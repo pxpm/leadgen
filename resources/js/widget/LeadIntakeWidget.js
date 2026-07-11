@@ -239,6 +239,7 @@ export class LeadIntakeWidget {
             d.appendChild(b);
         });
         this.panel.querySelector('.lgw-body').appendChild(d);
+        this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
     }
 
     buildMultiInput(options) {
@@ -260,6 +261,7 @@ export class LeadIntakeWidget {
             d.appendChild(b);
         });
         this.panel.querySelector('.lgw-body').appendChild(d);
+        this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
     }
 
     renderServiceChips(services) {
@@ -283,6 +285,7 @@ export class LeadIntakeWidget {
             d.appendChild(b);
         });
         this.panel.querySelector('.lgw-body').appendChild(d);
+        this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
     }
 
     appendToInput(text) {
