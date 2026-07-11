@@ -155,7 +155,8 @@ class ConversationOrchestrator
         foreach ($services as $service) {
             $serviceConfig = $this->config->resolve($lead->tenant, $service->service_key);
             $serviceName = $serviceConfig['service_name'] ?? $service->service_key;
-            $lines[] = "**{$serviceName}:**";
+            $icon = $serviceConfig['icon'] ?? '';
+            $lines[] = "\n{$icon} {$serviceName}:";
 
             foreach ($service->fields as $field) {
                 if ($field->field_value === '__declined__' || $field->field_value === '') {
@@ -169,7 +170,7 @@ class ConversationOrchestrator
         // Shared fields (not attributed to any specific service)
         $sharedFields = $lead->fields()->whereNull('lead_service_id')->get();
         if ($sharedFields->isNotEmpty()) {
-            $lines[] = "\n**Contacto:**";
+            $lines[] = "\n📋 Contacto:";
             foreach ($sharedFields as $field) {
                 if ($field->field_value === '__declined__' || $field->field_value === '') {
                     continue;
@@ -374,6 +375,13 @@ class ConversationOrchestrator
         $pending = $lead->pending_services;
         $nextService = array_shift($pending);
 
+        // Safety: shouldn't be called with no pending services, but guard anyway
+        if (! $nextService) {
+            Log::warning('activateNextService called with no pending services', ['lead_id' => $lead->id]);
+
+            return $this->buildResponse($lead, $this->config->resolve($lead->tenant, $lead->service_type), $userResponse);
+        }
+
         // Store whatever the user wrote as notes, and acknowledge it
         $ack = '';
         $trimmed = trim($userResponse);
@@ -400,6 +408,12 @@ class ConversationOrchestrator
         $nextField = $this->qualification->getNextField($lead);
         $firstQuestion = $nextField['prompt'] ?? 'Como posso ajudar?';
         $reply = "{$ack}{$transition} {$firstQuestion}";
+
+        // Track the new field so the next message doesn't re-trigger __summary__
+        if ($nextField) {
+            $lead->update(['current_field_key' => $nextField['key']]);
+        }
+
         $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
 
         return [

@@ -20,14 +20,14 @@ return new class extends Migration
         });
 
         Schema::table('lead_fields', function (Blueprint $table) {
-            $table->foreignId('lead_service_id')->nullable()->after('lead_id')->constrained('lead_services')->nullOnDelete();
+            $table->foreign('lead_service_id')->references('id')->on('lead_services')->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('lead_fields', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('lead_service_id');
+            $table->dropForeign(['lead_service_id']);
         });
 
         Schema::dropIfExists('lead_services');

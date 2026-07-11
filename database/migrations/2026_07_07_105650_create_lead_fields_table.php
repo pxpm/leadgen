@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('lead_fields', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lead_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('lead_service_id')->nullable();
             $table->string('field_key', 100);
             $table->string('field_type', 50)->default('text');
             $table->text('field_value')->nullable();
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->boolean('is_required')->default(false);
             $table->timestamps();
 
-            $table->unique(['lead_id', 'field_key']);
+            $table->unique(['lead_id', 'field_key', 'lead_service_id']);
         });
     }
 
