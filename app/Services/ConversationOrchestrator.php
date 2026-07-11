@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\LeadStatus;
 use App\Enums\MessageRole;
 use App\Models\Lead;
+use App\Models\Tenant;
 use Illuminate\Support\Facades\Log;
 
 use function Laravel\Ai\agent;
@@ -18,6 +19,7 @@ class ConversationOrchestrator
         private QualificationEngine $qualification,
         private StructuredExtractor $extractor,
         private FieldExtractor $fieldExtractor,
+        private TranslationService $trans,
     ) {}
 
     /**
@@ -204,6 +206,7 @@ class ConversationOrchestrator
     {
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
         $missing = $this->qualification->getMissingFields($lead);
+        $tenant = $lead->tenant;
 
         // All fields collected → summary
         if (empty($missing)) {
@@ -211,14 +214,15 @@ class ConversationOrchestrator
         }
 
         $nextField = $this->qualification->getNextField($lead);
-        $ack = $this->buildAcknowledgment($collected, $config, $locale);
+        $ack = $this->buildAcknowledgment($collected, $config, $locale, $tenant);
 
         // Specific handling for postal code after address
         if ($nextField && $nextField['key'] === 'postal_code' && isset($collected['property_address'])) {
-            $question = $config['locales'][$locale]['orchestration']['postal_code_question']
+            $question = $this->trans->get('orchestrator.postal_code_question', $locale, $tenant)
                 ?? 'E qual é o código postal dessa morada?';
         } else {
-            $question = $nextField['prompt'] ?? 'Pode dar-me mais informações?';
+            $question = $nextField['prompt'] ?? $this->trans->get('orchestrator.need_more_info', $locale, $tenant)
+                ?? 'Pode dar-me mais informações?';
         }
 
         return $ack ? "{$ack} {$question}" : $question;
@@ -233,13 +237,15 @@ class ConversationOrchestrator
         $options = $config['locales'][$locale]['field_options'] ?? [];
         $serviceName = $config['service_name'] ?? 'serviço';
 
+        $tenant = $lead->tenant;
+
         $header = str_replace(
             ':service',
             $serviceName,
-            $config['locales'][$locale]['orchestration']['summary_header']
+            $this->trans->get('orchestrator.summary_header', $locale, $tenant)
                 ?? "Perfeito! Já tenho todos os dados para o seu orçamento de {$serviceName}."
         );
-        $footer = $config['locales'][$locale]['orchestration']['summary_footer']
+        $footer = $this->trans->get('orchestrator.summary_footer', $locale, $tenant)
             ?? 'Está tudo correto? Quer acrescentar alguma nota adicional?';
 
         $lines = ["{$header}\nResumo:"];
@@ -260,7 +266,7 @@ class ConversationOrchestrator
      * Build a short acknowledgment of collected fields.
      * Pulls from locale config for natural variety.
      */
-    private function buildAcknowledgment(array $collected, array $config, string $locale): string
+    private function buildAcknowledgment(array $collected, array $config, string $locale, ?Tenant $tenant = null): string
     {
         if (empty($collected)) {
             return '';
@@ -272,28 +278,19 @@ class ConversationOrchestrator
         if (isset($collected['contact_name']) && $count === 1) {
             $name = $collected['contact_name'];
 
-            $nameVariants = $config['locales'][$locale]['name_acknowledgment_variants'] ?? [
-                "Obrigado, {$name}!",
-                "Perfeito, {$name}!",
-                "Certo, {$name}.",
-                "Ok, {$name}!",
-                "Entendido, {$name}.",
-            ];
+            $nameVariants = $this->trans->get('orchestrator.name_acknowledgment_variants', $locale, $tenant);
+            if (! is_array($nameVariants) || empty($nameVariants)) {
+                return '';
+            }
             $variant = $nameVariants[array_rand($nameVariants)];
 
             return str_replace(':name', $name, $variant);
         }
 
-        $variants = $config['locales'][$locale]['acknowledgment_variants'] ?? [
-            'Obrigado! Já registei.',
-            'Entendido!',
-            'Certo, tomei nota.',
-            'Ok, registado.',
-            'Perfeito, continue.',
-            'Já anotei essa.',
-            'Obrigado pela informação.',
-            'Tudo bem, siga.',
-        ];
+        $variants = $this->trans->get('orchestrator.acknowledgment_variants', $locale, $tenant);
+        if (! is_array($variants) || empty($variants)) {
+            return '';
+        }
 
         return $variants[array_rand($variants)];
     }
@@ -308,8 +305,9 @@ class ConversationOrchestrator
         $serviceName = $resolvedConfig['service_name'] ?? $serviceKey;
         $nextField = $this->qualification->getNextField($lead);
 
-        $firstQuestion = $nextField['prompt'] ?? 'Como posso ajudar?';
-        $template = $resolvedConfig['locales'][$locale]['orchestration']['service_activation']
+        $firstQuestion = $nextField['prompt'] ?? $this->trans->get('orchestrator.default_greeting', $locale, $lead->tenant)
+            ?? 'Como posso ajudar?';
+        $template = $this->trans->get('orchestrator.service_activation', $locale, $lead->tenant)
             ?? 'Perfeito! Vou ajudar com o serviço de :service. :question';
         $greeting = str_replace([':service', ':question'], [$serviceName, $firstQuestion], $template);
 
@@ -337,7 +335,7 @@ class ConversationOrchestrator
 
         $nextConfig = $this->config->resolve($lead->tenant, $nextService);
         $nextName = $nextConfig['service_name'] ?? $nextService;
-        $transitionTemplate = $nextConfig['locales'][$locale]['orchestration']['service_transition']
+        $transitionTemplate = $this->trans->get('orchestrator.service_transition', $locale, $lead->tenant)
             ?? "\n\nAgora vamos falar sobre {$nextName}.";
         $transition = str_replace(':service', $nextName, $transitionTemplate);
         $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $transition]);
@@ -377,7 +375,9 @@ class ConversationOrchestrator
             $lead->update(['service_type' => $matched]);
             $lead->refresh();
             $resolvedConfig = $this->config->resolve($lead->tenant, $matched);
-            $greeting = $resolvedConfig['locales'][$locale]['ai_prompt']['greeting_message'] ?? 'Como posso ajudar?';
+            $greeting = $resolvedConfig['locales'][$locale]['ai_prompt']['greeting_message']
+                ?? $this->trans->get('orchestrator.default_greeting', $locale, $lead->tenant)
+                ?? 'Como posso ajudar?';
             $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $greeting]);
 
             return [
@@ -392,7 +392,7 @@ class ConversationOrchestrator
 
         $serviceNames = implode(', ', array_column($available, 'name'));
         $baseConfig = $this->config->resolve($lead->tenant);
-        $template = $baseConfig['locales'][$locale]['orchestration']['service_selection_prompt']
+        $template = $this->trans->get('orchestrator.service_selection_prompt', $locale, $lead->tenant)
             ?? 'Olá! Em que podemos ajudar? Temos estes serviços: :services.';
         $reply = str_replace(':services', $serviceNames, $template);
         $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);

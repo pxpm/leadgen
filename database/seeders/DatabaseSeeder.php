@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             IndustrySeeder::class,
             PlanSeeder::class,
+            TranslationDefaultSeeder::class,
         ]);
 
         $starterPlan = Plan::where('slug', 'starter')->first();

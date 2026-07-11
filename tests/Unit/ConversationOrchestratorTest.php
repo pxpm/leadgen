@@ -9,6 +9,7 @@ use App\Services\FieldExtractor;
 use App\Services\IndustryConfigEngine;
 use App\Services\QualificationEngine;
 use App\Services\StructuredExtractor;
+use App\Services\TranslationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -32,6 +33,7 @@ beforeEach(function () {
         $qualEngine,
         new StructuredExtractor,
         $this->fieldExtractor,
+        new TranslationService,
     );
 });
 
