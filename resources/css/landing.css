@@ -1,0 +1,240 @@
+/* ═══════════════════════════════════════════════
+   Lead Intake Assistant — Landing Page Styles
+   Colors defined in app.css @theme — use var(--color-xxx)
+   ═══════════════════════════════════════════════ */
+
+/* ── Fonts ── */
+.font-serif-display {
+    font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+}
+
+/* ── Background textures ── */
+.bg-dots {
+    background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.bg-dots-dark {
+    background-image: radial-gradient(circle, #374151 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.bg-diagonal {
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 2px,
+        #f9fafb 2px,
+        #f9fafb 4px
+    );
+}
+
+/* ── Decorative line (hero section header underline) ── */
+.line-decoration {
+    position: relative;
+}
+
+.line-decoration::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    width: 48px;
+    height: 3px;
+    background: #f59e0b;
+    border-radius: 2px;
+}
+
+/* ── Card hover lift ── */
+.card-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Pipeline step connector ── */
+.pipe-step {
+    position: relative;
+}
+
+.pipe-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 40px;
+    right: -1rem;
+    width: 2rem;
+    height: 2px;
+    background: #e5e7eb;
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .pipe-step:not(:last-child)::after {
+        display: block;
+    }
+
+    .pipe-step:last-child::after {
+        display: none;
+    }
+}
+
+/* ── Angled section dividers ── */
+.section-angled {
+    clip-path: polygon(0 4%, 100% 0, 100% 96%, 0 100%);
+}
+
+.clip-angle {
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+}
+
+.clip-angle-reverse {
+    clip-path: polygon(0 15%, 100% 0, 100% 100%, 0 100%);
+}
+
+/* ── Smooth scroll offset for fixed header ── */
+html {
+    scroll-padding-top: 80px;
+}
+
+/* ── Range slider custom styling ── */
+input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 4px;
+    outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #f59e0b;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+input[type='range']::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #f59e0b;
+    border: none;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    cursor: pointer;
+}
+
+/* ── Section connector ── */
+.connector-bridge {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 20%);
+    z-index: 20;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.connector-fold {
+    flex-shrink: 0;
+    position: relative;
+    clip-path: polygon(0 100%, 100% 0, 100% 100%);
+    box-shadow: -3px -3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.connector-fold:nth-child(1) { width: 44px; height: 44px; background: var(--color-fold-gray); opacity: 0.75; }
+.connector-fold:nth-child(2) { width: 50px; height: 50px; background: var(--color-fold-gray); opacity: 0.8; margin-left: -10px; }
+.connector-fold:nth-child(3) { width: 56px; height: 56px; background: var(--color-fold-gray); opacity: 0.85; margin-left: -10px; }
+.connector-fold:nth-child(4) { width: 62px; height: 62px; background: var(--color-fold-gray); margin-left: -10px; }
+.connector-fold:nth-child(5) { width: 68px; height: 68px; background: var(--color-fold-amber); opacity: 0.6; margin-left: -10px; }
+.connector-fold:nth-child(6) { width: 74px; height: 74px; background: var(--color-fold-amber); opacity: 0.75; margin-left: -10px; }
+.connector-fold:nth-child(7) { width: 80px; height: 80px; background: var(--color-fold-amber); opacity: 0.85; margin-left: -10px; }
+.connector-fold:nth-child(8) { width: 86px; height: 86px; background: var(--color-fold-amber); margin-left: -10px; }
+.connector-fold:nth-child(9) { width: 92px; height: 92px; background: var(--color-fold-amber); margin-left: -10px; }
+.connector-fold:nth-child(10) { width: 98px; height: 98px; background: var(--color-fold-amber); margin-left: -10px; }
+
+.connector-fold:nth-child(2) { transform: translateY(3px); }
+.connector-fold:nth-child(3) { transform: translateY(6px); }
+.connector-fold:nth-child(4) { transform: translateY(10px); }
+.connector-fold:nth-child(5) { transform: translateY(15px); }
+.connector-fold:nth-child(6) { transform: translateY(22px); }
+.connector-fold:nth-child(7) { transform: translateY(31px); }
+.connector-fold:nth-child(8) { transform: translateY(42px); }
+.connector-fold:nth-child(9) { transform: translateY(56px); }
+.connector-fold:nth-child(10) { transform: translateY(72px); }
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.animate-pulse-dot {
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Folded corner cards ── */
+.fold-card {
+    position: relative;
+}
+
+.fold-card::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+}
+
+/* ── Colored backdrop behind cards ── */
+.fold-card-wrapper {
+    position: relative;
+}
+.fold-card-wrapper::before {
+    content: '';
+    position: absolute;
+    border-radius: 16px;
+    z-index: 0;
+    pointer-events: none;
+}
+.fold-br-backdrop::before {
+    background: var(--color-fold-gray);
+    inset: 10px -8px -8px 10px;
+}
+.fold-tr-backdrop::before {
+    background: var(--color-fold-amber);
+    inset: -8px -8px 20% 8px;
+}
+
+/* ── Bottom-right fold (gray cards) ── */
+.fold-br {
+    background: #f9fafb;
+}
+.fold-br::after {
+    bottom: -1px; right: -1px;
+    border: 27px solid transparent;
+    border-right-color: var(--color-fold-gray);
+    border-bottom-color: var(--color-fold-gray);
+    box-shadow: -4px -4px 14px rgba(0,0,0,0.15), -1px -1px 3px rgba(0,0,0,0.08);
+}
+
+/* ── Top-right fold (hero, amber) ── */
+.fold-tr-hero {
+    background: var(--color-brand-bg);
+    filter: drop-shadow(0 8px 24px rgba(245,158,11,.15));
+}
+.fold-tr-hero::after {
+    top: -1px; right: -1px;
+    border: 29px solid transparent;
+    border-right-color: var(--color-fold-amber);
+    border-top-color: var(--color-fold-amber);
+    box-shadow: -4px 4px 14px rgba(0,0,0,0.15), -1px 1px 3px rgba(0,0,0,0.08);
+}

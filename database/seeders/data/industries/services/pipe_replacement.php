@@ -1,0 +1,240 @@
+<?php
+
+return [
+    'key' => 'pipe_replacement',
+    'icon' => '🔧',
+    'required_fields' => [
+        0 => 'property_type',
+        1 => 'pipe_condition',
+    ],
+    'optional_fields' => [
+        0 => 'property_age',
+        1 => 'full_or_partial',
+        2 => 'access_type',
+        3 => 'water_source',
+        4 => 'problem_start',
+        5 => 'affected_fixtures',
+        6 => 'pipe_material',
+    ],
+    'field_definitions' => [
+        'property_type' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'apartment',
+                1 => 'house',
+                2 => 'building',
+                3 => 'commercial',
+                4 => 'other',
+            ],
+        ],
+        'pipe_condition' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'frequent_leaks',
+                1 => 'low_pressure',
+                2 => 'rusty_water',
+                3 => 'old_pipes',
+                4 => 'renovation',
+                5 => 'other',
+            ],
+        ],
+        'property_age' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'less_than_15',
+                1 => '15_to_30',
+                2 => 'over_30',
+                3 => 'not_sure',
+            ],
+        ],
+        'full_or_partial' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'full',
+                1 => 'partial',
+                2 => 'not_sure',
+            ],
+        ],
+        'access_type' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'easy',
+                1 => 'difficult',
+                2 => 'needs_demolition',
+            ],
+        ],
+        'water_source' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'municipal',
+                1 => 'well',
+                2 => 'septic',
+                3 => 'both',
+                4 => 'unsure',
+            ],
+        ],
+        'problem_start' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'less_than_week',
+                1 => 'few_weeks',
+                2 => 'month_or_more',
+            ],
+        ],
+        'affected_fixtures' => [
+            'type' => 'multi_select',
+            'options' => [
+                0 => 'sink',
+                1 => 'toilet',
+                2 => 'shower_bathtub',
+                3 => 'dishwasher',
+                4 => 'washing_machine',
+                5 => 'fridge',
+                6 => 'other',
+            ],
+        ],
+        'pipe_material' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'copper',
+                1 => 'pvc',
+                2 => 'galvanized',
+                3 => 'pex',
+                4 => 'multilayer',
+                5 => 'iron',
+                6 => 'steel',
+                7 => 'cpvc',
+                8 => 'not_sure',
+            ],
+        ],
+    ],
+    'conditional_requirements' => [],
+    'locales' => [
+        'pt' => [
+            'field_prompts' => [
+                'property_type' => 'Que tipo de propriedade é?',
+                'pipe_condition' => 'Porque quer substituir a canalização? Fugas frequentes, água com ferrugem, pouca pressão?',
+                'property_age' => 'Sabe quantos anos tem a propriedade?',
+                'full_or_partial' => 'Pretende substituição total ou parcial?',
+                'access_type' => 'O acesso aos canos é fácil ou vai ser preciso partir paredes?',
+                'water_source' => 'O problema envolve água da rede, poço ou fossa séptica?',
+                'problem_start' => 'Quando é que este problema começou?',
+                'affected_fixtures' => 'Que equipamentos são afetados? (pia, sanita, chuveiro, etc.)',
+                'pipe_material' => 'De que material são os canos? (se não souber, tudo bem)',
+            ],
+            'field_options' => [
+                'property_type' => [
+                    'apartment' => 'Apartamento',
+                    'house' => 'Moradia',
+                    'building' => 'Prédio',
+                    'commercial' => 'Comercial',
+                    'other' => 'Outro',
+                ],
+                'pipe_condition' => [
+                    'frequent_leaks' => 'Fugas frequentes',
+                    'low_pressure' => 'Pouca pressão',
+                    'rusty_water' => 'Água com ferrugem',
+                    'old_pipes' => 'Canos antigos',
+                    'renovation' => 'Remodelação',
+                    'other' => 'Outro',
+                ],
+                'property_age' => [
+                    'less_than_15' => '< 15 anos',
+                    '15_to_30' => '15-30 anos',
+                    'over_30' => '> 30 anos',
+                    'not_sure' => 'Não sei',
+                ],
+                'full_or_partial' => [
+                    'full' => 'Total',
+                    'partial' => 'Parcial',
+                    'not_sure' => 'A avaliar',
+                ],
+                'access_type' => [
+                    'easy' => 'Fácil acesso',
+                    'difficult' => 'Difícil',
+                    'needs_demolition' => 'Precisa de partir',
+                ],
+                'water_source' => [
+                    'municipal' => 'Água da rede',
+                    'well' => 'Água de poço',
+                    'septic' => 'Fossa séptica',
+                    'both' => 'Ambos (rede + esgotos)',
+                    'unsure' => 'Não tenho a certeza',
+                ],
+                'problem_start' => [
+                    'less_than_week' => 'Há menos de uma semana',
+                    'few_weeks' => 'Há algumas semanas',
+                    'month_or_more' => 'Há um mês ou mais',
+                ],
+                'affected_fixtures' => [
+                    'sink' => 'Pia / Lava-louça',
+                    'toilet' => 'Sanita',
+                    'shower_bathtub' => 'Chuveiro / Banheira',
+                    'dishwasher' => 'Máquina de lavar loiça',
+                    'washing_machine' => 'Máquina de lavar roupa',
+                    'fridge' => 'Frigorífico',
+                    'other' => 'Outro',
+                ],
+                'pipe_material' => [
+                    'copper' => 'Cobre',
+                    'pvc' => 'PVC',
+                    'galvanized' => 'Galvanizado',
+                    'pex' => 'PEX',
+                    'multilayer' => 'Multicamada',
+                    'iron' => 'Ferro',
+                    'steel' => 'Aço',
+                    'cpvc' => 'CPVC',
+                    'not_sure' => 'Não sei / Recomendado pelo especialista',
+                ],
+            ],
+            'name' => 'Substituição de Canalização',
+            'keywords' => [
+                0 => 'trocar canos',
+                1 => 'canos',
+                2 => 'tubagem',
+                3 => 'canalização nova',
+                4 => 'canalizacao nova',
+                5 => 'replumb',
+                6 => 'substituir',
+            ],
+            'synonyms' => [
+                'pipe_condition' => [
+                    'frequent_leaks' => [
+                        0 => 'fugas',
+                        1 => 'sempre a pingar',
+                        2 => 'rebenta',
+                        3 => 'frequentes',
+                    ],
+                    'low_pressure' => [
+                        0 => 'pouca pressão',
+                        1 => 'pouca pressao',
+                        2 => 'fraco',
+                        3 => 'pouca água',
+                    ],
+                    'rusty_water' => [
+                        0 => 'ferrugem',
+                        1 => 'castanha',
+                        2 => 'amarela',
+                        3 => 'suja',
+                        4 => 'ferro',
+                    ],
+                    'old_pipes' => [
+                        0 => 'antigo',
+                        1 => 'velho',
+                        2 => 'muitos anos',
+                        3 => 'nunca foi mexido',
+                    ],
+                    'renovation' => [
+                        0 => 'remodelar',
+                        1 => 'obras',
+                        2 => 'renovar',
+                        3 => 'aproveitar',
+                    ],
+                ],
+            ],
+            'ai_prompt' => [
+                'system' => 'És um assistente de admissão para substituição de canalizações. Recolhe informações sobre a instalação atual e o objetivo. Sê conversador e profissional. NUNCA dês estimativas de custos.',
+            ],
+        ],
+    ],
+];
