@@ -90,7 +90,8 @@ export class LeadIntakeWidget {
 
     async sendMessage(text, serviceKeys = null, intent = null) {
         if (!this.lead || this.isComplete) return;
-        this.addMessage('user', text);
+        // Don't show __skip__ in the chat — it's an internal command
+        if (text !== '__skip__') this.addMessage('user', text);
         this.inputEl.value = '';
         this.selectedServices.clear();
         this.showInput();
