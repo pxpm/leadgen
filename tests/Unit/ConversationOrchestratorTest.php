@@ -8,7 +8,6 @@ use App\Services\ConversationOrchestrator;
 use App\Services\FieldExtractor;
 use App\Services\IndustryConfigEngine;
 use App\Services\QualificationEngine;
-use App\Services\StructuredExtractor;
 use App\Services\TranslationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -31,7 +30,6 @@ beforeEach(function () {
     $this->orchestrator = new ConversationOrchestrator(
         $configEngine,
         $qualEngine,
-        new StructuredExtractor,
         $this->fieldExtractor,
         new TranslationService,
     );
@@ -208,15 +206,13 @@ test('smartExtract does not store email-request as phone', function () {
     $config = $engine->resolve($this->tenant, 'roofing');
     $locale = 'pt';
 
-    // "pode ser email?" should be detected as a deflection, not stored as phone
+    // "pode ser email?" is not a valid phone number — rejected by validator
     $method = reflectMethod(FieldExtractor::class, 'smartExtract');
-    $method->invoke($this->fieldExtractor, $lead, 'pode ser email?', $config, $locale);
+    $rejected = $method->invoke($this->fieldExtractor, $lead, 'pode ser email?', $config, $locale);
 
+    expect($rejected)->toBe(['phone']);
     $field = $lead->fields()->where('field_key', 'phone')->first();
-    // Should be null — "pode ser email?" is not a phone number
-    if ($field) {
-        expect($field->field_value)->not->toContain('pode ser email');
-    }
+    expect($field)->toBeNull();
 });
 
 // --- Phone validation ---
@@ -355,6 +351,192 @@ test('smartExtract auto-detects phone even when AI question does not match', fun
     $field = $lead->fields()->where('field_key', 'phone')->first();
     expect($field)->not->toBeNull();
     expect($field->field_value)->toBe('912345678');
+});
+
+// --- applyExtracted returns rejected keys ---
+
+test('applyExtracted returns rejected email key', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'service_type' => 'roofing',
+    ]);
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    $method = reflectMethod(FieldExtractor::class, 'applyExtracted');
+    $rejected = $method->invoke($this->fieldExtractor, $lead, [
+        'email' => ['value' => 'pedro asdfasdf', 'confidence' => 0.9, 'type' => 'text'],
+    ], $config);
+
+    expect($rejected)->toBe(['email']);
+});
+
+test('applyExtracted returns rejected phone key', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'service_type' => 'roofing',
+    ]);
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    $method = reflectMethod(FieldExtractor::class, 'applyExtracted');
+    $rejected = $method->invoke($this->fieldExtractor, $lead, [
+        'phone' => ['value' => 'abc', 'confidence' => 0.9, 'type' => 'text'],
+    ], $config);
+
+    expect($rejected)->toBe(['phone']);
+});
+
+test('applyExtracted returns empty array when all valid', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'service_type' => 'roofing',
+    ]);
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    $method = reflectMethod(FieldExtractor::class, 'applyExtracted');
+    $rejected = $method->invoke($this->fieldExtractor, $lead, [
+        'email' => ['value' => 'valid@email.com', 'confidence' => 0.9, 'type' => 'text'],
+        'phone' => ['value' => '912345678', 'confidence' => 0.9, 'type' => 'text'],
+    ], $config);
+
+    expect($rejected)->toBe([]);
+});
+
+// --- buildReply uses validation-failure message when field was rejected ---
+
+test('buildReply gives validation nack when email rejected', function () {
+    // Seed the translation defaults so the orchestrator can find the invalid_email key
+    $transService = new TranslationService;
+    $transService->seedFromFile('pt', 'orchestrator', require lang_path('pt/orchestrator.php'));
+
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'service_type' => 'roofing',
+    ]);
+
+    // Pre-collect all fields before email so email is the next field to ask
+    foreach (['problem_type', 'roof_type', 'contact_name', 'phone'] as $key) {
+        $lead->fields()->create([
+            'field_key' => $key,
+            'field_type' => 'text',
+            'field_value' => 'test',
+            'confidence' => 0.9,
+            'is_required' => true,
+        ]);
+    }
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    $method = reflectMethod(ConversationOrchestrator::class, 'buildReply');
+    $reply = $method->invoke($this->orchestrator, $lead, $config, 'pt', ['email']);
+
+    expect($reply)->toContain('não parece ser um email válido');
+    expect($reply)->not->toContain('Tudo bem');
+    expect($reply)->not->toContain('Já anotei');
+});
+
+test('buildReply uses normal acknowledgment when no fields rejected', function () {
+    $transService = new TranslationService;
+    $transService->seedFromFile('pt', 'orchestrator', require lang_path('pt/orchestrator.php'));
+
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'service_type' => 'roofing',
+    ]);
+
+    // Pre-collect a field so acknowledgment fires
+    $lead->fields()->create([
+        'field_key' => 'contact_name',
+        'field_type' => 'text',
+        'field_value' => 'Pedro',
+        'confidence' => 0.9,
+        'is_required' => true,
+    ]);
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    $method = reflectMethod(ConversationOrchestrator::class, 'buildReply');
+    $reply = $method->invoke($this->orchestrator, $lead, $config, 'pt', []);
+
+    // With no rejection and a previously collected field, acknowledgment should fire
+    // (the exact acknowledgment text is random, so we just verify it's not a validation nack)
+    expect($reply)->not->toContain('não parece');
+});
+
+// --- Skip flow (__skip__ chip) ---
+
+test('handleSkip declines optional field and lead completes', function () {
+    $transService = new TranslationService;
+    $transService->seedFromFile('pt', 'orchestrator', require lang_path('pt/orchestrator.php'));
+
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'service_type' => 'roofing',
+    ]);
+
+    // Pre-collect all required fields — the first optional field (property_type) becomes next
+    foreach (['problem_type', 'roof_type', 'contact_name', 'phone', 'email', 'property_address'] as $key) {
+        $lead->fields()->create([
+            'field_key' => $key,
+            'field_type' => 'text',
+            'field_value' => 'test',
+            'confidence' => 0.9,
+            'is_required' => true,
+        ]);
+    }
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    $lead->refresh();
+
+    $method = reflectMethod(ConversationOrchestrator::class, 'handleSkip');
+    $result = $method->invoke($this->orchestrator, $lead, $config, 'pt');
+
+    // property_type (optional, first in order) should be stored as __declined__
+    $field = $lead->fields()->where('field_key', 'property_type')->first();
+    expect($field)->not->toBeNull();
+    expect($field->field_value)->toBe('__declined__');
+
+    // All requireds were already done → lead completes (no next field)
+    expect($result['is_complete'])->toBeTrue();
+});
+
+test('handleSkip blocks required field with field_required message', function () {
+    $transService = new TranslationService;
+    $transService->seedFromFile('pt', 'orchestrator', require lang_path('pt/orchestrator.php'));
+
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'service_type' => 'roofing',
+    ]);
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    // No fields collected yet — first field is problem_type (required)
+    $method = reflectMethod(ConversationOrchestrator::class, 'handleSkip');
+    $result = $method->invoke($this->orchestrator, $lead, $config, 'pt');
+
+    expect($result['reply'])->toContain('obrigatório');
+    expect($result['next_field']['key'])->toBe('problem_type');
+    // Field should NOT have been stored
+    $field = $lead->fields()->where('field_key', 'problem_type')->first();
+    expect($field)->toBeNull();
 });
 
 // --- Helper ---

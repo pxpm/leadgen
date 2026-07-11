@@ -104,6 +104,7 @@ class QualificationEngine
 
         $result = ['key' => $fieldKey, 'type' => $definitions[$fieldKey]['type'] ?? 'text'];
         $result['prompt'] = $config['locales'][$locale]['field_prompts'][$fieldKey] ?? null;
+        $result['required'] = in_array($fieldKey, $config['required_fields'] ?? []);
 
         if (($definitions[$fieldKey]['type'] ?? null) === 'select') {
             $result['options'] = collect($definitions[$fieldKey]['options'])
@@ -112,6 +113,7 @@ class QualificationEngine
                     'label' => $config['locales'][$locale]['field_options'][$fieldKey][$val] ?? $val,
                 ])->values()->toArray();
             $result['multi'] = $definitions[$fieldKey]['multi'] ?? false;
+            $result['has_other'] = in_array('other', $definitions[$fieldKey]['options'] ?? []);
         }
 
         return $result;

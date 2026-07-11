@@ -40,7 +40,6 @@ return [
         ],
         'postal_code' => [
             'type' => 'text',
-            'pattern' => '^\\d{4}-\\d{3}$',
         ],
         'notes' => [
             'type' => 'text',

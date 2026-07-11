@@ -13,7 +13,7 @@ return [
         'Perfeito, continue.',
         'Já anotei essa.',
         'Obrigado pela informação.',
-        'Tudo bem, siga.',
+        'Tudo bem, vamos prosseguir.',
     ],
 
     'name_acknowledgment_variants' => [
@@ -32,4 +32,12 @@ return [
     'summary_footer' => 'Está tudo correto? Quer acrescentar alguma nota adicional?',
     'default_greeting' => 'Como posso ajudar?',
     'need_more_info' => 'Pode dar-me mais informações?',
+
+    // Validation-failure messages (when user input is rejected by validators)
+    'invalid_email' => 'Isso não parece ser um email válido. :question',
+    'invalid_phone' => 'Esse número não parece ser um número de telefone válido. :question',
+    'invalid_field' => 'Isso não parece estar correto. :question',
+
+    // Shown when user tries to skip a required field
+    'field_required' => 'Este campo é obrigatório. :question',
 ];

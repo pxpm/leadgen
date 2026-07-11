@@ -10,6 +10,7 @@ export class LeadIntakeWidget {
         this.panel = null;
         this.bodyEl = null;
         this.inputEl = null;
+        this.footerEl = null;
         this.selectedServices = new Set();
     }
 
@@ -88,6 +89,7 @@ export class LeadIntakeWidget {
         this.addMessage('user', text);
         this.inputEl.value = '';
         this.selectedServices.clear();
+        this.showFooter();
         this.setTyping(true);
         try {
             const body = { message: text };
@@ -168,6 +170,7 @@ export class LeadIntakeWidget {
 
         this.bodyEl = this.panel.querySelector('.lgw-body');
         this.inputEl = this.panel.querySelector('.lgw-input');
+        this.footerEl = this.panel.querySelector('.lgw-footer');
 
         // Close button
         const closeBtn = this.panel.querySelector('.lgw-header-close');
@@ -223,23 +226,69 @@ export class LeadIntakeWidget {
 
     renderChips(nextField) {
         const ex = this.panel.querySelector('.lgw-chips'); if (ex) ex.remove();
-        if (!nextField || nextField.type !== 'select' || !nextField.options) return;
+        if (!nextField) { this.showFooter(); return; }
+
+        const isSelect = nextField.type === 'select' && nextField.options && nextField.options.length;
+        const isOptional = nextField.required === false;
+        const hasOther = nextField.has_other === true;
+
+        if (!isSelect && !isOptional) { this.showFooter(); return; }
+
         const d = document.createElement('div'); d.className = 'lgw-chips';
-        const isMulti = nextField.multi === true;
-        nextField.options.forEach(o => {
-            const b = document.createElement('button'); b.textContent = o.label;
-            if (isMulti) {
-                b.onclick = () => {
-                    b.classList.toggle('lgw-chip-selected');
-                    this.buildMultiInput(nextField.options);
-                };
-            } else {
-                b.onclick = () => { this.sendMessage(o.label); d.remove(); };
+
+        // Option chips (select fields)
+        if (isSelect) {
+            const isMulti = nextField.multi === true;
+            nextField.options.forEach(o => {
+                const b = document.createElement('button'); b.textContent = o.label;
+
+                if (o.value === 'other') {
+                    // "Outro" chip → reveals text input instead of sending
+                    b.onclick = () => {
+                        d.querySelectorAll('button').forEach(btn => btn.classList.remove('lgw-chip-selected'));
+                        b.classList.add('lgw-chip-selected');
+                        this.showFooter();
+                        this.inputEl.focus();
+                    };
+                } else if (isMulti) {
+                    b.onclick = () => {
+                        b.classList.toggle('lgw-chip-selected');
+                        this.buildMultiInput(nextField.options);
+                    };
+                } else {
+                    b.onclick = () => { this.sendMessage(o.label); d.remove(); };
+                }
+                d.appendChild(b);
+            });
+
+            // If no "other" option → hide input (user must pick a chip)
+            if (!hasOther && !isMulti) {
+                this.hideFooter();
             }
-            d.appendChild(b);
-        });
+        }
+
+        // Skip chip (optional fields, regardless of type)
+        if (isOptional) {
+            const skip = document.createElement('button');
+            skip.textContent = 'Saltar →';
+            skip.className = 'lgw-chip-skip';
+            skip.onclick = () => {
+                this.sendMessage('__skip__');
+                d.remove();
+            };
+            d.appendChild(skip);
+        }
+
         this.panel.querySelector('.lgw-body').appendChild(d);
         this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+    }
+
+    hideFooter() {
+        if (this.footerEl) this.footerEl.classList.add('lgw-footer-hidden');
+    }
+
+    showFooter() {
+        if (this.footerEl) this.footerEl.classList.remove('lgw-footer-hidden');
     }
 
     buildMultiInput(options) {

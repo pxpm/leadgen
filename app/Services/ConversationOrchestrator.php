@@ -10,14 +10,11 @@ use App\Models\Lead;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Log;
 
-use function Laravel\Ai\agent;
-
 class ConversationOrchestrator
 {
     public function __construct(
         private IndustryConfigEngine $config,
         private QualificationEngine $qualification,
-        private StructuredExtractor $extractor,
         private FieldExtractor $fieldExtractor,
         private TranslationService $trans,
     ) {}
@@ -46,163 +43,29 @@ class ConversationOrchestrator
         // --- QUALIFICATION ---
         $resolvedConfig = $this->config->resolve($lead->tenant, $lead->service_type);
 
-        // Step 1: AI extraction (structured JSON only, no conversation)
-        $this->runAiExtraction($lead, $userMessage, $resolvedConfig);
+        // --- SKIP HANDLING (widget "Saltar" chip) ---
+        if ($userMessage === '__skip__') {
+            return $this->handleSkip($lead, $resolvedConfig, $locale);
+        }
 
-        // Step 2: Smart-match short answers
-        $this->fieldExtractor->smartExtract($lead, $userMessage, $resolvedConfig, $locale);
+        // Short-answer extraction (regex + smart matching — no AI needed for structured Q&A)
+        $rejectedKeys = $this->fieldExtractor->smartExtract($lead, $userMessage, $resolvedConfig, $locale);
 
-        // Step 3: Deterministic response (no AI text generation)
-        $reply = $this->buildReply($lead, $resolvedConfig, $locale);
+        // Deterministic response (no AI text generation)
+        $reply = $this->buildReply($lead, $resolvedConfig, $locale, $rejectedKeys);
         $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
 
-        // Completion + pending services
-        $this->qualification->maybeComplete($lead);
-        $lead->refresh();
-
-        if ($lead->status === LeadStatus::Qualified && ! empty($lead->pending_services)) {
-            return $this->activateNextService($lead, $reply, $locale);
-        }
-
-        $isComplete = $lead->status === LeadStatus::Qualified;
-        $nextField = $isComplete ? null : $this->qualification->getNextField($lead);
-
-        Log::channel('ai')->debug('AI: result', [
-            'lead_id' => $lead->id,
-            'is_complete' => $isComplete,
-            'collected' => $lead->fields()->count(),
-            'missing' => $this->qualification->getMissingFields($lead),
-        ]);
-
-        return [
-            'reply' => $reply,
-            'is_complete' => $isComplete,
-            'phase' => 'qualification',
-            'progress' => ['collected' => $lead->fields()->count(), 'required' => count($resolvedConfig['required_fields'] ?? [])],
-            'next_field' => $nextField,
-            'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
-        ];
-    }
-
-    // ─── AI Extraction ───────────────────────────────────────────
-
-    /**
-     * Use AI ONLY to extract structured JSON from the user message.
-     * No conversation generation — just pure extraction.
-     */
-    private function runAiExtraction(Lead $lead, string $userMessage, array $config): void
-    {
-        $fieldDefinitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
-
-        // Step A: regex-based extraction (no AI, fast)
-        $this->fieldExtractor->applyExtracted(
-            $lead,
-            $this->extractor->extract($userMessage, $fieldDefinitions),
-            $config
-        );
-
-        // Step B: AI extraction for natural language / complex messages
-        $locale = $this->config->getLocale($lead->tenant);
-        $missing = $this->qualification->getMissingFields($lead);
-        $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
-
-        if (empty($missing)) {
-            return;
-        }
-
-        $instructions = $this->buildExtractionPrompt($config, $missing, $collected, $locale);
-
-        try {
-            $response = agent()
-                ->instructions($instructions)
-                ->prompt($userMessage);
-
-            $text = $response->text ?? '';
-            $extracted = $this->parseExtractionResponse($text);
-
-            if (! empty($extracted)) {
-                $this->fieldExtractor->applyExtracted($lead, $extracted, $config);
-                Log::channel('ai')->debug('AI: extracted', ['keys' => array_keys($extracted)]);
-            }
-        } catch (\Throwable $e) {
-            Log::channel('ai')->error('AI extraction failed', ['error' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Build a minimal extraction-only prompt.
-     */
-    private function buildExtractionPrompt(array $config, array $missing, array $collected, string $locale): string
-    {
-        $prompts = $config['locales'][$locale]['field_prompts'] ?? [];
-        $defs = $config['field_definitions'] ?? [];
-        $opts = $config['locales'][$locale]['field_options'] ?? [];
-
-        $lines = ["Extrai APENAS JSON desta mensagem. NADA de texto livre.\n"];
-        $lines[] = 'Campos que ainda preciso (usa EXATAMENTE estas chaves):';
-
-        foreach ($missing as $key) {
-            $prompt = $prompts[$key] ?? $key;
-            $line = "- {$key}: \"{$prompt}\"";
-            $def = $defs[$key] ?? null;
-            if ($def && $def['type'] === 'select' && ! empty($def['options'])) {
-                $optLabels = array_map(fn ($o) => ($opts[$key][$o] ?? $o), $def['options']);
-                $line .= ' [valores: '.implode(', ', $optLabels).']';
-            }
-            $lines[] = $line;
-        }
-
-        if (! empty($collected)) {
-            $lines[] = "\nJá recolhido (NÃO extraias outra vez): ".json_encode($collected, JSON_UNESCAPED_UNICODE);
-        }
-
-        $lines[] = "\nResponde APENAS com JSON. Exemplo: {\"contact_name\":\"Pedro\",\"email\":\"pedro@email.com\"}";
-        $lines[] = 'NUNCA uses markdown fences. Só JSON puro.';
-
-        return implode("\n", $lines);
-    }
-
-    /**
-     * Parse the AI's extraction response into field data.
-     */
-    private function parseExtractionResponse(string $response): array
-    {
-        // Try direct JSON decode
-        $decoded = json_decode($response, true);
-        if (is_array($decoded)) {
-            $result = [];
-            foreach ($decoded as $key => $value) {
-                if (is_string($value) && $value !== '') {
-                    $result[$key] = ['value' => $value, 'confidence' => 0.9, 'type' => 'text'];
-                }
-            }
-
-            return $result;
-        }
-
-        // Fallback: strip markdown and try again
-        $cleaned = preg_replace('/```(?:json)?\s*/', '', $response);
-        $decoded = json_decode($cleaned, true);
-        if (is_array($decoded)) {
-            $result = [];
-            foreach ($decoded as $key => $value) {
-                if (is_string($value) && $value !== '') {
-                    $result[$key] = ['value' => $value, 'confidence' => 0.85, 'type' => 'text'];
-                }
-            }
-
-            return $result;
-        }
-
-        return [];
+        return $this->buildResponse($lead, $resolvedConfig, $reply);
     }
 
     // ─── Response Generation (Deterministic) ─────────────────────
 
     /**
      * Build a deterministic response. No AI text generation.
+     *
+     * @param  string[]  $rejectedKeys  Keys that were extracted but failed validation
      */
-    private function buildReply(Lead $lead, array $config, string $locale): string
+    private function buildReply(Lead $lead, array $config, string $locale, array $rejectedKeys = []): string
     {
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
         $missing = $this->qualification->getMissingFields($lead);
@@ -214,6 +77,13 @@ class ConversationOrchestrator
         }
 
         $nextField = $this->qualification->getNextField($lead);
+
+        // If the next field to ask was just rejected, give validation feedback instead
+        // of a generic acknowledgment that would mislead the user into thinking it was accepted.
+        if ($nextField && in_array($nextField['key'], $rejectedKeys, true)) {
+            return $this->buildValidationNack($nextField, $locale, $tenant);
+        }
+
         $ack = $this->buildAcknowledgment($collected, $config, $locale, $tenant);
 
         // Specific handling for postal code after address
@@ -226,6 +96,40 @@ class ConversationOrchestrator
         }
 
         return $ack ? "{$ack} {$question}" : $question;
+    }
+
+    /**
+     * Build a validation-failure message when the user's answer was rejected.
+     * Uses specific templates for email/phone/pattern, falls back to a generic one.
+     */
+    private function buildValidationNack(array $nextField, string $locale, ?Tenant $tenant): string
+    {
+        $key = $nextField['key'];
+        $question = $nextField['prompt'] ?? 'Pode dar-me mais informações?';
+
+        // Specific validation messages per field type
+        $templates = [
+            'email' => 'orchestrator.invalid_email',
+            'phone' => 'orchestrator.invalid_phone',
+        ];
+
+        if (isset($templates[$key])) {
+            $template = $this->trans->get($templates[$key], $locale, $tenant);
+
+            if ($template) {
+                return str_replace(':question', $question, $template);
+            }
+        }
+
+        // Generic fallback for pattern mismatches or unknown rejections
+        $template = $this->trans->get('orchestrator.invalid_field', $locale, $tenant);
+
+        if ($template) {
+            return str_replace(':question', $question, $template);
+        }
+
+        // Ultimate fallback (shouldn't normally be reached if seeds ran)
+        return "Isso não parece estar correto. {$question}";
     }
 
     /**
@@ -296,6 +200,88 @@ class ConversationOrchestrator
     }
 
     // ─── Service Management ───────────────────────────────────────
+
+    /**
+     * Handle the __skip__ signal from the widget's "Saltar" chip.
+     * Optional fields → store __declined__ and move on.
+     * Required fields → respond with field_required nack.
+     */
+    private function handleSkip(Lead $lead, array $config, string $locale): array
+    {
+        $nextField = $this->qualification->getNextField($lead);
+        $tenant = $lead->tenant;
+
+        if (! $nextField) {
+            // No field to skip — fall through to normal reply
+            $reply = $this->buildReply($lead, $config, $locale);
+            $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
+
+            return $this->buildResponse($lead, $config, $reply);
+        }
+
+        if ($nextField['required']) {
+            $question = $nextField['prompt']
+                ?? $this->trans->get('orchestrator.need_more_info', $locale, $tenant)
+                ?? 'Pode dar-me mais informações?';
+            $nack = $this->trans->get('orchestrator.field_required', $locale, $tenant);
+            $reply = $nack
+                ? str_replace(':question', $question, $nack)
+                : "Este campo é obrigatório. {$question}";
+            $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
+
+            return $this->buildResponse($lead, $config, $reply);
+        }
+
+        // Optional field — store declined and move on
+        $lead->fields()->create([
+            'field_key' => $nextField['key'],
+            'field_type' => $nextField['type'] ?? 'text',
+            'field_value' => '__declined__',
+            'confidence' => 0.0,
+            'is_required' => false,
+        ]);
+        $lead->unsetRelation('fields');
+        Log::channel('ai')->debug('AI: field skipped', ['key' => $nextField['key']]);
+
+        $reply = $this->buildReply($lead, $config, $locale);
+        $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
+
+        return $this->buildResponse($lead, $config, $reply);
+    }
+
+    /**
+     * Build the standard response array after qualification processing.
+     */
+    private function buildResponse(Lead $lead, array $config, string $reply): array
+    {
+        $this->qualification->maybeComplete($lead);
+        $lead->refresh();
+
+        if ($lead->status === LeadStatus::Qualified && ! empty($lead->pending_services)) {
+            return $this->activateNextService($lead, $reply, $this->config->getLocale($lead->tenant));
+        }
+
+        $isComplete = $lead->status === LeadStatus::Qualified;
+        $nextField = $isComplete ? null : $this->qualification->getNextField($lead);
+
+        Log::channel('ai')->debug('AI: result', [
+            'lead_id' => $lead->id,
+            'is_complete' => $isComplete,
+            'collected' => $lead->fields()->count(),
+            'missing' => $this->qualification->getMissingFields($lead),
+        ]);
+
+        return [
+            'reply' => $reply,
+            'is_complete' => $isComplete,
+            'phase' => 'qualification',
+            'progress' => ['collected' => $lead->fields()->count(), 'required' => count($config['required_fields'] ?? [])],
+            'next_field' => $nextField,
+            'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
+        ];
+    }
+
+    // ─── Service Management (original) ─────────────────────────────
 
     private function activateService(Lead $lead, string $serviceKey, string $locale): array
     {
