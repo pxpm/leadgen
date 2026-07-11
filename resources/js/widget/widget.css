@@ -179,7 +179,7 @@
     display:flex;padding:10px 14px;gap:8px;align-items:center;
     border-top:1px solid #e8ecf1;background:#fff;
 }
-.lgw-footer.lgw-footer-hidden{display:none}
+.lgw-input-hidden{visibility:hidden}
 .lgw-input{
     flex:1;padding:11px 16px;
     border:1.5px solid #e2e8f0;border-radius:24px;

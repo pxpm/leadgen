@@ -52,11 +52,11 @@ class IndustryConfigEngine
                 $base['locales'][$locale]['field_prompts'][$key] = $prompt;
             }
         }
-        if (! empty($overrides['conditional_fields'])) {
-            foreach ($overrides['conditional_fields'] as $key => $override) {
-                if (isset($base['conditional_fields'][$key])) {
-                    $base['conditional_fields'][$key] = array_merge(
-                        $base['conditional_fields'][$key],
+        if (! empty($overrides['field_definitions'])) {
+            foreach ($overrides['field_definitions'] as $key => $override) {
+                if (isset($base['field_definitions'][$key])) {
+                    $base['field_definitions'][$key] = array_merge(
+                        $base['field_definitions'][$key],
                         $override
                     );
                 }
@@ -90,7 +90,7 @@ class IndustryConfigEngine
     {
         $merged = $global;
 
-        foreach (['required_fields', 'optional_fields', 'greeting_message', 'field_prompts', 'conditional_fields', 'field_options'] as $key) {
+        foreach (['required_fields', 'optional_fields', 'greeting_message', 'field_prompts', 'field_definitions', 'field_options'] as $key) {
             if (! empty($perService[$key])) {
                 $merged[$key] = $perService[$key];
             }
@@ -179,16 +179,12 @@ class IndustryConfigEngine
     }
 
     /**
-     * Get field definitions merged from base + service, including conditional fields.
+     * Get field definitions for the resolved config. Includes conditional fields
+     * (which are now just regular field definitions with a "when" trigger).
      */
     public function getFieldDefinitions(Tenant $tenant, ?string $serviceType = null): array
     {
-        $config = $this->resolve($tenant, $serviceType);
-
-        return array_merge(
-            $config['field_definitions'] ?? [],
-            $config['conditional_fields'] ?? []
-        );
+        return $this->resolve($tenant, $serviceType)['field_definitions'] ?? [];
     }
 
     /**
@@ -212,8 +208,10 @@ class IndustryConfigEngine
         $baseRequired = $base['shared_fields']['required'] ?? [];
         $baseOptional = $base['shared_fields']['optional'] ?? [];
 
-        $base['required_fields'] = array_merge($serviceRequired, $baseRequired);
-        $base['optional_fields'] = array_merge($serviceOptional, $baseOptional);
+        // Shared fields (contact_name, phone, etc.) go first so the bot introduces
+        // itself before diving into service-specific technical questions.
+        $base['required_fields'] = array_merge($baseRequired, $serviceRequired);
+        $base['optional_fields'] = array_merge($baseOptional, $serviceOptional);
 
         // Merge field definitions
         $base['field_definitions'] = array_merge(
@@ -221,14 +219,8 @@ class IndustryConfigEngine
             $service['field_definitions'] ?? []
         );
 
-        // Merge conditional requirements
+        // Merge conditional requirements (global rules like "require X if Y")
         $base['conditional_requirements'] = $service['conditional_requirements'] ?? [];
-
-        // Merge conditional fields
-        $base['conditional_fields'] = array_merge(
-            $base['conditional_fields'] ?? [],
-            $service['conditional_fields'] ?? []
-        );
 
         // Merge locale-aware service data into the base's locale block
         $svcLocale = $service['locales'][$locale] ?? [];

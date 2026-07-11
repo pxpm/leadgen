@@ -25,7 +25,8 @@ return [
     ],
 
     'service_activation' => 'Perfeito! Vou ajudar com o serviço de :service. :question',
-    'postal_code_question' => 'E qual é o código postal dessa morada?',
+    'service_activation_name_first' => 'Vou ajudar-te com o serviço de :service. Vamos primeiro apresentar-nos, como te chamas?',
+    'service_activation_multi_name_first' => 'Vou ajudar-te com os serviços selecionados. Vamos primeiro apresentar-nos, como te chamas?',
     'service_selection_prompt' => 'Olá! Em que podemos ajudar? Temos estes serviços: :services.',
     'service_transition' => 'Agora vamos falar sobre :service.',
     'summary_header' => 'Perfeito! Já tenho todos os dados para o seu orçamento de :service.',

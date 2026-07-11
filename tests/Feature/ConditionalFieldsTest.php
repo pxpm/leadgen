@@ -83,7 +83,7 @@ test('optional conditional does not block completion', function () {
 });
 
 test('disabled conditional field never appears', function () {
-    $this->tenant->update(['service_config' => ['roofing' => ['conditional_fields' => ['leak_location' => ['enabled' => false]]]]]);
+    $this->tenant->update(['service_config' => ['roofing' => ['field_definitions' => ['leak_location' => ['enabled' => false]]]]]);
     $this->lead->refresh();
     $this->lead->fields()->create(['field_key' => 'problem_type', 'field_value' => 'leak', 'field_type' => 'select']);
 

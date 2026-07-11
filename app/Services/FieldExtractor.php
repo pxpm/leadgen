@@ -27,7 +27,7 @@ class FieldExtractor
      *
      * @return string[] Rejected field keys (so callers can give validation-failure feedback)
      */
-    public function applyExtracted(Lead $lead, array $extracted, array $config): array
+    public function applyExtracted(Lead $lead, array $extracted, array $config, ?int $leadServiceId = null): array
     {
         $definitions = $config['field_definitions'] ?? [];
         $rejected = [];
@@ -68,8 +68,11 @@ class FieldExtractor
                 continue;
             }
 
+            // Shared fields (contact_name, phone, etc.) belong to the lead, not a specific service.
+            $serviceId = $this->isSharedField($key, $config) ? null : $leadServiceId;
+
             $field = $lead->fields()->updateOrCreate(
-                ['field_key' => $key],
+                ['field_key' => $key, 'lead_service_id' => $serviceId],
                 [
                     'field_type' => $data['type'],
                     'field_value' => $data['value'],
@@ -106,7 +109,7 @@ class FieldExtractor
      *
      * @return string[] Rejected field keys
      */
-    public function smartExtract(Lead $lead, string $userMessage, array $config, string $locale): array
+    public function smartExtract(Lead $lead, string $userMessage, array $config, string $locale, ?int $leadServiceId = null): array
     {
         $msg = trim($userMessage);
         $wordCount = count(explode(' ', $msg));
@@ -117,16 +120,10 @@ class FieldExtractor
 
         $missing = $this->qualification->getMissingFields($lead);
         $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
-        $prompts = $config['locales'][$locale]['field_prompts'] ?? [];
         $options = $config['locales'][$locale]['field_options'] ?? [];
 
-        $lastAssistantMsg = $lead->messages()
-            ->where('role', 'assistant')
-            ->orderBy('created_at', 'desc')
-            ->first()?->content;
-
-        // --- MATCH AI QUESTION TO FIELD ---
-        $bestField = $this->findBestField($lastAssistantMsg, $missing, $prompts);
+        // The bot tracks which field it's asking via lead.current_field_key — no fragile prompt-matching.
+        $bestField = in_array($lead->current_field_key, $missing) ? $lead->current_field_key : null;
 
         // --- WORD LIMIT (select fields only) ---
         $fieldDef = $bestField ? ($definitions[$bestField] ?? null) : null;
@@ -137,16 +134,23 @@ class FieldExtractor
             return [];
         }
 
-        // --- AUTO-DETECT EMAIL/PHONE ---
+        // --- AUTO-DETECT EMAIL/PHONE, then fall back to first missing field ---
         if (! $bestField) {
             if (in_array('email', $missing) && $this->isValidEmail($msg)) {
-                return $this->applyExtracted($lead, ['email' => ['value' => $msg, 'confidence' => 0.9, 'type' => 'text']], $config);
+                return $this->applyExtracted($lead, ['email' => ['value' => $msg, 'confidence' => 0.9, 'type' => 'text']], $config, $leadServiceId);
             }
             if (in_array('phone', $missing) && $this->isValidPortuguesePhone($msg)) {
-                return $this->applyExtracted($lead, ['phone' => ['value' => $msg, 'confidence' => 0.9, 'type' => 'text']], $config);
+                return $this->applyExtracted($lead, ['phone' => ['value' => $msg, 'confidence' => 0.9, 'type' => 'text']], $config, $leadServiceId);
             }
 
-            return [];
+            // No prompt match and not an auto-detectable type — fall back to the
+            // first missing field. Covers custom templates (e.g. name-first activation
+            // uses "como te chamas?" instead of the standard field prompt).
+            if (! empty($missing)) {
+                $bestField = $missing[0];
+            } else {
+                return [];
+            }
         }
 
         $fieldDef = $definitions[$bestField] ?? null;
@@ -156,49 +160,23 @@ class FieldExtractor
 
         // --- SELECT FIELD MATCHING ---
         if ($fieldDef['type'] === 'select') {
-            return $this->extractSelectField($lead, $bestField, $msg, $config, $options, $locale);
+            return $this->extractSelectField($lead, $bestField, $msg, $config, $options, $locale, $leadServiceId);
         }
 
         // --- TEXT FIELD ---
         return $this->applyExtracted($lead, [
             $bestField => ['value' => $msg, 'confidence' => 0.8, 'type' => $fieldDef['type']],
-        ], $config);
+        ], $config, $leadServiceId);
     }
 
     // ─── Private helpers ───────────────────────────────────────────
-
-    /**
-     * Find which field the AI's last question is about.
-     * Matches the question text against field prompts, or defaults to the
-     * only missing field when there's exactly one.
-     */
-    private function findBestField(?string $lastAssistantMsg, array $missing, array $prompts): ?string
-    {
-        $bestField = null;
-
-        if ($lastAssistantMsg) {
-            foreach ($missing as $fieldKey) {
-                $prompt = $prompts[$fieldKey] ?? '';
-                if ($prompt && mb_stripos($lastAssistantMsg, mb_substr($prompt, 0, 20)) !== false) {
-                    $bestField = $fieldKey;
-                    break;
-                }
-            }
-        }
-
-        if (! $bestField && count($missing) === 1) {
-            return $missing[0];
-        }
-
-        return $bestField;
-    }
 
     /**
      * Extract a select-type field value using option matching and synonyms.
      *
      * @return string[] Rejected field keys
      */
-    private function extractSelectField(Lead $lead, string $fieldKey, string $msg, array $config, array $options, string $locale): array
+    private function extractSelectField(Lead $lead, string $fieldKey, string $msg, array $config, array $options, string $locale, ?int $leadServiceId = null): array
     {
         $matchedValue = null;
 
@@ -235,7 +213,7 @@ class FieldExtractor
                 }
             }
 
-            return $this->applyExtracted($lead, $extracted, $config);
+            return $this->applyExtracted($lead, $extracted, $config, $leadServiceId);
         }
 
         // Synonym matching (locale-aware)
@@ -245,7 +223,7 @@ class FieldExtractor
                 if (mb_stripos($msg, mb_strtolower($alias)) !== false) {
                     return $this->applyExtracted($lead, [
                         $fieldKey => ['value' => $canonicalValue, 'confidence' => 0.8, 'type' => 'select'],
-                    ], $config);
+                    ], $config, $leadServiceId);
                 }
             }
         }
@@ -253,7 +231,19 @@ class FieldExtractor
         // No match — still capture raw value
         return $this->applyExtracted($lead, [
             $fieldKey => ['value' => $msg, 'confidence' => 0.7, 'type' => 'select'],
-        ], $config);
+        ], $config, $leadServiceId);
+    }
+
+    /**
+     * Determine if a field key is shared across all services (contact_name, phone, etc.)
+     * vs service-specific (problem_type, roof_type, etc.).
+     */
+    private function isSharedField(string $key, array $config): bool
+    {
+        $sharedRequired = $config['shared_fields']['required'] ?? [];
+        $sharedOptional = $config['shared_fields']['optional'] ?? [];
+
+        return in_array($key, $sharedRequired) || in_array($key, $sharedOptional);
     }
 
     /**

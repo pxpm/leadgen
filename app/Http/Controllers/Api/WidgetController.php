@@ -37,6 +37,7 @@ class WidgetController extends Controller
             'greeting' => 'Olá! Em que podemos ajudar?',
             'services' => $services,
             'field_definitions' => [],
+            'turnstile_site_key' => config('services.turnstile.site_key'),
         ]);
     }
 

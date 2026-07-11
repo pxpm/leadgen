@@ -21,7 +21,7 @@ class Lead extends Model implements HasMedia
     protected $fillable = [
         'tenant_id', 'industry_id', 'status', 'source',
         'service_type', 'qualification_score', 'notes',
-        'session_token', 'pending_services',
+        'session_token', 'pending_services', 'current_field_key',
         'conversation_started_at', 'qualified_at', 'delivered_at',
     ];
 
@@ -59,6 +59,11 @@ class Lead extends Model implements HasMedia
     public function fields(): HasMany
     {
         return $this->hasMany(LeadField::class);
+    }
+
+    public function leadServices(): HasMany
+    {
+        return $this->hasMany(LeadService::class)->orderBy('order');
     }
 
     public function messages(): HasMany

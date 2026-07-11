@@ -75,13 +75,12 @@ test('getNextField returns first missing field', function () {
         'service_type' => 'roofing',
     ]);
 
-    // No fields collected — first missing should be first required field
+    // No fields collected — first missing is contact_name (shared fields come first)
     $next = $this->engine->getNextField($lead);
 
     expect($next)->not->toBeNull();
-    expect($next['key'])->toBe('problem_type'); // first service required field
-    expect($next['type'])->toBe('select');
-    expect($next)->toHaveKey('options');
+    expect($next['key'])->toBe('contact_name');
+    expect($next['type'])->toBe('text');
 });
 
 test('getNextField advances after fields are collected', function () {
@@ -124,6 +123,11 @@ test('getNextField includes options for select fields', function () {
         'tenant_id' => $this->tenant->id,
         'service_type' => 'roofing',
     ]);
+
+    // Collect shared text fields first so next is a service select field
+    foreach (['contact_name', 'phone', 'email', 'property_address'] as $key) {
+        $lead->fields()->create(['field_key' => $key, 'field_value' => 'test', 'field_type' => 'text']);
+    }
 
     $next = $this->engine->getNextField($lead);
 

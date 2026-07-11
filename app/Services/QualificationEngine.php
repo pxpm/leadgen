@@ -29,12 +29,16 @@ class QualificationEngine
             }
         }
 
-        // Check conditional fields: if triggered and required, must be collected
-        foreach ($config['conditional_fields'] ?? [] as $fieldKey => $def) {
+        // Check conditional fields (field definitions with a "when" trigger):
+        // if triggered and required, they must be collected.
+        foreach ($config['field_definitions'] ?? [] as $fieldKey => $def) {
+            if (empty($def['when'])) {
+                continue;
+            }
             if (isset($def['enabled']) && ! $def['enabled']) {
                 continue;
             }
-            if (! empty($def['required']) && $this->conditionsMatch($def['when'] ?? [], $collected)) {
+            if (! empty($def['required']) && $this->conditionsMatch($def['when'], $collected)) {
                 $condValue = $collected[$fieldKey] ?? null;
                 if ($condValue === null || $condValue === '' || $condValue === '__declined__') {
                     return false;
@@ -54,7 +58,21 @@ class QualificationEngine
     {
         $config = $this->config->resolve($lead->tenant, $lead->service_type);
         $requiredFields = $this->resolveRequiredFields($lead, $config);
-        $collectedKeys = $lead->fields->pluck('field_key')->toArray();
+
+        // Only count fields that belong to the current service or are shared (null lead_service_id).
+        // This prevents service A's fields from being treated as "collected" for service B.
+        $currentServiceId = $lead->leadServices()
+            ->where('service_key', $lead->service_type)
+            ->latest('order')
+            ->value('id');
+
+        $collectedKeys = $lead->fields()
+            ->where(function ($q) use ($currentServiceId) {
+                $q->where('lead_service_id', $currentServiceId)
+                    ->orWhereNull('lead_service_id');
+            })
+            ->pluck('field_key')
+            ->toArray();
 
         $missing = array_values(array_diff($requiredFields, $collectedKeys));
 
@@ -66,19 +84,19 @@ class QualificationEngine
             }
         }
 
-        // Add conditional fields whose trigger conditions are met
-        $conditionalFields = $config['conditional_fields'] ?? [];
+        // Add conditional fields (definitions with a "when" trigger) whose conditions are met
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
-        foreach ($conditionalFields as $fieldKey => $def) {
-            // Skip if disabled by tenant override or already collected
+        foreach ($config['field_definitions'] ?? [] as $fieldKey => $def) {
+            if (empty($def['when'])) {
+                continue;
+            }
             if (isset($def['enabled']) && ! $def['enabled']) {
                 continue;
             }
             if (in_array($fieldKey, $collectedKeys) || in_array($fieldKey, $missing)) {
                 continue;
             }
-            // Check if all 'when' conditions match
-            if ($this->conditionsMatch($def['when'] ?? [], $collected)) {
+            if ($this->conditionsMatch($def['when'], $collected)) {
                 $missing[] = $fieldKey;
             }
         }

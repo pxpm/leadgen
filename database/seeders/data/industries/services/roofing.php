@@ -74,8 +74,6 @@ return [
                 2 => 'specialist_provides',
             ],
         ],
-    ],
-    'conditional_fields' => [
         'leak_location' => [
             'type' => 'text',
             'required' => false,

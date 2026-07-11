@@ -14,7 +14,7 @@ class LeadField extends Model
     use HasFactory;
 
     protected $fillable = [
-        'lead_id', 'field_key', 'field_type', 'field_value',
+        'lead_id', 'lead_service_id', 'field_key', 'field_type', 'field_value',
         'field_options', 'confidence', 'is_required',
     ];
 

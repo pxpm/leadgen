@@ -12,6 +12,8 @@ export class LeadIntakeWidget {
         this.inputEl = null;
         this.footerEl = null;
         this.selectedServices = new Set();
+        this.turnstileSiteKey = null;
+        this.turnstileToken = null;
     }
 
     async init(slug) {
@@ -20,7 +22,9 @@ export class LeadIntakeWidget {
             if (!resp.ok) return;
             this.config = await resp.json();
             this.tenant = slug;
+            this.turnstileSiteKey = this.config.turnstile_site_key || null;
             this.buildUI(false);
+            if (this.turnstileSiteKey) this.initTurnstile();
             this.tryResume();
         } catch (e) { /* silent */ }
     }
@@ -89,16 +93,24 @@ export class LeadIntakeWidget {
         this.addMessage('user', text);
         this.inputEl.value = '';
         this.selectedServices.clear();
-        this.showFooter();
+        this.showInput();
         this.setTyping(true);
         try {
             const body = { message: text };
             if (serviceKeys && serviceKeys.length) body.service_keys = serviceKeys;
             if (intent) body.intent = intent;
+            const headers = { 'Content-Type': 'application/json' };
+            const token = await this.getTurnstileToken();
+            if (token) headers['X-Turnstile-Token'] = token;
+
             const resp = await fetch('/api/widget/conversations/' + this.lead.session_token + '/messages', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: headers,
                 body: JSON.stringify(body),
             });
+            if (!resp.ok) {
+                const msg = resp.status === 429 ? 'A enviar mensagens demasiado rápido. Aguarde um momento.' : 'Erro de ligação.';
+                this.setTyping(false); this.addMessage('bot', msg); return;
+            }
             const d = await resp.json();
             this.setTyping(false);
             if (d.is_complete) { this.isComplete = true; this.addMessage('bot', d.reply); this.showDone(); }
@@ -226,45 +238,52 @@ export class LeadIntakeWidget {
 
     renderChips(nextField) {
         const ex = this.panel.querySelector('.lgw-chips'); if (ex) ex.remove();
-        if (!nextField) { this.showFooter(); return; }
+        if (!nextField) { this.showInput(); return; }
 
         const isSelect = nextField.type === 'select' && nextField.options && nextField.options.length;
         const isOptional = nextField.required === false;
-        const hasOther = nextField.has_other === true;
 
-        if (!isSelect && !isOptional) { this.showFooter(); return; }
+        if (!isSelect && !isOptional) { this.showInput(); return; }
 
         const d = document.createElement('div'); d.className = 'lgw-chips';
 
         // Option chips (select fields)
         if (isSelect) {
+            this.hideInput();
+
             const isMulti = nextField.multi === true;
             nextField.options.forEach(o => {
                 const b = document.createElement('button'); b.textContent = o.label;
 
                 if (o.value === 'other') {
-                    // "Outro" chip → reveals text input instead of sending
+                    // "Outro" chip → reveals text input for custom answer
                     b.onclick = () => {
                         d.querySelectorAll('button').forEach(btn => btn.classList.remove('lgw-chip-selected'));
                         b.classList.add('lgw-chip-selected');
-                        this.showFooter();
+                        this.showInput();
                         this.inputEl.focus();
                     };
                 } else if (isMulti) {
+                    // Toggle selection, fill hidden input, user presses Send
                     b.onclick = () => {
                         b.classList.toggle('lgw-chip-selected');
                         this.buildMultiInput(nextField.options);
                     };
                 } else {
-                    b.onclick = () => { this.sendMessage(o.label); d.remove(); };
+                    // Single-select → send immediately
+                    b.onclick = () => {
+                        try {
+                            this.sendMessage(o.label);
+                            d.remove();
+                        } catch (e) {
+                            // If sendMessage crashes, still remove chips so UI isn't stuck
+                            d.remove();
+                            this.addMessage('bot', 'Ocorreu um erro. Tente novamente.');
+                        }
+                    };
                 }
                 d.appendChild(b);
             });
-
-            // If no "other" option → hide input (user must pick a chip)
-            if (!hasOther && !isMulti) {
-                this.hideFooter();
-            }
         }
 
         // Skip chip (optional fields, regardless of type)
@@ -273,8 +292,13 @@ export class LeadIntakeWidget {
             skip.textContent = 'Saltar →';
             skip.className = 'lgw-chip-skip';
             skip.onclick = () => {
-                this.sendMessage('__skip__');
-                d.remove();
+                try {
+                    this.sendMessage('__skip__');
+                    d.remove();
+                } catch (e) {
+                    d.remove();
+                    this.addMessage('bot', 'Ocorreu um erro. Tente novamente.');
+                }
             };
             d.appendChild(skip);
         }
@@ -283,12 +307,12 @@ export class LeadIntakeWidget {
         this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
     }
 
-    hideFooter() {
-        if (this.footerEl) this.footerEl.classList.add('lgw-footer-hidden');
+    hideInput() {
+        if (this.inputEl) this.inputEl.classList.add('lgw-input-hidden');
     }
 
-    showFooter() {
-        if (this.footerEl) this.footerEl.classList.remove('lgw-footer-hidden');
+    showInput() {
+        if (this.inputEl) this.inputEl.classList.remove('lgw-input-hidden');
     }
 
     buildMultiInput(options) {
@@ -316,6 +340,7 @@ export class LeadIntakeWidget {
     renderServiceChips(services) {
         const ex = this.panel.querySelector('.lgw-chips'); if (ex) ex.remove();
         this.selectedServices.clear();
+        this.hideInput();
         const d = document.createElement('div'); d.className = 'lgw-chips';
         services.forEach(s => {
             const b = document.createElement('button');
@@ -382,4 +407,43 @@ export class LeadIntakeWidget {
 
     saveSession() { if (this.lead) try { localStorage.setItem('lgw_session', JSON.stringify({ token: this.lead.session_token, id: this.lead.id })); } catch (e) {} }
     loadSession() { try { return JSON.parse(localStorage.getItem('lgw_session')); } catch (e) { return null; } }
+
+    // ── Turnstile ──────────────────────────────────────────────
+
+    initTurnstile() {
+        if (document.querySelector('script[src*="turnstile"]')) return;
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => { this.renderTurnstile(); };
+        document.head.appendChild(script);
+    }
+
+    renderTurnstile() {
+        if (!this.root || !window.turnstile) return;
+        // Create a hidden container for the Turnstile widget
+        const el = document.createElement('div');
+        el.id = 'lgw-turnstile';
+        el.style.display = 'none';
+        this.root.appendChild(el);
+        window.turnstile.render('#lgw-turnstile', {
+            sitekey: this.turnstileSiteKey,
+            callback: (token) => { this.turnstileToken = token; },
+            'expired-callback': () => { this.turnstileToken = null; },
+        });
+    }
+
+    async getTurnstileToken() {
+        if (!this.turnstileSiteKey) return null;
+        try {
+            // Refresh the token (returns a fresh one, or null if not ready)
+            if (window.turnstile && this.turnstileToken) {
+                window.turnstile.reset('#lgw-turnstile');
+                // Wait a tick for the callback to fire
+                await new Promise(r => setTimeout(r, 300));
+            }
+            return this.turnstileToken || null;
+        } catch (e) { return null; }
+    }
 }

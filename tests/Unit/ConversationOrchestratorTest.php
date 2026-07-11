@@ -147,11 +147,7 @@ test('smartExtract stores long address when AI asked about property_address', fu
         'service_type' => 'roofing',
     ]);
 
-    // Add an AI message asking for the address
-    $lead->messages()->create([
-        'role' => 'assistant',
-        'content' => 'Qual é a morada da propriedade?',
-    ]);
+    $lead->update(['current_field_key' => 'property_address']);
 
     $engine = new IndustryConfigEngine;
     $config = $engine->resolve($this->tenant, 'roofing');
@@ -173,10 +169,7 @@ test('smartExtract still limits long messages for select fields', function () {
         'service_type' => 'roofing',
     ]);
 
-    $lead->messages()->create([
-        'role' => 'assistant',
-        'content' => 'Que tipo de serviço de telhado precisa?',
-    ]);
+    $lead->update(['current_field_key' => 'problem_type']);
 
     $engine = new IndustryConfigEngine;
     $config = $engine->resolve($this->tenant, 'roofing');
@@ -197,10 +190,7 @@ test('smartExtract does not store email-request as phone', function () {
         'service_type' => 'roofing',
     ]);
 
-    $lead->messages()->create([
-        'role' => 'assistant',
-        'content' => 'Qual é o melhor número de telefone para o contactar?',
-    ]);
+    $lead->update(['current_field_key' => 'phone']);
 
     $engine = new IndustryConfigEngine;
     $config = $engine->resolve($this->tenant, 'roofing');
@@ -506,13 +496,15 @@ test('handleSkip declines optional field and lead completes', function () {
     $method = reflectMethod(ConversationOrchestrator::class, 'handleSkip');
     $result = $method->invoke($this->orchestrator, $lead, $config, 'pt');
 
-    // property_type (optional, first in order) should be stored as __declined__
-    $field = $lead->fields()->where('field_key', 'property_type')->first();
+    // postal_code (shared optional, first in order) should be stored as __declined__
+    $field = $lead->fields()->where('field_key', 'postal_code')->first();
     expect($field)->not->toBeNull();
     expect($field->field_value)->toBe('__declined__');
 
-    // All requireds were already done → lead completes (no next field)
-    expect($result['is_complete'])->toBeTrue();
+    // All requireds were already done — skip moves to next optional field
+    expect($result['is_complete'])->toBeFalse();
+    expect($result['next_field'])->not->toBeNull();
+    expect($result['next_field']['key'])->toBe('urgency');
 });
 
 test('handleSkip blocks required field with field_required message', function () {
@@ -528,14 +520,14 @@ test('handleSkip blocks required field with field_required message', function ()
     $engine = new IndustryConfigEngine;
     $config = $engine->resolve($this->tenant, 'roofing');
 
-    // No fields collected yet — first field is problem_type (required)
+    // No fields collected yet — first field is contact_name (shared, required)
     $method = reflectMethod(ConversationOrchestrator::class, 'handleSkip');
     $result = $method->invoke($this->orchestrator, $lead, $config, 'pt');
 
     expect($result['reply'])->toContain('obrigatório');
-    expect($result['next_field']['key'])->toBe('problem_type');
+    expect($result['next_field']['key'])->toBe('contact_name');
     // Field should NOT have been stored
-    $field = $lead->fields()->where('field_key', 'problem_type')->first();
+    $field = $lead->fields()->where('field_key', 'contact_name')->first();
     expect($field)->toBeNull();
 });
 

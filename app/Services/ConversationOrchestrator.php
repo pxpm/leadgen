@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\LeadStatus;
 use App\Enums\MessageRole;
 use App\Models\Lead;
+use App\Models\LeadService;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Log;
 
@@ -43,13 +44,20 @@ class ConversationOrchestrator
         // --- QUALIFICATION ---
         $resolvedConfig = $this->config->resolve($lead->tenant, $lead->service_type);
 
+        // --- SUMMARY CONFIRMATION → transition to next service ---
+        // User saw the summary + "Está tudo correto?" and responded.
+        if ($lead->current_field_key === '__summary__') {
+            return $this->activateNextService($lead, $userMessage, $locale);
+        }
+
         // --- SKIP HANDLING (widget "Saltar" chip) ---
         if ($userMessage === '__skip__') {
             return $this->handleSkip($lead, $resolvedConfig, $locale);
         }
 
         // Short-answer extraction (regex + smart matching — no AI needed for structured Q&A)
-        $rejectedKeys = $this->fieldExtractor->smartExtract($lead, $userMessage, $resolvedConfig, $locale);
+        $leadServiceId = $this->getCurrentLeadServiceId($lead);
+        $rejectedKeys = $this->fieldExtractor->smartExtract($lead, $userMessage, $resolvedConfig, $locale, $leadServiceId);
 
         // Deterministic response (no AI text generation)
         $reply = $this->buildReply($lead, $resolvedConfig, $locale, $rejectedKeys);
@@ -78,6 +86,12 @@ class ConversationOrchestrator
 
         $nextField = $this->qualification->getNextField($lead);
 
+        // Track which field the bot is asking about — smartExtract reads this
+        // directly instead of fragile prompt-matching.
+        if ($nextField) {
+            $lead->update(['current_field_key' => $nextField['key']]);
+        }
+
         // If the next field to ask was just rejected, give validation feedback instead
         // of a generic acknowledgment that would mislead the user into thinking it was accepted.
         if ($nextField && in_array($nextField['key'], $rejectedKeys, true)) {
@@ -85,15 +99,8 @@ class ConversationOrchestrator
         }
 
         $ack = $this->buildAcknowledgment($collected, $config, $locale, $tenant);
-
-        // Specific handling for postal code after address
-        if ($nextField && $nextField['key'] === 'postal_code' && isset($collected['property_address'])) {
-            $question = $this->trans->get('orchestrator.postal_code_question', $locale, $tenant)
-                ?? 'E qual é o código postal dessa morada?';
-        } else {
-            $question = $nextField['prompt'] ?? $this->trans->get('orchestrator.need_more_info', $locale, $tenant)
-                ?? 'Pode dar-me mais informações?';
-        }
+        $question = $nextField['prompt'] ?? $this->trans->get('orchestrator.need_more_info', $locale, $tenant)
+            ?? 'Pode dar-me mais informações?';
 
         return $ack ? "{$ack} {$question}" : $question;
     }
@@ -133,34 +140,47 @@ class ConversationOrchestrator
     }
 
     /**
-     * Build summary reply when all fields are collected.
-     * Skips declined fields and maps raw keys to localized labels.
+     * Build summary reply when all fields are collected, grouped by service.
+     * Shared fields (contact_name, phone, etc.) are listed in a "Contacto" section.
      */
     private function buildSummaryReply(Lead $lead, array $collected, array $config, string $locale): string
     {
         $options = $config['locales'][$locale]['field_options'] ?? [];
-        $serviceName = $config['service_name'] ?? 'serviço';
-
         $tenant = $lead->tenant;
 
-        $header = str_replace(
-            ':service',
-            $serviceName,
-            $this->trans->get('orchestrator.summary_header', $locale, $tenant)
-                ?? "Perfeito! Já tenho todos os dados para o seu orçamento de {$serviceName}."
-        );
+        $lines = [];
+
+        // Group fields by service
+        $services = $lead->leadServices()->with('fields')->get();
+        foreach ($services as $service) {
+            $serviceConfig = $this->config->resolve($lead->tenant, $service->service_key);
+            $serviceName = $serviceConfig['service_name'] ?? $service->service_key;
+            $lines[] = "**{$serviceName}:**";
+
+            foreach ($service->fields as $field) {
+                if ($field->field_value === '__declined__' || $field->field_value === '') {
+                    continue;
+                }
+                $label = $options[$field->field_key][$field->field_value] ?? $field->field_value;
+                $lines[] = "  • {$label}";
+            }
+        }
+
+        // Shared fields (not attributed to any specific service)
+        $sharedFields = $lead->fields()->whereNull('lead_service_id')->get();
+        if ($sharedFields->isNotEmpty()) {
+            $lines[] = "\n**Contacto:**";
+            foreach ($sharedFields as $field) {
+                if ($field->field_value === '__declined__' || $field->field_value === '') {
+                    continue;
+                }
+                $label = $options[$field->field_key][$field->field_value] ?? $field->field_value;
+                $lines[] = "  • {$label}";
+            }
+        }
+
         $footer = $this->trans->get('orchestrator.summary_footer', $locale, $tenant)
             ?? 'Está tudo correto? Quer acrescentar alguma nota adicional?';
-
-        $lines = ["{$header}\nResumo:"];
-        foreach ($collected as $key => $value) {
-            if ($value === '__declined__' || $value === '') {
-                continue;
-            }
-
-            $label = $options[$key][$value] ?? $value;
-            $lines[] = "  • {$label}";
-        }
         $lines[] = "\n{$footer}";
 
         return implode("\n", $lines);
@@ -233,7 +253,12 @@ class ConversationOrchestrator
         }
 
         // Optional field — store declined and move on
+        $leadServiceId = $this->getCurrentLeadServiceId($lead);
+        $isShared = in_array($nextField['key'], $config['shared_fields']['required'] ?? [])
+                 || in_array($nextField['key'], $config['shared_fields']['optional'] ?? []);
+
         $lead->fields()->create([
+            'lead_service_id' => $isShared ? null : $leadServiceId,
             'field_key' => $nextField['key'],
             'field_type' => $nextField['type'] ?? 'text',
             'field_value' => '__declined__',
@@ -257,12 +282,31 @@ class ConversationOrchestrator
         $this->qualification->maybeComplete($lead);
         $lead->refresh();
 
-        if ($lead->status === LeadStatus::Qualified && ! empty($lead->pending_services)) {
-            return $this->activateNextService($lead, $reply, $this->config->getLocale($lead->tenant));
+        // Only transition to the next service when there are truly no more fields
+        // to ask (required + optional + conditional).
+        $nextField = $this->qualification->getNextField($lead);
+
+        // All fields collected + pending services → show summary, wait for user to confirm.
+        // Don't auto-transition — the user should review and optionally add notes first.
+        if ($lead->status === LeadStatus::Qualified && ! empty($lead->pending_services) && ! $nextField) {
+            $lead->update(['current_field_key' => '__summary__']);
+
+            // Return the summary as-is, let user respond before transitioning
+            $isComplete = false;
+
+            return [
+                'reply' => $reply,
+                'is_complete' => $isComplete,
+                'phase' => 'qualification',
+                'progress' => ['collected' => $lead->fields()->count(), 'required' => count($config['required_fields'] ?? [])],
+                'next_field' => null,
+                'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
+            ];
         }
 
-        $isComplete = $lead->status === LeadStatus::Qualified;
-        $nextField = $isComplete ? null : $this->qualification->getNextField($lead);
+        // The conversation is "complete" from the widget's perspective only when
+        // there's nothing left to ask — not when the lead status says qualified.
+        $isComplete = ! $nextField && empty($lead->pending_services);
 
         Log::channel('ai')->debug('AI: result', [
             'lead_id' => $lead->id,
@@ -290,12 +334,22 @@ class ConversationOrchestrator
         $resolvedConfig = $this->config->resolve($lead->tenant, $serviceKey);
         $serviceName = $resolvedConfig['service_name'] ?? $serviceKey;
         $nextField = $this->qualification->getNextField($lead);
+        $tenant = $lead->tenant;
+        $hasMultiple = ! empty($lead->pending_services);
 
-        $firstQuestion = $nextField['prompt'] ?? $this->trans->get('orchestrator.default_greeting', $locale, $lead->tenant)
-            ?? 'Como posso ajudar?';
-        $template = $this->trans->get('orchestrator.service_activation', $locale, $lead->tenant)
-            ?? 'Perfeito! Vou ajudar com o serviço de :service. :question';
-        $greeting = str_replace([':service', ':question'], [$serviceName, $firstQuestion], $template);
+        // When the first question is the name, use a warm introduction template
+        if ($nextField && $nextField['key'] === 'contact_name') {
+            $key = $hasMultiple ? 'orchestrator.service_activation_multi_name_first' : 'orchestrator.service_activation_name_first';
+            $template = $this->trans->get($key, $locale, $tenant)
+                ?? 'Vou ajudar-te com o serviço de :service. Vamos primeiro apresentar-nos, como te chamas?';
+            $greeting = str_replace(':service', $serviceName, $template);
+        } else {
+            $firstQuestion = $nextField['prompt'] ?? $this->trans->get('orchestrator.default_greeting', $locale, $tenant)
+                ?? 'Como posso ajudar?';
+            $template = $this->trans->get('orchestrator.service_activation', $locale, $tenant)
+                ?? 'Perfeito! Vou ajudar com o serviço de :service. :question';
+            $greeting = str_replace([':service', ':question'], [$serviceName, $firstQuestion], $template);
+        }
 
         $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $greeting]);
 
@@ -309,13 +363,31 @@ class ConversationOrchestrator
         ];
     }
 
-    private function activateNextService(Lead $lead, string $reply, string $locale): array
+    /**
+     * Transition to the next pending service. Called after the user confirms
+     * the summary or when auto-transitioning from a completed service.
+     *
+     * @param  string  $userResponse  The user's response to the summary (may contain notes)
+     */
+    private function activateNextService(Lead $lead, string $userResponse, string $locale): array
     {
-        $nextService = array_shift($lead->pending_services);
+        $pending = $lead->pending_services;
+        $nextService = array_shift($pending);
+
+        // Store whatever the user wrote as notes, and acknowledge it
+        $ack = '';
+        $trimmed = trim($userResponse);
+
+        if (! empty($trimmed)) {
+            $lead->update(['notes' => $trimmed]);
+            $variants = $this->trans->get('orchestrator.acknowledgment_variants', $locale, $lead->tenant);
+            $ack = is_array($variants) ? $variants[array_rand($variants)].' ' : 'Obrigado, tomei nota. ';
+        }
+
         $lead->update([
             'status' => LeadStatus::InProgress,
             'service_type' => $nextService,
-            'pending_services' => $lead->pending_services,
+            'pending_services' => $pending,
         ]);
         $lead->refresh();
 
@@ -324,10 +396,14 @@ class ConversationOrchestrator
         $transitionTemplate = $this->trans->get('orchestrator.service_transition', $locale, $lead->tenant)
             ?? "\n\nAgora vamos falar sobre {$nextName}.";
         $transition = str_replace(':service', $nextName, $transitionTemplate);
-        $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $transition]);
+
+        $nextField = $this->qualification->getNextField($lead);
+        $firstQuestion = $nextField['prompt'] ?? 'Como posso ajudar?';
+        $reply = "{$ack}{$transition} {$firstQuestion}";
+        $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
 
         return [
-            'reply' => $reply.$transition,
+            'reply' => $reply,
             'is_complete' => false,
             'phase' => 'qualification',
             'progress' => ['collected' => $lead->fields()->count(), 'required' => count($nextConfig['required_fields'] ?? [])],
@@ -343,6 +419,9 @@ class ConversationOrchestrator
         $validSelection = array_values(array_intersect($keys, $validKeys));
 
         if (! empty($validSelection)) {
+            // Create LeadService records for all selected services
+            $this->createLeadServices($lead, $validSelection);
+
             if (count($validSelection) === 1) {
                 return $this->activateService($lead, $validSelection[0], $locale);
             }
@@ -358,6 +437,8 @@ class ConversationOrchestrator
 
         $matched = $this->classifyService($userMessage, $lead);
         if ($matched && in_array($matched, $validKeys)) {
+            $this->createLeadServices($lead, [$matched]);
+
             $lead->update(['service_type' => $matched]);
             $lead->refresh();
             $resolvedConfig = $this->config->resolve($lead->tenant, $matched);
@@ -419,5 +500,44 @@ class ConversationOrchestrator
         }
 
         return null;
+    }
+
+    // ─── LeadService Helpers ──────────────────────────────────────
+
+    /**
+     * Create LeadService records for the given service keys.
+     * Each service gets its own row so fields can be attributed per-service.
+     */
+    private function createLeadServices(Lead $lead, array $serviceKeys): void
+    {
+        $existingKeys = $lead->leadServices()->pluck('service_key')->toArray();
+        $order = $lead->leadServices()->max('order') ?? 0;
+
+        foreach ($serviceKeys as $key) {
+            if (in_array($key, $existingKeys)) {
+                continue;
+            }
+            $order++;
+            $lead->leadServices()->create([
+                'service_key' => $key,
+                'status' => 'in_progress',
+                'order' => $order,
+            ]);
+        }
+    }
+
+    /**
+     * Get the current LeadService ID for the active service_type.
+     */
+    private function getCurrentLeadServiceId(Lead $lead): ?int
+    {
+        if (! $lead->service_type) {
+            return null;
+        }
+
+        return $lead->leadServices()
+            ->where('service_key', $lead->service_type)
+            ->latest('order')
+            ->value('id');
     }
 }
