@@ -115,7 +115,12 @@ export class LeadIntakeWidget {
             this.setTyping(false);
             if (d.is_complete) { this.isComplete = true; this.addMessage('bot', d.reply); this.showDone(); }
             else {
-                this.addMessage('bot', d.reply);
+                // Render structured summary if present (widget formats with HTML/CSS)
+                if (d.summary) {
+                    this.renderSummary(d.summary);
+                } else {
+                    this.addMessage('bot', d.reply);
+                }
                 if (d.phase === 'service_selection' && d.services && d.services.length) {
                     this.renderServiceChips(d.services);
                 } else {
@@ -374,6 +379,34 @@ export class LeadIntakeWidget {
             if (this.selectedServices.has(s.key)) names.push(s.name);
         });
         this.inputEl.value = names.join(', ');
+    }
+
+    renderSummary(data) {
+        const w = document.createElement('div'); w.className = 'lgw-msg lgw-msg-bot';
+        const b = document.createElement('div'); b.className = 'lgw-bubble lgw-summary';
+
+        let html = '';
+
+        // Service sections
+        (data.services || []).forEach(svc => {
+            const items = svc.fields.map(f => `<span>${f}</span>`).join(', ');
+            html += `<div class="lgw-summary-line"><span class="lgw-summary-icon">${svc.icon}</span> <strong>${svc.name}:</strong> ${items}</div>`;
+        });
+
+        // Contact line
+        if (data.contact && data.contact.length) {
+            const contactItems = data.contact.map(c => `<span>${c}</span>`).join(' <span class="lgw-summary-sep">·</span> ');
+            html += `<div class="lgw-summary-line lgw-summary-contact">📋 ${contactItems}</div>`;
+        }
+
+        // Footer question
+        if (data.footer) {
+            html += `<div class="lgw-summary-footer">${data.footer}</div>`;
+        }
+
+        b.innerHTML = html;
+        w.appendChild(b); this.bodyEl.appendChild(w);
+        this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
     }
 
     addMessage(role, text) {

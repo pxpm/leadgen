@@ -58,12 +58,18 @@ class ConversationOrchestrator
         // Short-answer extraction (regex + smart matching — no AI needed for structured Q&A)
         $leadServiceId = $this->getCurrentLeadServiceId($lead);
         $rejectedKeys = $this->fieldExtractor->smartExtract($lead, $userMessage, $resolvedConfig, $locale, $leadServiceId);
-
-        // Deterministic response (no AI text generation)
         $reply = $this->buildReply($lead, $resolvedConfig, $locale, $rejectedKeys);
-        $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
 
-        return $this->buildResponse($lead, $resolvedConfig, $reply);
+        // When all fields are collected, include structured summary for the widget to render
+        $summary = empty($this->qualification->getMissingFields($lead))
+            ? $this->buildSummaryData($lead, $resolvedConfig, $locale)
+            : null;
+
+        // Store the footer as the DB message (widget renders summary HTML instead)
+        $dbReply = $summary ? $summary['footer'] : $reply;
+        $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $dbReply]);
+
+        return $this->buildResponse($lead, $resolvedConfig, $summary ? $summary['footer'] : $reply, $summary);
     }
 
     // ─── Response Generation (Deterministic) ─────────────────────
@@ -79,9 +85,9 @@ class ConversationOrchestrator
         $missing = $this->qualification->getMissingFields($lead);
         $tenant = $lead->tenant;
 
-        // All fields collected → summary
+        // All fields collected → summary (widget renders from structured data)
         if (empty($missing)) {
-            return $this->buildSummaryReply($lead, $collected, $config, $locale);
+            return '';
         }
 
         $nextField = $this->qualification->getNextField($lead);
@@ -141,50 +147,52 @@ class ConversationOrchestrator
 
     /**
      * Build summary reply when all fields are collected, grouped by service.
-     * Shared fields (contact_name, phone, etc.) are listed in a "Contacto" section.
+     * Returns a structured array for the widget to render with proper HTML/CSS.
+     *
+     * @return array{services: array, contact: array, footer: string}
      */
-    private function buildSummaryReply(Lead $lead, array $collected, array $config, string $locale): string
+    private function buildSummaryData(Lead $lead, array $config, string $locale): array
     {
         $options = $config['locales'][$locale]['field_options'] ?? [];
         $tenant = $lead->tenant;
+        $services = [];
+        $contact = [];
 
-        $lines = [];
-
-        // Group fields by service
-        $services = $lead->leadServices()->with('fields')->get();
-        foreach ($services as $service) {
+        foreach ($lead->leadServices()->with('fields')->get() as $service) {
             $serviceConfig = $this->config->resolve($lead->tenant, $service->service_key);
-            $serviceName = $serviceConfig['service_name'] ?? $service->service_key;
-            $icon = $serviceConfig['icon'] ?? '';
-            $lines[] = "\n{$icon} {$serviceName}:";
+            $fields = [];
 
             foreach ($service->fields as $field) {
                 if ($field->field_value === '__declined__' || $field->field_value === '') {
                     continue;
                 }
-                $label = $options[$field->field_key][$field->field_value] ?? $field->field_value;
-                $lines[] = "  • {$label}";
+                $fields[] = $options[$field->field_key][$field->field_value] ?? $field->field_value;
+            }
+
+            if (! empty($fields)) {
+                $services[] = [
+                    'icon' => $serviceConfig['icon'] ?? '',
+                    'name' => $serviceConfig['service_name'] ?? $service->service_key,
+                    'fields' => $fields,
+                ];
             }
         }
 
-        // Shared fields (not attributed to any specific service)
-        $sharedFields = $lead->fields()->whereNull('lead_service_id')->get();
-        if ($sharedFields->isNotEmpty()) {
-            $lines[] = "\n📋 Contacto:";
-            foreach ($sharedFields as $field) {
-                if ($field->field_value === '__declined__' || $field->field_value === '') {
-                    continue;
-                }
-                $label = $options[$field->field_key][$field->field_value] ?? $field->field_value;
-                $lines[] = "  • {$label}";
+        foreach ($lead->fields()->whereNull('lead_service_id')->get() as $field) {
+            if ($field->field_value === '__declined__' || $field->field_value === '') {
+                continue;
             }
+            $contact[] = $options[$field->field_key][$field->field_value] ?? $field->field_value;
         }
 
         $footer = $this->trans->get('orchestrator.summary_footer', $locale, $tenant)
             ?? 'Está tudo correto? Quer acrescentar alguma nota adicional?';
-        $lines[] = "\n{$footer}";
 
-        return implode("\n", $lines);
+        return [
+            'services' => $services,
+            'contact' => $contact,
+            'footer' => $footer,
+        ];
     }
 
     /**
@@ -278,7 +286,7 @@ class ConversationOrchestrator
     /**
      * Build the standard response array after qualification processing.
      */
-    private function buildResponse(Lead $lead, array $config, string $reply): array
+    private function buildResponse(Lead $lead, array $config, string $reply, ?array $summary = null): array
     {
         $this->qualification->maybeComplete($lead);
         $lead->refresh();
@@ -297,6 +305,7 @@ class ConversationOrchestrator
 
             return [
                 'reply' => $reply,
+                'summary' => $summary,
                 'is_complete' => $isComplete,
                 'phase' => 'qualification',
                 'progress' => ['collected' => $lead->fields()->count(), 'required' => count($config['required_fields'] ?? [])],
@@ -318,6 +327,7 @@ class ConversationOrchestrator
 
         return [
             'reply' => $reply,
+            'summary' => $summary,
             'is_complete' => $isComplete,
             'phase' => 'qualification',
             'progress' => ['collected' => $lead->fields()->count(), 'required' => count($config['required_fields'] ?? [])],
