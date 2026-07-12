@@ -31,26 +31,10 @@ test('lists subscriptions for a tenant', function () {
         ->assertCanSeeTableRecords([$this->subscription]);
 });
 
-test('can create a manual subscription', function () {
+test('can change subscription plan (upgrade/downgrade)', function () {
     $this->actingAs($this->superAdmin);
 
-    $plan = Plan::factory()->create(['is_active' => true]);
-
-    Livewire::test(SubscriptionsRelationManager::class, [
-        'ownerRecord' => $this->tenant,
-    ])
-        ->callTableAction('create', data: [
-            'plan_id' => $plan->id,
-            'status' => 'active',
-        ])
-        ->assertHasNoTableActionErrors();
-
-    expect($this->tenant->subscriptions()->count())->toBe(2);
-});
-
-test('can edit subscription status', function () {
-    $this->actingAs($this->superAdmin);
-
+    $newPlan = Plan::factory()->create(['is_active' => true]);
     $sub = Subscription::factory()->active()->create([
         'tenant_id' => $this->tenant->id,
         'plan_id' => $this->plan->id,
@@ -60,26 +44,25 @@ test('can edit subscription status', function () {
         'ownerRecord' => $this->tenant,
     ])
         ->callTableAction('edit', $sub, data: [
-            'plan_id' => $this->plan->id,
-            'status' => 'canceled',
+            'plan_id' => $newPlan->id,
         ])
         ->assertHasNoTableActionErrors();
 
-    expect($sub->fresh()->status->value)->toBe('canceled');
+    expect($sub->fresh()->plan_id)->toBe($newPlan->id);
 });
 
-test('can delete a subscription', function () {
+test('cannot create or delete subscriptions from manager', function () {
     $this->actingAs($this->superAdmin);
 
-    $sub = Subscription::factory()->active()->create([
-        'tenant_id' => $this->tenant->id,
-        'plan_id' => $this->plan->id,
+    $component = Livewire::test(SubscriptionsRelationManager::class, [
+        'ownerRecord' => $this->tenant,
     ]);
 
-    Livewire::test(SubscriptionsRelationManager::class, [
-        'ownerRecord' => $this->tenant,
-    ])
-        ->callTableAction('delete', $sub);
+    // No create button available
+    expect(fn () => $component->callTableAction('create'))
+        ->toThrow(Exception::class);
 
-    expect(Subscription::find($sub->id))->toBeNull();
+    // No delete button available
+    expect(fn () => $component->callTableAction('delete', $this->subscription))
+        ->toThrow(Exception::class);
 });

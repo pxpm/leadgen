@@ -263,8 +263,8 @@ class ConversationOrchestrator
 
         // Optional field — store declined and move on
         $leadServiceId = $this->getCurrentLeadServiceId($lead);
-        $isShared = in_array($nextField['key'], $config['shared_fields']['required'] ?? [])
-                 || in_array($nextField['key'], $config['shared_fields']['optional'] ?? []);
+        $isShared = in_array($nextField['key'], $config['shared_fields']['qualification'] ?? [])
+                 || in_array($nextField['key'], $config['shared_fields']['contact'] ?? []);
 
         $lead->fields()->create([
             'lead_service_id' => $isShared ? null : $leadServiceId,

@@ -240,10 +240,10 @@ class FieldExtractor
      */
     private function isSharedField(string $key, array $config): bool
     {
-        $sharedRequired = $config['shared_fields']['required'] ?? [];
-        $sharedOptional = $config['shared_fields']['optional'] ?? [];
+        $qualification = $config['shared_fields']['qualification'] ?? [];
+        $contact = $config['shared_fields']['contact'] ?? [];
 
-        return in_array($key, $sharedRequired) || in_array($key, $sharedOptional);
+        return in_array($key, $qualification) || in_array($key, $contact);
     }
 
     /**

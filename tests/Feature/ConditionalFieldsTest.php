@@ -13,8 +13,8 @@ beforeEach(function () {
     $roofing = require database_path('seeders/data/industries/services/roofing.php');
 
     $config = $base;
-    $config['required_fields'] = array_merge($roofing['required_fields'] ?? [], $base['shared_fields']['required'] ?? []);
-    $config['optional_fields'] = array_merge($roofing['optional_fields'] ?? [], $base['shared_fields']['optional'] ?? []);
+    $config['required_fields'] = array_merge($roofing['required_fields'] ?? [], $base['shared_fields']['qualification'] ?? [], $base['shared_fields']['contact'] ?? []);
+    $config['optional_fields'] = $roofing['optional_fields'] ?? [];
     $config['field_definitions'] = array_merge($config['field_definitions'] ?? [], $roofing['field_definitions'] ?? []);
     $config['conditional_fields'] = $roofing['conditional_fields'] ?? [];
     $config['conditional_requirements'] = $roofing['conditional_requirements'] ?? [];
@@ -74,10 +74,13 @@ test('required conditional blocks completion when triggered and missing', functi
 test('optional conditional does not block completion', function () {
     $this->lead->fields()->create(['field_key' => 'problem_type', 'field_value' => 'leak', 'field_type' => 'select']);
     $this->lead->fields()->create(['field_key' => 'roof_type', 'field_value' => 'tile', 'field_type' => 'select']);
+    $this->lead->fields()->create(['field_key' => 'property_type', 'field_value' => 'house', 'field_type' => 'select']);
+    $this->lead->fields()->create(['field_key' => 'urgency', 'field_value' => 'within_week', 'field_type' => 'select']);
     $this->lead->fields()->create(['field_key' => 'contact_name', 'field_value' => 'Test', 'field_type' => 'text']);
     $this->lead->fields()->create(['field_key' => 'property_address', 'field_value' => 'Rua X', 'field_type' => 'text']);
     $this->lead->fields()->create(['field_key' => 'email', 'field_value' => 'a@b.com', 'field_type' => 'text']);
     $this->lead->fields()->create(['field_key' => 'phone', 'field_value' => '912345678', 'field_type' => 'text']);
+    $this->lead->fields()->create(['field_key' => 'postal_code', 'field_value' => '1000-001', 'field_type' => 'text']);
 
     expect($this->engine->isComplete($this->lead))->toBeTrue();
 });

@@ -43,11 +43,6 @@ class TenantStatsOverview extends StatsOverviewWidget
                 ->description($totalCalls > 0 ? round(($recoveredCalls / $totalCalls) * 100).'% recuperação' : '0%')
                 ->icon('heroicon-o-arrow-path')
                 ->color('info'),
-
-            Stat::make('Taxa de Conversão', "{$conversionRate}%")
-                ->description('Leads → Qualificados')
-                ->icon('heroicon-o-chart-bar')
-                ->color('gray'),
         ];
     }
 

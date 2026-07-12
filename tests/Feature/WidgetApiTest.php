@@ -155,7 +155,7 @@ test('GenerateSummaryJob is dispatched when lead qualifies', function () {
     ]);
 
     // Collect all required fields so the lead qualifies
-    foreach (['contact_name', 'phone', 'email', 'property_address', 'problem_type', 'roof_type'] as $key) {
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
         $lead->fields()->create([
             'field_key' => $key,
             'field_value' => 'test',

@@ -26,8 +26,10 @@ test('lead is not complete when no fields collected', function () {
 test('lead is complete when all required fields collected', function () {
     $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'service_type' => 'roofing']);
 
-    // Service required: problem_type, roof_type. Shared required: contact_name, phone, email, property_address.
-    foreach (['contact_name', 'phone', 'email', 'property_address', 'problem_type', 'roof_type'] as $key) {
+    // Service required: problem_type, roof_type.
+    // Qualification: property_type, urgency.
+    // Contact: contact_name, phone, email, property_address, postal_code.
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
         $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'text']);
     }
 
@@ -40,8 +42,8 @@ test('missing fields returns correct list', function () {
 
     $missing = $this->engine->getMissingFields($lead);
 
-    // Service: problem_type, roof_type. Shared: property_address. Contact: phone, email.
-    expect($missing)->toContain('problem_type', 'roof_type', 'property_address');
+    // Service fields + qualification fields + remaining contact + optionals
+    expect($missing)->toContain('problem_type', 'roof_type', 'property_type', 'urgency');
     expect($missing)->not->toContain('contact_name');
 });
 
@@ -57,7 +59,7 @@ test('conditional requirements add fields when condition met', function () {
 test('maybeComplete transitions status when complete', function () {
     $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'status' => LeadStatus::InProgress, 'service_type' => 'roofing']);
 
-    foreach (['contact_name', 'phone', 'email', 'property_address', 'problem_type', 'roof_type'] as $key) {
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
         $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'text']);
     }
 
@@ -75,12 +77,12 @@ test('getNextField returns first missing field', function () {
         'service_type' => 'roofing',
     ]);
 
-    // No fields collected — first missing is contact_name (shared fields come first)
+    // No fields collected — first missing is problem_type (service fields come first)
     $next = $this->engine->getNextField($lead);
 
     expect($next)->not->toBeNull();
-    expect($next['key'])->toBe('contact_name');
-    expect($next['type'])->toBe('text');
+    expect($next['key'])->toBe('problem_type');
+    expect($next['type'])->toBe('select');
 });
 
 test('getNextField advances after fields are collected', function () {
@@ -95,9 +97,9 @@ test('getNextField advances after fields are collected', function () {
 
     $next = $this->engine->getNextField($lead);
 
-    // Next should be a shared field: contact_name or property_address
-    expect($next['key'])->toBe('contact_name');
-    expect($next['type'])->toBe('text');
+    // Next should be property_type (first qualification shared field)
+    expect($next['key'])->toBe('property_type');
+    expect($next['type'])->toBe('select');
 });
 
 test('getNextField returns null when all fields collected', function () {
@@ -124,11 +126,7 @@ test('getNextField includes options for select fields', function () {
         'service_type' => 'roofing',
     ]);
 
-    // Collect shared text fields first so next is a service select field
-    foreach (['contact_name', 'phone', 'email', 'property_address'] as $key) {
-        $lead->fields()->create(['field_key' => $key, 'field_value' => 'test', 'field_type' => 'text']);
-    }
-
+    // First field is problem_type (service select) — no need to collect anything first
     $next = $this->engine->getNextField($lead);
 
     expect($next['options'])->toBeArray();
@@ -143,9 +141,14 @@ test('getNextField does not include options for text fields', function () {
         'service_type' => 'roofing',
     ]);
 
-    // Collect all select fields so next is text
+    // Collect all select fields (service + qualification + optionals) so next is text (contact_name)
     $lead->fields()->create(['field_key' => 'problem_type', 'field_value' => 'repair', 'field_type' => 'select']);
     $lead->fields()->create(['field_key' => 'roof_type', 'field_value' => 'tile', 'field_type' => 'select']);
+    $lead->fields()->create(['field_key' => 'property_type', 'field_value' => 'house', 'field_type' => 'select']);
+    $lead->fields()->create(['field_key' => 'urgency', 'field_value' => 'within_week', 'field_type' => 'select']);
+    $lead->fields()->create(['field_key' => 'roof_age', 'field_value' => 'less_than_5', 'field_type' => 'select']);
+    $lead->fields()->create(['field_key' => 'insurance_claim', 'field_value' => 'no', 'field_type' => 'select']);
+    $lead->fields()->create(['field_key' => 'material_supplied', 'field_value' => 'specialist_provides', 'field_type' => 'select']);
 
     $next = $this->engine->getNextField($lead);
 
@@ -166,9 +169,8 @@ test('getNextField returns correct field after partial address collection', func
 
     $next = $this->engine->getNextField($lead);
 
-    // Next should be the first missing required field in order.
-    // Order: contact_name, phone, email, property_address, then service fields.
-    // After collecting problem_type, roof_type, contact_name → next is 'phone'.
-    expect($next['key'])->toBe('phone');
-    expect($next['type'])->toBe('text');
+    // Order: service → qualification → contact. After service fields + contact_name,
+    // next is property_type (first qualification field), not another contact field.
+    expect($next['key'])->toBe('property_type');
+    expect($next['type'])->toBe('select');
 });

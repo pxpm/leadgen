@@ -1,3 +1,5 @@
+import { messages } from './i18n.js';
+
 export class LeadIntakeWidget {
     constructor() {
         this.tenant = null;
@@ -14,6 +16,15 @@ export class LeadIntakeWidget {
         this.selectedServices = new Set();
         this.turnstileSiteKey = null;
         this.turnstileToken = null;
+    }
+
+    /** Get a translated string for the current tenant locale. Falls back to pt. */
+    t(key, vars = {}) {
+        const locale = (this.config && this.config.tenant && this.config.tenant.locale) || 'pt';
+        const msg = (messages[locale] && messages[locale][key])
+            || (messages.pt[key])
+            || key;
+        return msg.replace(/\{(\w+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
     }
 
     async init(slug) {
@@ -81,11 +92,11 @@ export class LeadIntakeWidget {
             const d = await resp.json();
             this.lead = d.lead;
             this.saveSession();
-            this.addMessage('bot', this.config.greeting || 'Olá! Como posso ajudar?');
+            this.addMessage('bot', this.config.greeting || this.t('greeting_fallback'));
             if (this.config.services && this.config.services.length) {
                 this.renderServiceChips(this.config.services);
             }
-        } catch (e) { this.addMessage('bot', 'Ligação perdida.'); }
+        } catch (e) { this.addMessage('bot', this.t('connection_lost')); }
     }
 
     async sendMessage(text, serviceKeys = null, intent = null) {
@@ -101,18 +112,38 @@ export class LeadIntakeWidget {
             if (serviceKeys && serviceKeys.length) body.service_keys = serviceKeys;
             if (intent) body.intent = intent;
             const headers = { 'Content-Type': 'application/json' };
-            const token = await this.getTurnstileToken();
-            if (token) headers['X-Turnstile-Token'] = token;
 
-            const resp = await fetch('/api/widget/conversations/' + this.lead.session_token + '/messages', {
-                method: 'POST', headers: headers,
-                body: JSON.stringify(body),
-            });
-            if (!resp.ok) {
-                const msg = resp.status === 429 ? 'A enviar mensagens demasiado rápido. Aguarde um momento.' : 'Erro de ligação.';
+            let d = null;
+            let attempt = 0;
+            const delays = [5, 10]; // seconds to wait before retrying
+
+            while (attempt <= delays.length) {
+                const token = await this.getTurnstileToken();
+                if (token) headers['X-Turnstile-Token'] = token;
+
+                const resp = await fetch('/api/widget/conversations/' + this.lead.session_token + '/messages', {
+                    method: 'POST', headers: headers,
+                    body: JSON.stringify(body),
+                });
+
+                if (resp.ok) {
+                    d = await resp.json();
+                    break;
+                }
+
+                if (resp.status === 429 && attempt < delays.length) {
+                    const sec = delays[attempt];
+                    this.setTyping(false);
+                    this.addMessage('bot', this.t('rate_limit_retry', { sec: sec }));
+                    await new Promise(r => setTimeout(r, sec * 1000));
+                    this.setTyping(true);
+                    attempt++;
+                    continue;
+                }
+
+                const msg = resp.status === 429 ? this.t('rate_limit_final') : this.t('connection_error');
                 this.setTyping(false); this.addMessage('bot', msg); return;
             }
-            const d = await resp.json();
             this.setTyping(false);
             if (d.is_complete) { this.isComplete = true; this.addMessage('bot', d.reply); this.showDone(); }
             else {
@@ -128,7 +159,7 @@ export class LeadIntakeWidget {
                     this.renderChips(d.next_field);
                 }
             }
-        } catch (e) { this.setTyping(false); this.addMessage('bot', 'Erro de ligação.'); }
+        } catch (e) { this.setTyping(false); this.addMessage('bot', this.t('connection_error')); }
     }
 
     async uploadFile(file) {
@@ -137,7 +168,7 @@ export class LeadIntakeWidget {
         try {
             await fetch('/api/widget/conversations/' + this.lead.session_token + '/uploads', { method: 'POST', body: fd });
             this.addMessage('user', '📎 ' + file.name);
-        } catch (e) { this.addMessage('bot', 'Erro ao enviar.'); }
+        } catch (e) { this.addMessage('bot', this.t('upload_error')); }
     }
 
     buildUI(fullscreen) {
@@ -170,15 +201,15 @@ export class LeadIntakeWidget {
         this.panel.innerHTML =
             '<div class="lgw-header">' +
             '<div class="lgw-header-avatar">🏠</div>' +
-            '<div class="lgw-header-text"><div class="lgw-header-name">' + name + '</div><div class="lgw-header-status">Online</div></div>' +
+            '<div class="lgw-header-text"><div class="lgw-header-name">' + name + '</div><div class="lgw-header-status">' + this.t('status_online') + '</div></div>' +
             '<button class="lgw-header-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
             '</div>' +
             '<div class="lgw-body"></div>' +
             '<div class="lgw-typing"><span></span><span></span><span></span></div>' +
             '<div class="lgw-footer">' +
-            '<button class="lgw-btn lgw-btn-plus" title="Anexar ficheiro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>' +
-            '<input class="lgw-input" placeholder="Escreva a sua mensagem...">' +
-            '<button class="lgw-btn lgw-btn-attach" title="Anexar ficheiro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' +
+            '<button class="lgw-btn lgw-btn-plus" title="' + this.t('attach_title') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>' +
+            '<input class="lgw-input" placeholder="' + this.t('input_placeholder') + '">' +
+            '<button class="lgw-btn lgw-btn-attach" title="' + this.t('attach_title') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' +
             '<button class="lgw-btn lgw-btn-send"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>' +
             '<input type="file" accept="image/*" capture="environment" style="display:none">' +
             '</div>';
@@ -284,7 +315,7 @@ export class LeadIntakeWidget {
                         } catch (e) {
                             // If sendMessage crashes, still remove chips so UI isn't stuck
                             d.remove();
-                            this.addMessage('bot', 'Ocorreu um erro. Tente novamente.');
+                            this.addMessage('bot', this.t('generic_error'));
                         }
                     };
                 }
@@ -295,7 +326,7 @@ export class LeadIntakeWidget {
         // Skip chip (optional fields, regardless of type)
         if (isOptional) {
             const skip = document.createElement('button');
-            skip.textContent = 'Saltar →';
+            skip.textContent = this.t('skip_chip');
             skip.className = 'lgw-chip-skip';
             skip.onclick = () => {
                 try {
@@ -303,7 +334,7 @@ export class LeadIntakeWidget {
                     d.remove();
                 } catch (e) {
                     d.remove();
-                    this.addMessage('bot', 'Ocorreu um erro. Tente novamente.');
+                    this.addMessage('bot', this.t('generic_error'));
                 }
             };
             d.appendChild(skip);
@@ -411,6 +442,10 @@ export class LeadIntakeWidget {
     }
 
     addMessage(role, text) {
+        // Render skip commands as a human-readable message
+        if (text === '__skip__') {
+            text = this.t('skip_placeholder');
+        }
         const w = document.createElement('div'); w.className = 'lgw-msg lgw-msg-' + role;
         const b = document.createElement('div'); b.className = 'lgw-bubble'; b.textContent = text;
         w.appendChild(b); this.bodyEl.appendChild(w);
@@ -420,8 +455,10 @@ export class LeadIntakeWidget {
     setTyping(v) { const el = this.panel.querySelector('.lgw-typing'); if (el) el.style.display = v ? 'flex' : 'none'; }
 
     showDone() {
+        // Clear session — conversation is complete, user can start fresh
+        try { localStorage.removeItem('lgw_session'); } catch (e) {}
         const f = this.panel.querySelector('.lgw-footer');
-        if (f) f.innerHTML = '<div class="lgw-done"><div class="lgw-done-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="lgw-done-title">Obrigado!</div><div class="lgw-done-sub">Entraremos em contacto em breve.</div></div>';
+        if (f) f.innerHTML = '<div class="lgw-done"><div class="lgw-done-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div><div class="lgw-done-title">' + this.t('done_title') + '</div><div class="lgw-done-sub">' + this.t('done_sub') + '</div></div>';
     }
 
     async tryResume() {

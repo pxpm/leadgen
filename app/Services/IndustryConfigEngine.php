@@ -209,13 +209,13 @@ class IndustryConfigEngine
         // Merge required/optional fields
         $serviceRequired = $service['required_fields'] ?? [];
         $serviceOptional = $service['optional_fields'] ?? [];
-        $baseRequired = $base['shared_fields']['required'] ?? [];
-        $baseOptional = $base['shared_fields']['optional'] ?? [];
+        $qualification = $base['shared_fields']['qualification'] ?? [];
+        $contact = $base['shared_fields']['contact'] ?? [];
 
-        // Shared fields (contact_name, phone, etc.) go first so the bot introduces
-        // itself before diving into service-specific technical questions.
-        $base['required_fields'] = array_merge($baseRequired, $serviceRequired);
-        $base['optional_fields'] = array_merge($baseOptional, $serviceOptional);
+        // Service questions → qualification context → optionals → contact LAST
+        $base['required_fields'] = array_values(array_unique(array_merge($serviceRequired, $qualification)));
+        $base['optional_fields'] = $serviceOptional;
+        $base['contact_fields'] = $contact;
 
         // Merge field definitions
         $base['field_definitions'] = array_merge(

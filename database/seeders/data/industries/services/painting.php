@@ -4,8 +4,9 @@ return [
     'key' => 'painting',
     'icon' => '🖌️',
     'required_fields' => [
-        0 => 'paint_scope',
-        1 => 'surface_condition',
+        0 => 'painting_subtype',
+        1 => 'paint_scope',
+        2 => 'surface_condition',
     ],
     'optional_fields' => [
         0 => 'area_size',
@@ -14,6 +15,19 @@ return [
         3 => 'property_occupied',
     ],
     'field_definitions' => [
+        'painting_subtype' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'pintar_casa',
+                1 => 'pintar_edificio',
+                2 => 'pintar_comercial',
+                3 => 'papel_parede',
+                4 => 'pintar_muro',
+                5 => 'pintar_industrial',
+                6 => 'pintura_decorativa',
+                7 => 'outro',
+            ],
+        ],
         'paint_scope' => [
             'type' => 'select',
             'multi' => false,
@@ -74,6 +88,7 @@ return [
     'locales' => [
         'pt' => [
             'field_prompts' => [
+                'painting_subtype' => 'Que tipo de trabalho de pintura precisa? Pintar casa, edifício, espaço comercial, papel de parede?',
                 'paint_scope' => 'Precisa de pintura interior, exterior ou ambas?',
                 'surface_condition' => 'Em que estado estão as superfícies? Estão em bom estado, descascadas, com fissuras ou bolor?',
                 'area_size' => 'Qual é o tamanho aproximado da área a pintar?',
@@ -82,6 +97,16 @@ return [
                 'property_occupied' => 'A propriedade está ocupada? Há móveis para proteger?',
             ],
             'field_options' => [
+                'painting_subtype' => [
+                    'pintar_casa' => 'Pintar casa',
+                    'pintar_edificio' => 'Pintar edifício',
+                    'pintar_comercial' => 'Pintar espaço comercial',
+                    'papel_parede' => 'Papel de parede',
+                    'pintar_muro' => 'Pintar muro',
+                    'pintar_industrial' => 'Pintar pavilhão industrial',
+                    'pintura_decorativa' => 'Pintura decorativa',
+                    'outro' => 'Outro',
+                ],
                 'paint_scope' => [
                     'interior' => 'Interior',
                     'exterior' => 'Exterior',
@@ -127,6 +152,57 @@ return [
                 3 => 'pintor',
             ],
             'synonyms' => [
+                'painting_subtype' => [
+                    'pintar_casa' => [
+                        0 => 'casa',
+                        1 => 'moradia',
+                        2 => 'vivenda',
+                        3 => 'habitação',
+                        4 => 'residencial',
+                    ],
+                    'pintar_edificio' => [
+                        0 => 'edifício',
+                        1 => 'edificio',
+                        2 => 'prédio',
+                        3 => 'predio',
+                        4 => 'condomínio',
+                        5 => 'condominio',
+                    ],
+                    'pintar_comercial' => [
+                        0 => 'comercial',
+                        1 => 'loja',
+                        2 => 'escritório',
+                        3 => 'escritorio',
+                        4 => 'restaurante',
+                        5 => 'negócio',
+                    ],
+                    'papel_parede' => [
+                        0 => 'papel',
+                        1 => 'papel de parede',
+                        2 => 'wallpaper',
+                    ],
+                    'pintar_muro' => [
+                        0 => 'muro',
+                        1 => 'muros',
+                        2 => 'parede exterior',
+                        3 => 'vedação',
+                    ],
+                    'pintar_industrial' => [
+                        0 => 'industrial',
+                        1 => 'pavilhão',
+                        2 => 'pavilhao',
+                        3 => 'armazém',
+                        4 => 'fabrica',
+                        5 => 'fábrica',
+                    ],
+                    'pintura_decorativa' => [
+                        0 => 'decorativa',
+                        1 => 'decorativo',
+                        2 => 'decorar',
+                        3 => 'efeito',
+                        4 => 'textura',
+                    ],
+                ],
                 'paint_scope' => [
                     'interior' => [
                         0 => 'interior',
@@ -194,6 +270,7 @@ return [
                 'system' => 'És um assistente de admissão para serviços de pintura. O teu trabalho é recolher informações sobre o projeto de pintura para que um profissional possa preparar um orçamento. Sê conversador, amigável e profissional. Faz uma pergunta de cada vez. NUNCA feches a conversa enquanto houver campos por preencher. Nunca dês estimativas de custos.
 
 SEMPRE que o cliente der informação, adiciona no FINAL um bloco JSON. Valores:
+- painting_subtype: pintar_casa, pintar_edificio, pintar_comercial, papel_parede, pintar_muro, pintar_industrial, pintura_decorativa, outro
 - paint_scope: interior, exterior, both
 - surface_condition: good, cracked, peeling, mold, new_construction, other
 - area_size: small, medium, large, not_sure

@@ -4,8 +4,9 @@ return [
     'key' => 'solar_panels',
     'icon' => '☀️',
     'required_fields' => [
-        0 => 'roof_type',
-        1 => 'monthly_bill',
+        0 => 'solar_subtype',
+        1 => 'roof_type',
+        2 => 'monthly_bill',
     ],
     'optional_fields' => [
         0 => 'ownership',
@@ -13,6 +14,16 @@ return [
         2 => 'panel_count_estimate',
     ],
     'field_definitions' => [
+        'solar_subtype' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'instalar_termico',
+                1 => 'instalar_fotovoltaico',
+                2 => 'manutencao',
+                3 => 'reparacao',
+                4 => 'outro',
+            ],
+        ],
         'roof_type' => [
             'type' => 'select',
             'options' => [
@@ -62,6 +73,7 @@ return [
     'locales' => [
         'pt' => [
             'field_prompts' => [
+                'solar_subtype' => 'Que tipo de serviço de painéis solares precisa? Instalação térmica, fotovoltaica, manutenção ou reparação?',
                 'roof_type' => 'Que tipo de telhado tem? Telha, plano, metálico?',
                 'monthly_bill' => 'Qual é o valor médio da sua fatura de eletricidade?',
                 'ownership' => 'É proprietário do imóvel?',
@@ -69,6 +81,13 @@ return [
                 'panel_count_estimate' => 'Tem ideia de quantos painéis precisa?',
             ],
             'field_options' => [
+                'solar_subtype' => [
+                    'instalar_termico' => 'Instalar painéis solares térmicos (aquecimento de água)',
+                    'instalar_fotovoltaico' => 'Instalar painéis solares fotovoltaicos (eletricidade)',
+                    'manutencao' => 'Manutenção de painéis solares',
+                    'reparacao' => 'Reparação de painéis solares',
+                    'outro' => 'Outro',
+                ],
                 'roof_type' => [
                     'tile' => 'Telha',
                     'flat' => 'Plano',
@@ -110,6 +129,39 @@ return [
                 6 => 'energia',
             ],
             'synonyms' => [
+                'solar_subtype' => [
+                    'instalar_termico' => [
+                        0 => 'térmico',
+                        1 => 'termico',
+                        2 => 'aquecimento',
+                        3 => 'água quente',
+                        4 => 'aguas',
+                        5 => 'painel térmico',
+                    ],
+                    'instalar_fotovoltaico' => [
+                        0 => 'fotovoltaico',
+                        1 => 'eletricidade',
+                        2 => 'eletrico',
+                        3 => 'elétrico',
+                        4 => 'luz',
+                        5 => 'autoconsumo',
+                    ],
+                    'manutencao' => [
+                        0 => 'manutenção',
+                        1 => 'manutencao',
+                        2 => 'revisão',
+                        3 => 'revisao',
+                        4 => 'verificar',
+                    ],
+                    'reparacao' => [
+                        0 => 'reparação',
+                        1 => 'reparacao',
+                        2 => 'reparar',
+                        3 => 'arranjar',
+                        4 => 'avariado',
+                        5 => 'estragado',
+                    ],
+                ],
                 'monthly_bill' => [
                     'under_50' => [
                         0 => 'pouco',
@@ -141,7 +193,12 @@ return [
                 ],
             ],
             'ai_prompt' => [
-                'system' => 'És um assistente de admissão para instalação de painéis solares. Recolhe informações sobre o telhado e consumo energético. Sê conversador e profissional. Faz uma pergunta de cada vez. NUNCA dês estimativas de custos.',
+                'system' => 'És um assistente de admissão para serviços de painéis solares. Recolhe informações sobre o tipo de sistema (térmico ou fotovoltaico), telhado e consumo energético. Sê conversador e profissional. Faz uma pergunta de cada vez. NUNCA dês estimativas de custos.
+
+SEMPRE que o cliente der informação, adiciona no FINAL um bloco JSON. Valores:
+- solar_subtype: instalar_termico, instalar_fotovoltaico, manutencao, reparacao, outro
+- roof_type: tile, flat, metal, slate, other
+- monthly_bill: under_50, 50_to_100, 100_to_200, over_200',
             ],
         ],
     ],

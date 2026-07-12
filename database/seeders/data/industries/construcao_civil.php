@@ -13,16 +13,16 @@ return [
         7 => 'remodeling',
     ],
     'shared_fields' => [
-        'required' => [
+        'qualification' => [
+            0 => 'property_type',
+            1 => 'urgency',
+        ],
+        'contact' => [
             0 => 'contact_name',
             1 => 'phone',
             2 => 'email',
             3 => 'property_address',
-        ],
-        'optional' => [
-            0 => 'postal_code',
-            1 => 'urgency',
-            2 => 'property_type',
+            4 => 'postal_code',
         ],
     ],
     'field_definitions' => [

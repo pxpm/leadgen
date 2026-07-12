@@ -30,6 +30,14 @@ class QualificationEngine
             }
         }
 
+        // Contact fields are always required (name, phone, email, address, postal_code)
+        foreach ($config['contact_fields'] ?? [] as $field) {
+            $value = $collected[$field] ?? null;
+            if ($value === null || $value === '' || $value === Lead::DECLINED) {
+                return false;
+            }
+        }
+
         // Check conditional fields (field definitions with a "when" trigger):
         // if triggered and required, they must be collected.
         foreach ($config['field_definitions'] ?? [] as $fieldKey => $def) {
@@ -52,8 +60,8 @@ class QualificationEngine
 
     /**
      * Get the list of fields still missing for this lead.
-     * Includes required fields first, then optional fields — so the AI asks
-     * about everything, but only required fields block completion.
+     * Order: service required → qualification → optional → conditional → contact LAST.
+     * Only required + qualification + contact fields block completion.
      */
     public function getMissingFields(Lead $lead): array
     {
@@ -77,7 +85,7 @@ class QualificationEngine
 
         $missing = array_values(array_diff($requiredFields, $collectedKeys));
 
-        // Add optional fields that haven't been collected yet (asked after requireds)
+        // Add optional fields that haven't been collected yet (asked after required, before contact)
         $optionals = $config['optional_fields'] ?? [];
         foreach ($optionals as $opt) {
             if (! in_array($opt, $collectedKeys) && ! in_array($opt, $missing)) {
@@ -99,6 +107,14 @@ class QualificationEngine
             }
             if ($this->conditionsMatch($def['when'], $collected)) {
                 $missing[] = $fieldKey;
+            }
+        }
+
+        // Add contact fields LAST (name, phone, email, address, postal_code)
+        $contactFields = $config['contact_fields'] ?? [];
+        foreach ($contactFields as $c) {
+            if (! in_array($c, $collectedKeys) && ! in_array($c, $missing)) {
+                $missing[] = $c;
             }
         }
 

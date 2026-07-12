@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\TenantResource\RelationManagers;
 
-use App\Enums\SubscriptionStatus;
 use App\Filament\Resources\TenantResource\Pages\EditTenant;
-use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -36,20 +32,8 @@ class SubscriptionsRelationManager extends RelationManager
                     ->relationship('plan', 'name', fn ($query) => $query->where('is_active', true))
                     ->searchable()
                     ->preload()
-                    ->required(),
-
-                Select::make('status')
-                    ->label('Estado')
-                    ->options(collect(SubscriptionStatus::cases())->mapWithKeys(fn (SubscriptionStatus $status) => [$status->value => $status->label()])->toArray())
-                    ->required(),
-
-                DateTimePicker::make('trial_ends_at')
-                    ->label('Fim do Trial')
-                    ->nullable(),
-
-                DateTimePicker::make('ends_at')
-                    ->label('Termina em')
-                    ->nullable(),
+                    ->required()
+                    ->helperText('Alterar o plano faz upgrade ou downgrade da subscrição.'),
             ]);
     }
 
@@ -92,11 +76,10 @@ class SubscriptionsRelationManager extends RelationManager
                     ->dateTime('d/m/Y'),
             ])
             ->headerActions([
-                CreateAction::make()->label('Nova Subscrição'),
+                // No create — new subscriptions are add-ons for future features
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()->label('Alterar Plano'),
             ])
             ->defaultSort('created_at', 'desc');
     }

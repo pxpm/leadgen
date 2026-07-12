@@ -240,7 +240,10 @@
 
 /* ── Done state ── */
 .lgw-done{
-    text-align:center;padding:40px 24px;animation:lgw-msg-in .4s ease;
+    width:100%;text-align:center;padding:40px 24px;animation:lgw-msg-in .4s ease;
+}
+.lgw-footer:has(.lgw-done){
+    display:block;padding:0;
 }
 .lgw-done-icon{
     width:64px;height:64px;border-radius:50%;

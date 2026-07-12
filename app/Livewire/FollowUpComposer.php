@@ -1,0 +1,202 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Livewire;
+
+use App\Enums\FollowUpScenario;
+use App\Mail\FollowUpMail;
+use App\Models\EmailLearningExample;
+use App\Models\FollowUpAction;
+use App\Models\Lead;
+use App\Services\EmailComposer;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\View\View;
+use Livewire\Component;
+
+class FollowUpComposer extends Component
+{
+    public Lead $lead;
+
+    public string $scenario = '';
+
+    /** @var array<string> */
+    public array $selectedItems = [];
+
+    /** @var array<string> */
+    public array $expandedGroups = [];
+
+    public string $freeText = '';
+
+    public string $generatedEmail = '';
+
+    public string $errorMessage = '';
+
+    public bool $isGenerating = false;
+
+    public bool $isSending = false;
+
+    public bool $emailSent = false;
+
+    public bool $showPreview = false;
+
+    public function mount(Lead $lead, string $scenario): void
+    {
+        $this->lead = $lead;
+        $this->scenario = $scenario;
+    }
+
+    public function toggleItem(string $key): void
+    {
+        if (in_array($key, $this->selectedItems, true)) {
+            $this->selectedItems = array_values(array_diff($this->selectedItems, [$key]));
+        } else {
+            $this->selectedItems[] = $key;
+        }
+    }
+
+    public function toggleGroup(string $group): void
+    {
+        if (in_array($group, $this->expandedGroups, true)) {
+            $this->expandedGroups = array_values(array_diff($this->expandedGroups, [$group]));
+        } else {
+            $this->expandedGroups[] = $group;
+        }
+    }
+
+    public function clearGenerated(): void
+    {
+        $this->generatedEmail = '';
+        $this->errorMessage = '';
+        $this->showPreview = false;
+    }
+
+    public function generateEmail(): void
+    {
+        if (empty($this->selectedItems) && $this->scenario !== FollowUpScenario::General->value) {
+            return;
+        }
+
+        $this->errorMessage = '';
+        $this->isGenerating = true;
+
+        $scenario = FollowUpScenario::from($this->scenario);
+        $composer = app(EmailComposer::class);
+
+        try {
+            $this->generatedEmail = $composer->compose(
+                lead: $this->lead,
+                scenario: $scenario,
+                selectedItems: $this->selectedItems,
+                freeText: $this->freeText ?: null,
+            );
+        } catch (\Throwable $e) {
+            $this->errorMessage = 'Erro ao gerar email: '.$e->getMessage();
+            $this->isGenerating = false;
+
+            return;
+        }
+
+        $this->showPreview = ! empty($this->generatedEmail);
+        $this->isGenerating = false;
+    }
+
+    public function sendEmail(): void
+    {
+        if (empty($this->generatedEmail)) {
+            return;
+        }
+
+        $this->isSending = true;
+
+        $recipientEmail = $this->lead->fields()->where('field_key', 'email')->first()?->field_value;
+
+        if (! $recipientEmail) {
+            $this->isSending = false;
+
+            return;
+        }
+
+        $scenario = FollowUpScenario::from($this->scenario);
+        $config = config("follow_up.scenarios.{$scenario->value}");
+        $locale = $this->lead->tenant->locale ?? 'pt';
+        $locales = $config['locales'][$locale] ?? $config['locales']['pt'];
+        $subject = str_replace(':tenant', $this->lead->tenant->name, $locales['subject']);
+
+        // Send email
+        Mail::to($recipientEmail)->send(new FollowUpMail(
+            lead: $this->lead,
+            emailBody: $this->generatedEmail,
+            emailSubject: $subject,
+        ));
+
+        // Record the action
+        $action = FollowUpAction::create([
+            'tenant_id' => $this->lead->tenant_id,
+            'lead_id' => $this->lead->id,
+            'scenario' => $scenario,
+            'selected_items' => $this->selectedItems,
+            'free_text' => $this->freeText ?: null,
+            'generated_email' => $this->generatedEmail,
+            'final_email' => $this->generatedEmail,
+            'status' => 'sent',
+            'sent_at' => now(),
+        ]);
+
+        // Record learning example for future improvement
+        EmailLearningExample::recordFromAction($action);
+
+        // Record notification for history
+        $this->lead->notifications()->create([
+            'tenant_id' => $this->lead->tenant_id,
+            'channel' => 'email',
+            'recipient' => $recipientEmail,
+            'status' => 'sent',
+            'sent_at' => now(),
+        ]);
+
+        $this->emailSent = true;
+        $this->isSending = false;
+    }
+
+    public function getScenarioConfigProperty(): array
+    {
+        return config("follow_up.scenarios.{$this->scenario}", []);
+    }
+
+    public function getHasGroupsProperty(): bool
+    {
+        return ! empty($this->scenarioConfig['groups']);
+    }
+
+    public function getGroupsProperty(): array
+    {
+        return $this->scenarioConfig['groups'] ?? [];
+    }
+
+    public function getReasonsProperty(): array
+    {
+        // Flat list (request_info, quote_followup) — no groups
+        return $this->scenarioConfig['reasons'] ?? [];
+    }
+
+    public function getSelectedLabelsProperty(): array
+    {
+        $reasons = $this->reasons;
+        if (empty($reasons)) {
+            // Try grouped reasons
+            foreach ($this->groups as $group) {
+                foreach ($group['reasons'] as $key => $label) {
+                    $reasons[$key] = $label;
+                }
+            }
+        }
+
+        return array_map(fn ($item) => $reasons[$item] ?? $item, $this->selectedItems);
+    }
+
+    public function render(): View
+    {
+        return view('livewire.follow-up-composer');
+    }
+}

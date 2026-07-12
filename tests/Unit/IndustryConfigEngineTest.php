@@ -36,9 +36,10 @@ test('resolves config with service merges fields', function () {
 
     $config = $this->engine->resolve($tenant, 'roofing');
 
-    expect($config)->toHaveKeys(['required_fields', 'optional_fields', 'locales']);
+    expect($config)->toHaveKeys(['required_fields', 'contact_fields', 'locales']);
     expect($config['locales']['pt'])->toHaveKeys(['ai_prompt', 'synonyms']);
-    expect($config['required_fields'])->toContain('problem_type', 'roof_type', 'contact_name', 'property_address');
+    expect($config['required_fields'])->toContain('problem_type', 'roof_type', 'property_type', 'urgency');
+    expect($config['contact_fields'])->toContain('contact_name', 'phone', 'email', 'property_address', 'postal_code');
     expect($config['field_definitions'])->toHaveKeys(['roof_type', 'problem_type', 'contact_name', 'phone']);
 });
 

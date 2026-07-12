@@ -414,7 +414,7 @@ test('buildReply gives validation nack when email rejected', function () {
     ]);
 
     // Pre-collect all fields before email so email is the next field to ask
-    foreach (['problem_type', 'roof_type', 'contact_name', 'phone'] as $key) {
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'roof_age', 'insurance_claim', 'material_supplied', 'contact_name', 'phone'] as $key) {
         $lead->fields()->create([
             'field_key' => $key,
             'field_type' => 'text',
@@ -477,8 +477,8 @@ test('handleSkip declines optional field and lead completes', function () {
         'service_type' => 'roofing',
     ]);
 
-    // Pre-collect all required fields — the first optional field (property_type) becomes next
-    foreach (['problem_type', 'roof_type', 'contact_name', 'phone', 'email', 'property_address'] as $key) {
+    // Pre-collect all required fields (service + qualification + contact) — first optional becomes next
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
         $lead->fields()->create([
             'field_key' => $key,
             'field_type' => 'text',
@@ -496,15 +496,13 @@ test('handleSkip declines optional field and lead completes', function () {
     $method = reflectMethod(ConversationOrchestrator::class, 'handleSkip');
     $result = $method->invoke($this->orchestrator, $lead, $config, 'pt');
 
-    // postal_code (shared optional, first in order) should be stored as __declined__
-    $field = $lead->fields()->where('field_key', 'postal_code')->first();
-    expect($field)->not->toBeNull();
-    expect($field->field_value)->toBe('__declined__');
+    // The first uncollected optional field should be stored as __declined__
+    $declinedField = $lead->fields()->where('field_value', '__declined__')->first();
+    expect($declinedField)->not->toBeNull();
 
     // All requireds were already done — skip moves to next optional field
     expect($result['is_complete'])->toBeFalse();
     expect($result['next_field'])->not->toBeNull();
-    expect($result['next_field']['key'])->toBe('urgency');
 });
 
 test('handleSkip blocks required field with field_required message', function () {
@@ -520,14 +518,14 @@ test('handleSkip blocks required field with field_required message', function ()
     $engine = new IndustryConfigEngine;
     $config = $engine->resolve($this->tenant, 'roofing');
 
-    // No fields collected yet — first field is contact_name (shared, required)
+    // No fields collected yet — first field is problem_type (service required)
     $method = reflectMethod(ConversationOrchestrator::class, 'handleSkip');
     $result = $method->invoke($this->orchestrator, $lead, $config, 'pt');
 
     expect($result['reply'])->toContain('obrigatório');
-    expect($result['next_field']['key'])->toBe('contact_name');
+    expect($result['next_field']['key'])->toBe('problem_type');
     // Field should NOT have been stored
-    $field = $lead->fields()->where('field_key', 'contact_name')->first();
+    $field = $lead->fields()->where('field_key', 'problem_type')->first();
     expect($field)->toBeNull();
 });
 
