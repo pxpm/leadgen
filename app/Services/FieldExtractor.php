@@ -126,11 +126,14 @@ class FieldExtractor
         $bestField = in_array($lead->current_field_key, $missing) ? $lead->current_field_key : null;
 
         // --- WORD LIMIT (select fields only) ---
+        // Skip the limit if the message exactly matches one of the field's option labels
+        // (e.g. chip click for a long label like "Emergência — preciso de ajuda agora")
         $fieldDef = $bestField ? ($definitions[$bestField] ?? null) : null;
-        if ($fieldDef && $fieldDef['type'] !== 'text' && $wordCount > 5) {
+        $isOptionMatch = $fieldDef && $this->matchesOptionLabel($msg, $options[$bestField] ?? []);
+        if (! $isOptionMatch && $fieldDef && $fieldDef['type'] !== 'text' && $wordCount > 5) {
             return [];
         }
-        if (! $fieldDef && $wordCount > 5) {
+        if (! $isOptionMatch && ! $fieldDef && $wordCount > 5) {
             return [];
         }
 
@@ -232,6 +235,22 @@ class FieldExtractor
         return $this->applyExtracted($lead, [
             $fieldKey => ['value' => $msg, 'confidence' => 0.7, 'type' => 'select'],
         ], $config, $leadServiceId);
+    }
+
+    /**
+     * Check if the message is an exact match for one of the field's option labels.
+     * Used to bypass the word limit for chip clicks on long labels.
+     */
+    private function matchesOptionLabel(string $msg, array $options): bool
+    {
+        $normalized = mb_strtolower(trim($msg));
+        foreach ($options as $label) {
+            if (mb_strtolower($label) === $normalized) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

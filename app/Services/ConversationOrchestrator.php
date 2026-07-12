@@ -295,18 +295,17 @@ class ConversationOrchestrator
         // to ask (required + optional + conditional).
         $nextField = $this->qualification->getNextField($lead);
 
-        // All fields collected + pending services → show summary, wait for user to confirm.
-        // Don't auto-transition — the user should review and optionally add notes first.
-        if ($lead->status === LeadStatus::Qualified && ! empty($lead->pending_services) && ! $nextField) {
+        // When all fields are collected and there are no missing fields, show
+        // the structured summary for the user to review — regardless of whether
+        // there are pending services. Multi-service leads will transition after
+        // confirmation; single-service leads will complete.
+        if ($lead->status === LeadStatus::Qualified && ! $nextField) {
             $lead->update(['current_field_key' => Lead::SUMMARY_MARKER]);
-
-            // Return the summary as-is, let user respond before transitioning
-            $isComplete = false;
 
             return [
                 'reply' => $reply,
                 'summary' => $summary,
-                'is_complete' => $isComplete,
+                'is_complete' => false,
                 'phase' => 'qualification',
                 'progress' => ['collected' => $lead->fields()->count(), 'required' => count($config['required_fields'] ?? [])],
                 'next_field' => null,
@@ -385,11 +384,22 @@ class ConversationOrchestrator
         $pending = $lead->pending_services;
         $nextService = array_shift($pending);
 
-        // Safety: shouldn't be called with no pending services, but guard anyway
+        // No more services — user confirmed the summary, conversation is complete
         if (! $nextService) {
-            Log::warning('activateNextService called with no pending services', ['lead_id' => $lead->id]);
+            $trimmed = trim($userResponse);
+            if (! empty($trimmed)) {
+                $lead->update(['notes' => $trimmed]);
+            }
 
-            return $this->buildResponse($lead, $this->config->resolve($lead->tenant, $lead->service_type), $userResponse);
+            return [
+                'reply' => '',
+                'summary' => null,
+                'is_complete' => true,
+                'phase' => 'qualification',
+                'progress' => ['collected' => $lead->fields()->count(), 'required' => 0],
+                'next_field' => null,
+                'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
+            ];
         }
 
         // Store whatever the user wrote as notes, and acknowledge it

@@ -16,6 +16,7 @@ export class LeadIntakeWidget {
         this.selectedServices = new Set();
         this.turnstileSiteKey = null;
         this.turnstileToken = null;
+        this.healthTimer = null;
     }
 
     /** Get a translated string for the current tenant locale. Falls back to pt. */
@@ -66,6 +67,7 @@ export class LeadIntakeWidget {
 
             (d.messages || []).forEach(m => this.addMessage(m.role === 'assistant' ? 'bot' : 'user', m.content));
             this.open();
+            this.startHealthPing();
         } catch (e) { /* silent */ }
     }
 
@@ -93,10 +95,24 @@ export class LeadIntakeWidget {
             this.lead = d.lead;
             this.saveSession();
             this.addMessage('bot', this.config.greeting || this.t('greeting_fallback'));
+            this.startHealthPing();
             if (this.config.services && this.config.services.length) {
                 this.renderServiceChips(this.config.services);
             }
         } catch (e) { this.addMessage('bot', this.t('connection_lost')); }
+    }
+
+    /** Keep the rate-limit window spread out with a lightweight periodic ping. */
+    startHealthPing() {
+        this.stopHealthPing();
+        this.healthTimer = setInterval(() => {
+            if (!this.tenant || this.isComplete) { this.stopHealthPing(); return; }
+            fetch('/api/widget/' + this.tenant + '/config').catch(() => {});
+        }, 25000);
+    }
+
+    stopHealthPing() {
+        if (this.healthTimer) { clearInterval(this.healthTimer); this.healthTimer = null; }
     }
 
     async sendMessage(text, serviceKeys = null, intent = null) {
@@ -442,6 +458,8 @@ export class LeadIntakeWidget {
     }
 
     addMessage(role, text) {
+        // Skip empty messages (e.g. completion signal with no reply text)
+        if (!text) return;
         // Render skip commands as a human-readable message
         if (text === '__skip__') {
             text = this.t('skip_placeholder');
@@ -455,6 +473,7 @@ export class LeadIntakeWidget {
     setTyping(v) { const el = this.panel.querySelector('.lgw-typing'); if (el) el.style.display = v ? 'flex' : 'none'; }
 
     showDone() {
+        this.stopHealthPing();
         // Clear session — conversation is complete, user can start fresh
         try { localStorage.removeItem('lgw_session'); } catch (e) {}
         const f = this.panel.querySelector('.lgw-footer');
