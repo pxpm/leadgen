@@ -194,6 +194,10 @@ class IndustryConfigEngine
     {
         $tenant->loadMissing('industry');
 
+        if (! $tenant->industry) {
+            throw new \RuntimeException("Tenant [{$tenant->id}] has no industry configured.");
+        }
+
         return $tenant->industry->config;
     }
 

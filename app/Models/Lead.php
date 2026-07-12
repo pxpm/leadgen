@@ -18,6 +18,15 @@ class Lead extends Model implements HasMedia
 {
     use BelongsToTenant, HasFactory, InteractsWithMedia;
 
+    /** Field value stored when a user declines or skips a field. */
+    public const DECLINED = '__declined__';
+
+    /** Internal message sent by the widget's "Skip" chip. */
+    public const SKIP_MESSAGE = '__skip__';
+
+    /** current_field_key value when the summary has been shown and we await user confirmation. */
+    public const SUMMARY_MARKER = '__summary__';
+
     protected $fillable = [
         'tenant_id', 'industry_id', 'status', 'source',
         'service_type', 'qualification_score', 'notes',

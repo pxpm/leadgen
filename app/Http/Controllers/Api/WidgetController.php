@@ -152,26 +152,4 @@ class WidgetController extends Controller
             'name' => $media->file_name,
         ], 201);
     }
-
-    /**
-     * Build localized field definitions with prompts and option labels.
-     */
-    private function localizedFields(array $config, string $locale): array
-    {
-        $definitions = $config['field_definitions'] ?? [];
-        $prompts = $config['locales'][$locale]['field_prompts'] ?? [];
-        $options = $config['locales'][$locale]['field_options'] ?? [];
-
-        return collect($definitions)->map(function ($def, $key) use ($prompts, $options) {
-            $entry = ['key' => $key, 'type' => $def['type'], 'prompt' => $prompts[$key] ?? null];
-
-            if ($def['type'] === 'select' && isset($options[$key])) {
-                $entry['options'] = collect($def['options'])
-                    ->map(fn ($val) => ['value' => $val, 'label' => $options[$key][$val] ?? $val])
-                    ->values()->toArray();
-            }
-
-            return $entry;
-        })->values()->toArray();
-    }
 }

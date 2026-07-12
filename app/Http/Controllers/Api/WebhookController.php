@@ -13,11 +13,10 @@ class WebhookController extends Controller
 {
     /**
      * Handle Twilio incoming call webhook.
+     * Request signature is validated by ValidateTwilioWebhook middleware.
      */
     public function incomingCall(Request $request): Response
     {
-        // TODO: Validate Twilio signature
-
         HandleIncomingCallJob::dispatch(
             callerNumber: $request->input('From'),
             toNumber: $request->input('To'),

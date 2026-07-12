@@ -12,11 +12,17 @@ use Illuminate\Support\Str;
 class MagicLinkService
 {
     /**
-     * Generate a magic link token for a tenant user to view a lead.
+     * Generate a magic link token for a specific user to view a lead.
+     * If no email is given, targets the first admin user of the tenant.
      */
-    public function createForLead(Lead $lead): string
+    public function createForLead(Lead $lead, ?string $email = null): string
     {
-        $user = $lead->tenant->users()->first();
+        if ($email) {
+            $user = $lead->tenant->users()->where('email', $email)->first();
+        } else {
+            $user = $lead->tenant->users()->first();
+        }
+
         if (! $user) {
             return '';
         }

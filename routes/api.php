@@ -10,16 +10,18 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('widget')->middleware(['throttle:60,1', 'active-subscription'])->group(function () {
     Route::get('/{tenant:slug}/config', [WidgetController::class, 'config']);
     Route::post('/{tenant:slug}/conversations', [WidgetController::class, 'startConversation'])
-        ->middleware('throttle:10,1');
-    Route::get('/conversations/{lead:session_token}', [WidgetController::class, 'resumeConversation']);
+        ->middleware(['throttle:10,1', 'turnstile']);
+    Route::get('/conversations/{lead:session_token}', [WidgetController::class, 'resumeConversation'])
+        ->middleware('throttle:30,1');
     Route::post('/conversations/{lead:session_token}/messages', [WidgetController::class, 'sendMessage'])
         ->middleware(['throttle:30,1', 'turnstile']);
     Route::post('/conversations/{lead:session_token}/uploads', [WidgetController::class, 'upload'])
         ->middleware('turnstile');
 });
 
-// Twilio webhooks
-Route::post('/webhooks/twilio/incoming-call', [WebhookController::class, 'incomingCall']);
+// Twilio webhooks — signature-validated, rate-limited
+Route::post('/webhooks/twilio/incoming-call', [WebhookController::class, 'incomingCall'])
+    ->middleware(['twilio-webhook', 'throttle:30,1']);
 
 // Stripe webhooks
 Route::post('/webhooks/stripe', StripeWebhookController::class);

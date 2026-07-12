@@ -25,7 +25,7 @@ Route::get('/js/widget.js', function () {
 });
 
 // ─── Local-only test routes ─────────────────────────────────────
-if (app()->isLocal()) {
+if (app()->environment('local')) {
     // Widget test page
     Route::get('/widget-test', fn () => view('widget-test'));
 
@@ -71,10 +71,23 @@ Route::get('/missed-call/{missedCall}', function (MissedCall $missedCall) {
         'tenantName' => $tenant?->name ?? 'Empresa',
         'tenantSlug' => $tenant?->slug ?? '',
         'primaryColor' => $tenant?->branding_config['primary_color'] ?? '#2563eb',
-        'token' => request('token'),
+        'token' => session('lgw_token_'.$missedCall->id),
         'intent' => request('intent'),
     ]);
 })->name('missed-call.landing');
+
+// Missed call full-screen widget page
+Route::get('/missed-call/{missedCall}/widget', function (MissedCall $missedCall) {
+    $tenant = $missedCall->tenant;
+
+    return view('missed-call-landing', [
+        'tenantName' => $tenant?->name ?? 'Empresa',
+        'tenantSlug' => $tenant?->slug ?? '',
+        'primaryColor' => $tenant?->branding_config['primary_color'] ?? '#2563eb',
+        'token' => session('lgw_token_'.$missedCall->id),
+        'intent' => request('intent'),
+    ]);
+})->name('missed-call.widget');
 
 // SMS sent confirmation page (after tenant triggers the follow-up)
 Route::get('/missed-call/{missedCall}/sent', function (MissedCall $missedCall) {

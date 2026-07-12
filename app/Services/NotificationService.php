@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Contracts\SmsProvider;
+use App\Enums\NotificationChannel;
+use App\Enums\NotificationStatus;
 use App\Mail\LeadQualifiedMail;
 use App\Models\Lead;
 use Illuminate\Support\Facades\Mail;
@@ -39,17 +41,17 @@ class NotificationService
 
                 $lead->notifications()->create([
                     'tenant_id' => $lead->tenant_id,
-                    'channel' => 'email',
+                    'channel' => NotificationChannel::Email,
                     'recipient' => $email,
-                    'status' => 'sent',
+                    'status' => NotificationStatus::Sent,
                     'sent_at' => now(),
                 ]);
             } catch (\Exception $e) {
                 $lead->notifications()->create([
                     'tenant_id' => $lead->tenant_id,
-                    'channel' => 'email',
+                    'channel' => NotificationChannel::Email,
                     'recipient' => $email,
-                    'status' => 'failed',
+                    'status' => NotificationStatus::Failed,
                     'error_message' => $e->getMessage(),
                 ]);
             }
@@ -58,13 +60,15 @@ class NotificationService
 
     private function sendSms(Lead $lead, array $recipients): void
     {
+        $tenant = $lead->tenant;
+        $locale = $tenant->locale ?? 'pt';
         $fields = $lead->fields->pluck('field_value', 'field_key');
-        $name = $fields['contact_name'] ?? 'Lead';
-        $urgency = $fields['urgency'] ?? 'normal';
-        $score = $lead->qualification_score ?? '?';
+        $name = $fields['contact_name'] ?? ($locale === 'pt' ? 'Cliente' : 'Customer');
 
         $magicLink = $this->magicLinks->createForLead($lead);
-        $message = "{$name}, {$urgency}. Score: {$score}/10. {$magicLink}";
+        $message = $locale === 'pt'
+            ? "Novo lead: {$name}. Veja os detalhes: {$magicLink}"
+            : "New lead: {$name}. View details: {$magicLink}";
 
         $smsProvider = app(SmsProvider::class);
 
@@ -73,9 +77,9 @@ class NotificationService
 
             $lead->notifications()->create([
                 'tenant_id' => $lead->tenant_id,
-                'channel' => 'sms',
+                'channel' => NotificationChannel::Sms,
                 'recipient' => $phone,
-                'status' => $result->success ? 'sent' : 'failed',
+                'status' => $result->success ? NotificationStatus::Sent : NotificationStatus::Failed,
                 'sent_at' => $result->success ? now() : null,
                 'error_message' => $result->error,
             ]);

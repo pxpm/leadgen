@@ -46,12 +46,12 @@ class ConversationOrchestrator
 
         // --- SUMMARY CONFIRMATION → transition to next service ---
         // User saw the summary + "Está tudo correto?" and responded.
-        if ($lead->current_field_key === '__summary__') {
+        if ($lead->current_field_key === Lead::SUMMARY_MARKER) {
             return $this->activateNextService($lead, $userMessage, $locale);
         }
 
         // --- SKIP HANDLING (widget "Saltar" chip) ---
-        if ($userMessage === '__skip__') {
+        if ($userMessage === Lead::SKIP_MESSAGE) {
             return $this->handleSkip($lead, $resolvedConfig, $locale);
         }
 
@@ -163,7 +163,7 @@ class ConversationOrchestrator
             $fields = [];
 
             foreach ($service->fields as $field) {
-                if ($field->field_value === '__declined__' || $field->field_value === '') {
+                if ($field->field_value === Lead::DECLINED || $field->field_value === '') {
                     continue;
                 }
                 $fields[] = $options[$field->field_key][$field->field_value] ?? $field->field_value;
@@ -179,7 +179,7 @@ class ConversationOrchestrator
         }
 
         foreach ($lead->fields()->whereNull('lead_service_id')->get() as $field) {
-            if ($field->field_value === '__declined__' || $field->field_value === '') {
+            if ($field->field_value === Lead::DECLINED || $field->field_value === '') {
                 continue;
             }
             $contact[] = $options[$field->field_key][$field->field_value] ?? $field->field_value;
@@ -270,7 +270,7 @@ class ConversationOrchestrator
             'lead_service_id' => $isShared ? null : $leadServiceId,
             'field_key' => $nextField['key'],
             'field_type' => $nextField['type'] ?? 'text',
-            'field_value' => '__declined__',
+            'field_value' => Lead::DECLINED,
             'confidence' => 0.0,
             'is_required' => false,
         ]);
@@ -298,7 +298,7 @@ class ConversationOrchestrator
         // All fields collected + pending services → show summary, wait for user to confirm.
         // Don't auto-transition — the user should review and optionally add notes first.
         if ($lead->status === LeadStatus::Qualified && ! empty($lead->pending_services) && ! $nextField) {
-            $lead->update(['current_field_key' => '__summary__']);
+            $lead->update(['current_field_key' => Lead::SUMMARY_MARKER]);
 
             // Return the summary as-is, let user respond before transitioning
             $isComplete = false;

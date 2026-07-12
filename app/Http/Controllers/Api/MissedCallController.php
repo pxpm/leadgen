@@ -45,7 +45,10 @@ class MissedCallController extends Controller
             ]);
         }
 
-        return redirect('/missed-call/'.$missedCall->id.'?token='.$lead->session_token.($intent ? '&intent='.$intent : ''));
+        // Store token in session to avoid leaking it in URL query params
+        session(['lgw_token_'.$missedCall->id => $lead->session_token]);
+
+        return redirect('/missed-call/'.$missedCall->id.'/widget'.($intent ? '?intent='.$intent : ''));
     }
 
     /**

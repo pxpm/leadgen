@@ -12,38 +12,24 @@ class LeadScoringService
 
     /**
      * Score a lead based on industry config scoring factors.
+     * Scoring rules are defined per-industry in scoring.factors.
      */
     public function score(Lead $lead): int
     {
-        $config = $this->config->resolve($lead->tenant);
+        $config = $this->config->resolve($lead->tenant, $lead->service_type);
         $factors = $config['scoring']['factors'] ?? [];
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
         $hasPhotos = $lead->getMedia('photos')->isNotEmpty();
 
         $score = 0;
 
-        if ($hasPhotos) {
-            $score += $factors['photos_uploaded'] ?? 0;
-        }
-
-        if (! empty($collected['urgency'])) {
-            $score += $factors['urgency_provided'] ?? 0;
-        }
-
-        if (! empty($collected['property_address'])) {
-            $score += $factors['address_provided'] ?? 0;
-        }
-
-        if (! empty($collected['problem_type'])) {
-            $score += $factors['project_type_known'] ?? 0;
-        }
-
-        if (! empty($collected['insurance_claim']) && $collected['insurance_claim'] === 'yes') {
-            $score += $factors['insurance_claim'] ?? 0;
-        }
-
-        if (($collected['problem_type'] ?? '') === 'replacement') {
-            $score += $factors['replacement_project'] ?? 0;
+        // Config-driven scoring: each factor maps a field_key to points
+        foreach ($factors as $factorKey => $points) {
+            if ($factorKey === 'photos_uploaded' && $hasPhotos) {
+                $score += $points;
+            } elseif (isset($collected[$factorKey]) && $collected[$factorKey] !== '' && $collected[$factorKey] !== Lead::DECLINED) {
+                $score += $points;
+            }
         }
 
         $score = max(1, min(10, $score));

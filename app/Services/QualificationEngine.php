@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\LeadStatus;
+use App\Jobs\GenerateSummaryJob;
 use App\Models\Lead;
 
 class QualificationEngine
@@ -24,7 +25,7 @@ class QualificationEngine
             $value = $collected[$field] ?? null;
 
             // Missing key or declined/empty value → not complete
-            if ($value === null || $value === '' || $value === '__declined__') {
+            if ($value === null || $value === '' || $value === Lead::DECLINED) {
                 return false;
             }
         }
@@ -40,7 +41,7 @@ class QualificationEngine
             }
             if (! empty($def['required']) && $this->conditionsMatch($def['when'], $collected)) {
                 $condValue = $collected[$fieldKey] ?? null;
-                if ($condValue === null || $condValue === '' || $condValue === '__declined__') {
+                if ($condValue === null || $condValue === '' || $condValue === Lead::DECLINED) {
                     return false;
                 }
             }
@@ -147,6 +148,8 @@ class QualificationEngine
                 'status' => LeadStatus::Qualified,
                 'qualified_at' => now(),
             ]);
+
+            GenerateSummaryJob::dispatch($lead);
         }
     }
 

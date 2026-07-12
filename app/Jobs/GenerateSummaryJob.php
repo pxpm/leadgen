@@ -17,6 +17,7 @@ class GenerateSummaryJob implements ShouldQueue
 
     public function handle(SummaryService $summarizer): void
     {
-        $summarizer->generate($this->lead);
+        $summary = $summarizer->generate($this->lead);
+        $this->lead->update(['notes' => $summary]);
     }
 }
