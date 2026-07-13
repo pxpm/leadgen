@@ -10,7 +10,6 @@ use App\Filament\Widgets\TenantStatsOverview;
 use App\Models\ShortLink;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 
 class TenantDashboard extends Page
@@ -22,6 +21,11 @@ class TenantDashboard extends Page
     protected string $view = 'filament.pages.tenant-dashboard';
 
     public ?string $shortLinkUrl = null;
+
+    public function dismissLink(): void
+    {
+        $this->shortLinkUrl = null;
+    }
 
     public function getWidgets(): array
     {
@@ -41,19 +45,9 @@ class TenantDashboard extends Page
     {
         return [
             Action::make('generateIntakeLink')
-                ->label('Gerar link de qualificação')
+                ->label(__('admin.dashboard.generate_intake_link'))
                 ->icon('heroicon-o-link')
                 ->color('primary')
-                ->modalHeading('Link de qualificação')
-                ->modalDescription('Partilhe este link com potenciais clientes. O link expira em 24 horas.')
-                ->form([
-                    TextInput::make('url')
-                        ->label('URL')
-                        ->disabled()
-                        ->default(fn () => $this->shortLinkUrl)
-                        ->extraAttributes(['class' => 'font-mono text-sm'])
-                        ->columnSpanFull(),
-                ])
                 ->action(function (): void {
                     $tenant = auth()->user()->tenant;
 
@@ -65,13 +59,7 @@ class TenantDashboard extends Page
                     ]);
 
                     $this->shortLinkUrl = url('/s/'.$shortLink->hash);
-                })
-                ->extraModalFooterActions([
-                    Action::make('copyLink')
-                        ->label('Copiar link')
-                        ->icon('heroicon-o-clipboard')
-                        ->extraAttributes(['onclick' => 'navigator.clipboard.writeText(document.querySelector(\'[name=\"url\"]\').value);this.innerText=\'Copiado!\';setTimeout(()=>this.innerText=\'Copiar link\',2000)']),
-                ]),
+                }),
         ];
     }
 }

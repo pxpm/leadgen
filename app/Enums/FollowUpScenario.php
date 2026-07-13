@@ -14,10 +14,10 @@ enum FollowUpScenario: string
     public function label(): string
     {
         return match ($this) {
-            self::Decline => 'Rejeitar Lead',
-            self::RequestInfo => 'Pedir Informações',
-            self::QuoteFollowUp => 'Acompanhar Orçamento',
-            self::General => 'Contacto Geral',
+            self::Decline => __('enums.follow_up_scenario.decline'),
+            self::RequestInfo => __('enums.follow_up_scenario.request_info'),
+            self::QuoteFollowUp => __('enums.follow_up_scenario.quote_followup'),
+            self::General => __('enums.follow_up_scenario.general'),
         };
     }
 

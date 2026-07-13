@@ -34,7 +34,7 @@ class WidgetController extends Controller
                 'primary_color' => $tenant->branding_config['primary_color'] ?? '#1a56db',
                 'locale' => $locale,
             ],
-            'greeting' => 'Olá! Em que podemos ajudar?',
+            'greeting' => __('app.widget_api.default_greeting'),
             'services' => $services,
             'field_definitions' => [],
             'turnstile_site_key' => config('services.turnstile.site_key'),
@@ -67,7 +67,7 @@ class WidgetController extends Controller
         if ($lead->status === LeadStatus::Delivered) {
             return response()->json([
                 'error' => 'session_expired',
-                'message' => 'Esta sessão expirou. Por favor inicie uma nova conversa.',
+                'message' => __('app.widget_api.session_expired'),
             ], 410);
         }
 
@@ -90,11 +90,11 @@ class WidgetController extends Controller
 
             if ($missedCallConfig) {
                 $response['intent_selection'] = [
-                    'welcome_message' => $missedCallConfig['welcome_message'] ?? 'Olá! Como podemos ajudar?',
+                    'welcome_message' => $missedCallConfig['welcome_message'] ?? __('app.widget_api.missed_call_welcome'),
                     'intents' => $missedCallConfig['intents'] ?? [
-                        'budget' => 'Quero um orçamento',
-                        'report' => 'Reportar um problema',
-                        'other' => 'Outro assunto',
+                        'budget' => __('app.widget_api.intent_quote'),
+                        'report' => __('app.widget_api.intent_report'),
+                        'other' => __('app.widget_api.intent_other'),
                     ],
                 ];
             }

@@ -22,8 +22,8 @@ class LeadQualifiedMail extends Mailable
         $name = $this->lead->fields->where('field_key', 'contact_name')->first()?->field_value ?? 'Novo Lead';
 
         return new Envelope(
-            subject: "Novo Lead: {$name}",
-            replyTo: [$this->lead->tenant->notification_config['email']['recipients'][0] ?? 'noreply@leadgen.com'],
+            subject: __('emails.lead_qualified.subject', ['name' => $name]),
+            replyTo: [$this->lead->tenant->notification_config['email']['recipients'][0] ?? __('emails.generic.fallback_reply_to')],
         );
     }
 

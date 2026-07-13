@@ -31,7 +31,7 @@ class SendCallerSmsJob implements ShouldQueue
         $intakeUrl = url('/s/'.$shortLink->hash);
 
         $message = $tenant->notification_config['missed_call_sms_template']
-            ?? 'Desculpe, não podemos atender agora. Toque aqui para nos deixar uma mensagem: {intake_url}';
+            ?? __('app.missed_call_sms.default_template', ['intake_url' => '{intake_url}']);
 
         $message = str_replace(
             ['{company_name}', '{intake_url}'],

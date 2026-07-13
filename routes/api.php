@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\GoogleOAuthController;
+use App\Http\Controllers\Api\InboundEmailController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WidgetController;
 use App\Http\Controllers\IntakeController;
@@ -25,6 +27,16 @@ Route::post('/webhooks/twilio/incoming-call', [WebhookController::class, 'incomi
 
 // Stripe webhooks
 Route::post('/webhooks/stripe', StripeWebhookController::class);
+
+// Inbound email webhook (Resend, Mailgun, etc.)
+Route::post('/webhooks/inbound-email', InboundEmailController::class)
+    ->middleware('throttle:60,1');
+
+// Google OAuth for email sending (authenticated, tenant-scoped)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/oauth/google/redirect', [GoogleOAuthController::class, 'redirect']);
+    Route::get('/oauth/google/callback', [GoogleOAuthController::class, 'callback']);
+});
 
 // Shareable intake link generation (authenticated, tenant-scoped)
 Route::middleware(['auth', 'active-subscription'])->group(function () {

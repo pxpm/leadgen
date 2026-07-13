@@ -91,7 +91,7 @@ class FollowUpComposer extends Component
                 freeText: $this->freeText ?: null,
             );
         } catch (\Throwable $e) {
-            $this->errorMessage = 'Erro ao gerar email: '.$e->getMessage();
+            $this->errorMessage = __('Erro ao gerar email: ').$e->getMessage();
             $this->isGenerating = false;
 
             return;

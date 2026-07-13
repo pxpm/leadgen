@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TenantResource\Pages;
+use App\Filament\Resources\TenantResource\RelationManagers\EmailAccountsRelationManager;
 use App\Filament\Resources\TenantResource\RelationManagers\SubscriptionsRelationManager;
 use App\Models\Tenant;
 use BackedEnum;
@@ -140,6 +141,7 @@ class TenantResource extends Resource
     {
         return [
             SubscriptionsRelationManager::class,
+            EmailAccountsRelationManager::class,
         ];
     }
 

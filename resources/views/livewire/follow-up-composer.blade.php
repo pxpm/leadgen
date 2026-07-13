@@ -4,7 +4,7 @@
             <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-lg shadow-emerald-500/20">
                 <x-heroicon-o-check class="h-8 w-8 text-white" />
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Email enviado</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ __('emails.followup_sent.heading') }}</h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {{ $lead->fields()->where('field_key', 'email')->first()?->field_value ?? 'Cliente' }}
             </p>
@@ -81,7 +81,7 @@
         {{-- Flat pills --}}
         <div class="mb-6">
             <p class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                @if ($scenario === 'request_info') Informacao necessaria
+                @if ($scenario === 'request_info') Informação necessária
                 @elseif ($scenario === 'quote_followup') Fase do acompanhamento
                 @else Motivo @endif
             </p>
@@ -127,7 +127,7 @@
             @if ($scenario !== 'general' && empty($selectedItems)) disabled @endif
             class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-blue-600 hover:shadow-xl hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
         >
-            <span wire:loading.remove wire:target="generateEmail"><x-heroicon-o-sparkles class="h-5 w-5" /> Gerar email com IA</span>
+            <span wire:loading.remove wire:target="generateEmail"><x-heroicon-o-sparkles class="h-5 w-5" /> Gerar email</span>
             <span wire:loading wire:target="generateEmail"><x-heroicon-o-arrow-path class="h-5 w-5 animate-spin" /> A gerar...</span>
         </button>
     @endif
@@ -148,8 +148,8 @@
                     <x-heroicon-o-arrow-path class="mr-1.5 inline h-4 w-4" />Gerar novamente
                 </button>
                 <button wire:click.prevent="sendEmail" wire:loading.attr="disabled" wire:target="sendEmail" class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-emerald-500 hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-40 disabled:shadow-none">
-                    <span wire:loading.remove wire:target="sendEmail"><x-heroicon-o-paper-airplane class="h-4 w-4" /> Enviar email</span>
-                    <span wire:loading wire:target="sendEmail"><x-heroicon-o-arrow-path class="h-4 w-4 animate-spin" /> A enviar...</span>
+                    <span wire:loading.remove wire:target="sendEmail" class="inline-flex items-center gap-1.5"><x-heroicon-o-paper-airplane class="h-4 w-4 shrink-0" />Enviar email</span>
+                    <span wire:loading wire:target="sendEmail" class="inline-flex items-center gap-1.5"><x-heroicon-o-arrow-path class="h-4 w-4 shrink-0 animate-spin" />A enviar...</span>
                 </button>
             </div>
         </div>

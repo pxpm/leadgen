@@ -32,7 +32,10 @@ class NotifyTenantOfMissedCallJob implements ShouldQueue
         $shortLink = ShortLink::forMissedCallSendSms($this->missedCall);
         $actionUrl = url('/s/'.$shortLink->hash);
 
-        $message = "Perdeu uma chamada de {$this->missedCall->caller_number}. Clique para enviar SMS de follow-up: {$actionUrl}";
+        $message = __('app.missed_call_sms.body', [
+            'number' => $this->missedCall->caller_number,
+            'url' => $actionUrl,
+        ]);
 
         if ($method === 'sms' || $method === 'both') {
             $recipients = $config['recipients'] ?? [];

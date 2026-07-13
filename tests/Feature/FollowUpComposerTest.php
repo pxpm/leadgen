@@ -166,7 +166,7 @@ test('request info scenario shows info fields', function () {
         'lead' => $this->lead,
         'scenario' => FollowUpScenario::RequestInfo->value,
     ])
-        ->assertSee('Informacao necessaria')
+        ->assertSee('Informação necessária')
         ->assertSee('Fotos do local')
         ->assertSee('Morada exata');
 });

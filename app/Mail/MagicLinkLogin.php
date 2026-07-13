@@ -22,7 +22,7 @@ class MagicLinkLogin extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Bem-vindo ao Lead Intake — {$this->tenantName}",
+            subject: __('emails.magic_link.subject', ['tenant' => $this->tenantName]),
         );
     }
 

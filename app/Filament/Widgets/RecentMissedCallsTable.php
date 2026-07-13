@@ -23,48 +23,47 @@ class RecentMissedCallsTable extends TableWidget
                 MissedCall::query()
                     ->where('tenant_id', auth()->user()?->tenant_id)
                     ->latest()
-                    ->limit(15)
             )
-            ->heading('Chamadas Perdidas Recentes')
-            ->description('Últimas 15 chamadas não atendidas')
+            ->heading(__('admin.missed_calls_table.heading'))
+            ->description(__('admin.missed_calls_table.description'))
             ->columns([
                 TextColumn::make('caller_number')
-                    ->label('Número')
+                    ->label(__('admin.missed_calls_table.column_number'))
                     ->searchable(),
 
                 TextColumn::make('tenant_phone')
-                    ->label('Linha')
+                    ->label(__('admin.missed_calls_table.column_line'))
                     ->searchable(),
 
                 TextColumn::make('matched_by')
-                    ->label('Correspondência')
+                    ->label(__('admin.missed_calls_table.column_match'))
                     ->badge()
                     ->formatStateUsing(fn (?string $state) => match ($state) {
-                        'dedicated_number' => 'Número direto',
-                        'forwarded_from' => 'Reencaminhado',
+                        'dedicated_number' => __('admin.missed_calls_table.column_match_dedicated'),
+                        'forwarded_from' => __('admin.missed_calls_table.column_match_forwarded'),
                         default => $state ?? '—',
                     }),
 
                 TextColumn::make('intent')
-                    ->label('Intenção')
+                    ->label(__('admin.missed_calls_table.column_intent'))
                     ->badge()
                     ->placeholder('—'),
 
                 IconColumn::make('sms_sent')
-                    ->label('SMS?')
+                    ->label(__('admin.missed_calls_table.column_sms'))
                     ->boolean(),
 
                 TextColumn::make('lead_id')
-                    ->label('Lead')
+                    ->label(__('admin.missed_calls_table.column_lead'))
                     ->state(fn (MissedCall $record) => $record->lead_id ? "#{$record->lead_id}" : '—'),
 
                 TextColumn::make('created_at')
-                    ->label('Data')
+                    ->label(__('admin.missed_calls_table.column_date'))
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
-            ->paginated(false);
+            ->paginated([10, 25, 50, 100]);
     }
 
     public static function canView(): bool

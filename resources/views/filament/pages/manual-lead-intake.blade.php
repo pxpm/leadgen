@@ -3,13 +3,13 @@
         {{-- Left: Form --}}
         <div class="lg:col-span-1">
             <x-filament::section>
-                <x-slot name="heading">Email do Cliente</x-slot>
+                <x-slot name="heading">{{ __('admin.manual_lead_intake.section_email') }}</x-slot>
 
                 <form wire:submit="extractData" class="space-y-4">
                     <div>
-                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Serviço</label>
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('admin.manual_lead_intake.service_type') }}</label>
                         <select wire:model="serviceType" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800">
-                            <option value="">Selecionar...</option>
+                            <option value="">{{ __('admin.common.select') }}</option>
                             @foreach ($this->serviceOptions as $key => $name)
                                 <option value="{{ $key }}">{{ $name }}</option>
                             @endforeach
@@ -17,14 +17,14 @@
                     </div>
 
                     <div>
-                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Conteúdo do Email</label>
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('admin.manual_lead_intake.email_content') }}</label>
                         <textarea wire:model="emailText" rows="10"
                             class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800"
-                            placeholder="Cola aqui o texto do email do cliente..."></textarea>
+                            placeholder="{{ __('admin.manual_lead_intake.email_placeholder') }}"></textarea>
                     </div>
 
                     <x-filament::button type="submit" color="gray" class="w-full">
-                        Extrair Dados
+                        {{ __('admin.manual_lead_intake.extract_data') }}
                     </x-filament::button>
                 </form>
             </x-filament::section>
@@ -34,7 +34,7 @@
         <div class="lg:col-span-2">
             @if ($extractedFields)
                 <x-filament::section>
-                    <x-slot name="heading">Campos Extraídos</x-slot>
+                    <x-slot name="heading">{{ __('admin.manual_lead_intake.section_extracted') }}</x-slot>
                     <x-slot name="description">{{ count($extractedFields) }} campos encontrados pela IA</x-slot>
 
                     <div class="grid grid-cols-2 gap-3">
@@ -50,8 +50,8 @@
 
             @if ($missingFields)
                 <x-filament::section class="mt-4">
-                    <x-slot name="heading">Campos em Falta</x-slot>
-                    <x-slot name="description">Estes campos são obrigatórios e ainda não foram preenchidos</x-slot>
+                    <x-slot name="heading">{{ __('admin.manual_lead_intake.section_missing') }}</x-slot>
+                    <x-slot name="description">{{ __('admin.manual_lead_intake.missing_description') }}</x-slot>
 
                     <ul class="list-disc pl-5 text-sm text-danger-600 dark:text-danger-400">
                         @foreach ($missingFields as $field)
@@ -62,10 +62,10 @@
 
                 <div class="mt-4">
                     <x-filament::button wire:click="createLeadAndSendLink" color="success">
-                        Criar Lead e Enviar Link
+                        {{ __('admin.manual_lead_intake.create_lead_send_link') }}
                     </x-filament::button>
                     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        O cliente receberá um link para continuar o processo e fornecer os campos em falta.
+                        {{ __('admin.manual_lead_intake.send_link_description') }}
                     </p>
                 </div>
             @endif

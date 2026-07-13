@@ -17,56 +17,56 @@ class ViewLead extends ViewRecord
     {
         return [
             Action::make('decline_lead')
-                ->label('Rejeitar Lead')
+                ->label(__('admin.lead_actions.decline'))
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->modalHeading('Rejeitar Lead')
-                ->modalDescription('Selecione o(s) motivo(s) para rejeitar este lead e gere um email profissional.')
+                ->modalHeading(__('admin.lead_actions.decline_heading'))
+                ->modalDescription(__('admin.lead_actions.decline_description'))
                 ->modalContent(fn () => view('livewire.follow-up-composer-wrapper', [
                     'lead' => $this->record,
                     'scenario' => FollowUpScenario::Decline->value,
                 ]))
                 ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Fechar'),
+                ->modalCancelActionLabel(__('admin.common.close')),
 
             Action::make('request_info')
-                ->label('Pedir Informações')
+                ->label(__('admin.lead_actions.request_info'))
                 ->icon('heroicon-o-question-mark-circle')
                 ->color('warning')
-                ->modalHeading('Pedir Informações ao Cliente')
-                ->modalDescription('Selecione a informação que precisa e gere um email profissional.')
+                ->modalHeading(__('admin.lead_actions.request_info_heading'))
+                ->modalDescription(__('admin.lead_actions.request_info_description'))
                 ->modalContent(fn () => view('livewire.follow-up-composer-wrapper', [
                     'lead' => $this->record,
                     'scenario' => FollowUpScenario::RequestInfo->value,
                 ]))
                 ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Fechar'),
+                ->modalCancelActionLabel(__('admin.common.close')),
 
             Action::make('quote_followup')
-                ->label('Acompanhar Orçamento')
+                ->label(__('admin.lead_actions.quote_followup'))
                 ->icon('heroicon-o-clock')
                 ->color('info')
-                ->modalHeading('Acompanhar Orçamento')
-                ->modalDescription('Selecione o estágio do acompanhamento e gere um email profissional.')
+                ->modalHeading(__('admin.lead_actions.quote_followup_heading'))
+                ->modalDescription(__('admin.lead_actions.quote_followup_description'))
                 ->modalContent(fn () => view('livewire.follow-up-composer-wrapper', [
                     'lead' => $this->record,
                     'scenario' => FollowUpScenario::QuoteFollowUp->value,
                 ]))
                 ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Fechar'),
+                ->modalCancelActionLabel(__('admin.common.close')),
 
             Action::make('general_contact')
-                ->label('Contacto Geral')
+                ->label(__('admin.lead_actions.general_contact'))
                 ->icon('heroicon-o-chat-bubble-left')
                 ->color('gray')
-                ->modalHeading('Contacto Geral')
-                ->modalDescription('Escreva notas e gere um email personalizado.')
+                ->modalHeading(__('admin.lead_actions.general_contact_heading'))
+                ->modalDescription(__('admin.lead_actions.general_contact_description'))
                 ->modalContent(fn () => view('livewire.follow-up-composer-wrapper', [
                     'lead' => $this->record,
                     'scenario' => FollowUpScenario::General->value,
                 ]))
                 ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Fechar'),
+                ->modalCancelActionLabel(__('admin.common.close')),
         ];
     }
 }

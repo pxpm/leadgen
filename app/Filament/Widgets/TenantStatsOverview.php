@@ -24,23 +24,25 @@ class TenantStatsOverview extends StatsOverviewWidget
         $conversionRate = $totalLeads > 0 ? round(($qualifiedLeads / $totalLeads) * 100) : 0;
 
         return [
-            Stat::make('Total de Leads', $totalLeads)
-                ->description('Todos os leads')
+            Stat::make(__('admin.stats.total_leads'), $totalLeads)
+                ->description(__('admin.stats.total_leads_desc'))
                 ->icon('heroicon-o-user-group')
                 ->color('primary'),
 
-            Stat::make('Leads Qualificados', $qualifiedLeads)
-                ->description("{$conversionRate}% de conversão")
+            Stat::make(__('admin.stats.qualified_leads'), $qualifiedLeads)
+                ->description(__('admin.stats.qualified_leads_desc', ['rate' => $conversionRate]))
                 ->icon('heroicon-o-check-badge')
                 ->color('success'),
 
-            Stat::make('Chamadas Perdidas', $totalCalls)
-                ->description('Total de chamadas')
+            Stat::make(__('admin.stats.missed_calls'), $totalCalls)
+                ->description(__('admin.stats.missed_calls_desc'))
                 ->icon('heroicon-o-phone-arrow-down-left')
                 ->color('warning'),
 
-            Stat::make('Chamadas Recuperadas', $recoveredCalls)
-                ->description($totalCalls > 0 ? round(($recoveredCalls / $totalCalls) * 100).'% recuperação' : '0%')
+            Stat::make(__('admin.stats.recovered_calls'), $recoveredCalls)
+                ->description($totalCalls > 0
+                    ? __('admin.stats.recovered_calls_desc', ['rate' => round(($recoveredCalls / $totalCalls) * 100)])
+                    : __('admin.stats.recovered_calls_desc_zero'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('info'),
         ];

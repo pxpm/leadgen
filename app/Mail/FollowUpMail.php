@@ -25,7 +25,7 @@ class FollowUpMail extends Mailable
     {
         $recipient = $this->lead->tenant->notification_config['email']['recipients'][0]
             ?? config('mail.from.address')
-            ?? 'noreply@leadgen.com';
+            ?? __('emails.generic.fallback_reply_to');
 
         return new Envelope(
             subject: $this->emailSubject,

@@ -89,4 +89,9 @@ class Lead extends Model implements HasMedia
     {
         return $this->hasMany(MissedCall::class);
     }
+
+    public function emailMessages(): HasMany
+    {
+        return $this->hasMany(LeadEmailMessage::class)->orderBy('received_at', 'asc');
+    }
 }

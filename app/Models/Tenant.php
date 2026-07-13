@@ -87,6 +87,11 @@ class Tenant extends Model implements HasMedia
         return $this->hasMany(MissedCall::class);
     }
 
+    public function emailAccounts(): HasMany
+    {
+        return $this->hasMany(TenantEmailAccount::class);
+    }
+
     /**
      * Get the current plan from the active subscription.
      */

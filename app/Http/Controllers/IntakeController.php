@@ -26,14 +26,14 @@ class IntakeController extends Controller
     public function resolve(ShortLink $shortLink, Request $request): RedirectResponse
     {
         if ($shortLink->isExpired()) {
-            abort(410, 'Este link expirou.');
+            abort(410, __('app.intake_errors.link_expired'));
         }
 
         return match ($shortLink->source) {
             'direct_link' => $this->resolveDirectLink($shortLink, $request),
             'missed_call_intake' => $this->resolveMissedCallIntake($shortLink, $request),
             'missed_call_send_sms' => $this->resolveMissedCallSendSms($shortLink),
-            default => abort(400, 'Tipo de link desconhecido.'),
+            default => abort(400, __('app.intake_errors.unknown_link_type')),
         };
     }
 
