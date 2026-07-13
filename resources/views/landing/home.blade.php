@@ -15,7 +15,7 @@
 @include('landing.partials._lead_summary')
 @include('landing.partials._why_not_forms')
 @include('landing.partials._industries')
-@include('landing.partials._interactive_demo')
+@include('landing.partials._time_saved')
 @include('landing.partials._faq')
 @include('landing.partials._final_cta')
 

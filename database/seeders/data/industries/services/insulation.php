@@ -5,7 +5,6 @@ return [
     'icon' => '🌡️',
     'required_fields' => [
         0 => 'insulation_type',
-        1 => 'building_type',
     ],
     'optional_fields' => [
         0 => 'area_size',
@@ -27,11 +26,20 @@ return [
         'building_type' => [
             'type' => 'select',
             'options' => [
-                0 => 'house',
-                1 => 'apartment_building',
-                2 => 'commercial',
-                3 => 'industrial',
-                4 => 'other',
+                0 => 'detached',
+                1 => 'semi_detached',
+                2 => 'apartment_building',
+                3 => 'commercial',
+                4 => 'industrial',
+                5 => 'other',
+            ],
+            'required' => true,
+            'when' => [
+                'property_type' => [
+                    0 => 'house',
+                    1 => 'commercial',
+                    2 => 'industrial',
+                ],
             ],
         ],
         'area_size' => [
@@ -74,7 +82,7 @@ return [
         'pt' => [
             'field_prompts' => [
                 'insulation_type' => 'Que tipo de isolamento precisa? Capoto (fachada), isolamento de telhado, isolamento acústico?',
-                'building_type' => 'Que tipo de edifício é? Moradia, prédio de apartamentos, espaço comercial?',
+                'building_type' => 'E especificamente, que tipo de construção? Moradia isolada, geminada, prédio?',
                 'area_size' => 'Qual é o tamanho aproximado da área a isolar?',
                 'current_insulation' => 'Atualmente tem algum tipo de isolamento instalado?',
                 'material_supplied' => 'Vai fornecer os materiais ou prefere que o especialista os forneça?',
@@ -89,10 +97,11 @@ return [
                     'other' => 'Outro',
                 ],
                 'building_type' => [
-                    'house' => 'Moradia',
+                    'detached' => 'Moradia isolada',
+                    'semi_detached' => 'Moradia geminada',
                     'apartment_building' => 'Prédio de apartamentos',
-                    'commercial' => 'Comercial',
-                    'industrial' => 'Industrial',
+                    'commercial' => 'Espaço comercial',
+                    'industrial' => 'Pavilhão industrial',
                     'other' => 'Outro',
                 ],
                 'area_size' => [

@@ -17,7 +17,7 @@ return [
 
     'hero' => [
         'headline' => 'Não perca clientes, nem perca tempo.',
-        'subheadline' => 'Responda instantaneamente, recolha detalhes do projeto automaticamente e receba leads qualificados prontos para follow-up.',
+        'subheadline' => 'O assistente faz as perguntas, recolhe fotos, escreve o email de follow-up. Você recebe o lead qualificado — pronto para fechar.',
         'cta_primary' => 'Marcar Demo',
         'cta_secondary' => 'Ver Como Funciona',
         'conversation' => [
@@ -69,20 +69,20 @@ return [
 
     'solution' => [
         'headline' => 'Como não perder um possível cliente e ganhar tempo ao mesmo tempo.',
-        'respond' => [
-            'title' => 'Não atendeu? Não perdeu.',
-            'description' => 'Transforme cada chamada perdida num lead qualificado. Um clique envia um SMS com um link. O cliente responde às perguntas. Você recebe um lead completo — sem fazer uma chamada.',
-            'tags' => ['SMS automático', '1 clique', 'Chamadas perdidas'],
-        ],
         'qualify' => [
-            'title' => 'Esteja onde os clientes estão.',
-            'description' => 'Adicione o widget ao seu site ou partilhe um link. O assistente qualifica contactos 24 horas por dia. Zero apps para instalar, zero complicações.',
-            'tags' => ['Widget', 'Link partilhável', 'Site'],
+            'title' => 'Qualifique sem fazer uma chamada.',
+            'description' => 'O assistente conversa com o cliente, faz as perguntas certas, recolhe fotos e medidas. Em minutos, tem um lead completo com tudo o que precisa para fazer o orçamento — sem tocar no telefone.',
+            'tags' => ['Conversa natural', 'Fotos e medidas', 'Disponível 24/7'],
         ],
-        'deliver' => [
-            'title' => 'Aja no momento certo.',
-            'description' => 'Receba o resumo do lead no email. Alertas por SMS quando o lead é urgente. Tudo integrado no seu fluxo de trabalho — sem aprender ferramentas novas.',
-            'tags' => ['Email', 'Alertas SMS', 'Integração'],
+        'followup' => [
+            'title' => 'Da conversa ao email em segundos.',
+            'description' => 'Com base nas respostas do cliente, a IA escreve o email de follow-up — rejeitar com educação, pedir mais informações, acompanhar um orçamento, ou contacto personalizado. Você revê, clica enviar, e ganha 20 minutos por lead.',
+            'tags' => ['Pronto a enviar', '4 cenários', 'Revisão em segundos'],
+        ],
+        'channels' => [
+            'title' => 'Todos os canais, uma plataforma.',
+            'description' => 'Widget no site, link partilhável, SMS para chamadas perdidas, email do cliente — o lead entra por onde for, e chega-lhe qualificado com o email de follow-up pronto. Um clique e está feito.',
+            'tags' => ['Widget', 'SMS', 'Email', 'Link'],
         ],
     ],
 
@@ -97,11 +97,31 @@ return [
         ],
     ],
 
-    'interactive_demo' => [
-        'headline' => 'Experimente Você Mesmo',
-        'subtitle' => 'Simule uma conversa real com o assistente.',
-        'placeholder' => 'Escreva a sua mensagem...',
-        'try_examples' => 'Ou experimente um destes cenários:',
+    'time_saved' => [
+        'headline' => 'Quanto Vale Responder a Tempo?',
+        'subtitle' => 'O mesmo lead. Duas formas de responder.',
+        'without' => [
+            'title' => 'Sem o assistente',
+            'item_1' => 'Lê o resumo do lead (2 min)',
+            'item_2' => 'Pensa no que escrever (3 min)',
+            'item_3' => 'Escreve o email (10 min)',
+            'item_4' => 'Revê e envia (2 min)',
+            'item_5' => 'Às vezes esquece-se',
+            'result' => '∼ 17 min por lead. Leads esquecidos. Clientes perdidos.',
+        ],
+        'with' => [
+            'title' => 'Com o assistente',
+            'item_1' => 'Lead qualificado chega',
+            'item_2' => 'Email escrito pela IA',
+            'item_3' => 'Revê (30 segundos)',
+            'item_4' => 'Clica enviar',
+            'item_5' => 'Nunca se esquece',
+            'result' => '∼ 1 min por lead. Sempre responde. Mais orçamentos fechados.',
+        ],
+        'calculator' => [
+            'label' => 'Quantos leads qualifica por mês?',
+            'results' => 'Por mês, poupa cerca de {hours} horas. Isso são {days} dias de trabalho por ano.',
+        ],
     ],
 
     'before_after' => [
@@ -118,13 +138,14 @@ return [
             'item_1' => 'Resposta instantânea',
             'item_2' => 'Fotos recolhidas',
             'item_3' => 'Leads qualificados',
-            'item_4' => 'Orçamentos mais rápidos',
+            'item_4' => 'Email de follow-up automático',
+            'item_5' => 'Orçamentos mais rápidos',
         ],
     ],
 
     'lead_summary' => [
         'headline' => 'O Que Você Recebe',
-        'subtitle' => 'Cada lead qualificado chega com tudo o que precisa para fechar o negócio.',
+        'subtitle' => 'Cada lead qualificado chega com tudo o que precisa — incluindo o email de follow-up pronto a enviar.',
         'customer' => 'Cliente',
         'service' => 'Serviço',
         'location' => 'Localização',
@@ -188,6 +209,10 @@ return [
                 'answer' => 'Menos de um dia. Configuramos as perguntas de qualificação para a sua indústria, personalizamos as mensagens, e fica pronto a usar.',
             ],
             [
+                'question' => 'A IA também escreve os emails de follow-up?',
+                'answer' => 'Sim. Com base nos dados recolhidos na conversa, a IA gera um email profissional adaptado ao cenário — rejeitar, pedir mais informações, acompanhar um orçamento, ou contacto geral. Você revê, ajusta se quiser, e envia. São 15-20 minutos poupados por lead.',
+            ],
+            [
                 'question' => 'Os clientes precisam de instalar alguma coisa?',
                 'answer' => 'Não. Os seus clientes recebem um link. Abrem no browser do telemóvel. Não é preciso instalar apps.',
             ],
@@ -195,9 +220,9 @@ return [
     ],
 
     'final_cta' => [
-        'headline' => 'Cada lead perdido é uma oportunidade perdida.',
+        'headline' => 'Não perca mais tempo ao telefone.',
         'cta' => 'Marcar Demo',
-        'subtext' => 'Comece a responder em minutos, não em horas.',
+        'subtext' => 'Qualifique leads e envie follow-ups em minutos, não em horas.',
     ],
 
     'pipeline_tree' => [

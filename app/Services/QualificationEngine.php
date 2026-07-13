@@ -60,8 +60,7 @@ class QualificationEngine
 
     /**
      * Get the list of fields still missing for this lead.
-     * Order: service required → qualification → optional → conditional → contact LAST.
-     * Only required + qualification + contact fields block completion.
+     * Order: service required → optional → conditional → contact LAST.
      */
     public function getMissingFields(Lead $lead): array
     {
@@ -85,7 +84,7 @@ class QualificationEngine
 
         $missing = array_values(array_diff($requiredFields, $collectedKeys));
 
-        // Add optional fields that haven't been collected yet (asked after required, before contact)
+        // Add optional fields that haven't been collected yet
         $optionals = $config['optional_fields'] ?? [];
         foreach ($optionals as $opt) {
             if (! in_array($opt, $collectedKeys) && ! in_array($opt, $missing)) {
@@ -122,11 +121,88 @@ class QualificationEngine
     }
 
     /**
-     * Get the next field the AI should ask about.
-     * Returns the first uncollected field — we control the order, the AI follows.
+     * Find conditional child fields triggered by a specific parent field's value.
+     * Returns field definitions for children whose "when" condition references
+     * the parent and whose condition is currently met.
+     *
+     * @return array<array{key: string, type: string, options?: array, prompt?: string, required?: bool}>
      */
-    public function getNextField(Lead $lead): ?array
+    public function getTriggeredChildren(Lead $lead, string $parentFieldKey): array
     {
+        $config = $this->config->resolve($lead->tenant, $lead->service_type);
+        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
+        $locale = $this->config->getLocale($lead->tenant);
+        $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
+
+        $children = [];
+
+        foreach ($config['field_definitions'] ?? [] as $fieldKey => $def) {
+            if (empty($def['when'])) {
+                continue;
+            }
+            if (isset($def['enabled']) && ! $def['enabled']) {
+                continue;
+            }
+            // Only consider children whose "when" references the parent
+            if (! array_key_exists($parentFieldKey, $def['when'])) {
+                continue;
+            }
+            // Already collected?
+            if (isset($collected[$fieldKey]) && $collected[$fieldKey] !== Lead::DECLINED) {
+                continue;
+            }
+            // Declined (skipped)?
+            if (isset($collected[$fieldKey]) && $collected[$fieldKey] === Lead::DECLINED) {
+                continue;
+            }
+            // Condition must be met
+            if (! $this->conditionsMatch($def['when'], $collected)) {
+                continue;
+            }
+
+            $child = [
+                'key' => $fieldKey,
+                'type' => $definitions[$fieldKey]['type'] ?? 'text',
+                'prompt' => $config['locales'][$locale]['field_prompts'][$fieldKey] ?? null,
+                'required' => ! empty($def['required']),
+            ];
+
+            if (($definitions[$fieldKey]['type'] ?? null) === 'select') {
+                $child['options'] = collect($definitions[$fieldKey]['options'] ?? [])
+                    ->map(fn ($val) => [
+                        'value' => $val,
+                        'label' => $config['locales'][$locale]['field_options'][$fieldKey][$val] ?? $val,
+                    ])->values()->toArray();
+                $child['multi'] = $definitions[$fieldKey]['multi'] ?? false;
+                $child['has_other'] = in_array('other', $definitions[$fieldKey]['options'] ?? []);
+            }
+
+            $children[] = $child;
+        }
+
+        return $children;
+    }
+
+    /**
+     * Get the next field the AI should ask about.
+     *
+     * When $afterField is provided (the field that was just answered), triggered
+     * conditional children of that field are prioritized over the default order.
+     * This ensures follow-up questions (e.g. house_type after property_type=house)
+     * are asked immediately, before unrelated optional fields.
+     */
+    public function getNextField(Lead $lead, ?string $afterField = null): ?array
+    {
+        // If a field was just answered, check for triggered conditional children first.
+        // These take priority over the static field order so follow-up questions
+        // appear immediately after their parent.
+        if ($afterField) {
+            $children = $this->getTriggeredChildren($lead, $afterField);
+            if (! empty($children)) {
+                return $children[0];
+            }
+        }
+
         $missing = $this->getMissingFields($lead);
         if (empty($missing)) {
             return null;

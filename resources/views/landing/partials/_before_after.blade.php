@@ -29,7 +29,7 @@
                 <div class="absolute top-4 right-4 px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full tracking-wide">DEPOIS</div>
                 <h3 class="text-2xl font-bold text-green-200 mb-8">{{ __('landing.before_after.after.title') }}</h3>
                 <ul class="space-y-5">
-                    @foreach (['item_1', 'item_2', 'item_3', 'item_4'] as $item)
+                    @foreach (['item_1', 'item_2', 'item_3', 'item_4', 'item_5'] as $item)
                         <li class="flex items-start gap-4 text-green-800 group">
                             <span class="shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
                                 <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

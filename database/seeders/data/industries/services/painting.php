@@ -10,9 +10,8 @@ return [
     ],
     'optional_fields' => [
         0 => 'area_size',
-        1 => 'building_type',
-        2 => 'material_supplied',
-        3 => 'property_occupied',
+        1 => 'material_supplied',
+        2 => 'property_occupied',
     ],
     'field_definitions' => [
         'painting_subtype' => [
@@ -60,11 +59,20 @@ return [
         'building_type' => [
             'type' => 'select',
             'options' => [
-                0 => 'house',
-                1 => 'apartment',
-                2 => 'commercial',
-                3 => 'industrial',
-                4 => 'other',
+                0 => 'detached',
+                1 => 'semi_detached',
+                2 => 'apartment_building',
+                3 => 'commercial',
+                4 => 'industrial',
+                5 => 'other',
+            ],
+            'required' => false,
+            'when' => [
+                'property_type' => [
+                    0 => 'house',
+                    1 => 'commercial',
+                    2 => 'industrial',
+                ],
             ],
         ],
         'material_supplied' => [
@@ -92,7 +100,7 @@ return [
                 'paint_scope' => 'Precisa de pintura interior, exterior ou ambas?',
                 'surface_condition' => 'Em que estado estão as superfícies? Estão em bom estado, descascadas, com fissuras ou bolor?',
                 'area_size' => 'Qual é o tamanho aproximado da área a pintar?',
-                'building_type' => 'Que tipo de edifício é? Moradia, apartamento, espaço comercial?',
+                'building_type' => 'Que tipo de edifício é especificamente? Moradia isolada, geminada, prédio?',
                 'material_supplied' => 'Vai fornecer a tinta ou prefere que o especialista a forneça?',
                 'property_occupied' => 'A propriedade está ocupada? Há móveis para proteger?',
             ],
@@ -127,10 +135,11 @@ return [
                     'not_sure' => 'Não sei',
                 ],
                 'building_type' => [
-                    'house' => 'Moradia',
-                    'apartment' => 'Apartamento',
-                    'commercial' => 'Comercial',
-                    'industrial' => 'Industrial',
+                    'detached' => 'Moradia isolada',
+                    'semi_detached' => 'Moradia geminada',
+                    'apartment_building' => 'Prédio de apartamentos',
+                    'commercial' => 'Espaço comercial',
+                    'industrial' => 'Pavilhão industrial',
                     'other' => 'Outro',
                 ],
                 'material_supplied' => [

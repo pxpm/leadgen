@@ -57,8 +57,13 @@ class ConversationOrchestrator
 
         // Short-answer extraction (regex + smart matching — no AI needed for structured Q&A)
         $leadServiceId = $this->getCurrentLeadServiceId($lead);
+
+        // Capture which field was being asked BEFORE extraction, so we can
+        // prioritize conditional children of the field that was just answered.
+        $answeredField = $lead->current_field_key;
+
         $rejectedKeys = $this->fieldExtractor->smartExtract($lead, $userMessage, $resolvedConfig, $locale, $leadServiceId);
-        $reply = $this->buildReply($lead, $resolvedConfig, $locale, $rejectedKeys);
+        $reply = $this->buildReply($lead, $resolvedConfig, $locale, $rejectedKeys, $answeredField);
 
         // When all fields are collected, include structured summary for the widget to render
         $summary = empty($this->qualification->getMissingFields($lead))
@@ -69,7 +74,7 @@ class ConversationOrchestrator
         $dbReply = $summary ? $summary['footer'] : $reply;
         $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $dbReply]);
 
-        return $this->buildResponse($lead, $resolvedConfig, $summary ? $summary['footer'] : $reply, $summary);
+        return $this->buildResponse($lead, $resolvedConfig, $summary ? $summary['footer'] : $reply, $summary, $answeredField);
     }
 
     // ─── Response Generation (Deterministic) ─────────────────────
@@ -79,7 +84,7 @@ class ConversationOrchestrator
      *
      * @param  string[]  $rejectedKeys  Keys that were extracted but failed validation
      */
-    private function buildReply(Lead $lead, array $config, string $locale, array $rejectedKeys = []): string
+    private function buildReply(Lead $lead, array $config, string $locale, array $rejectedKeys = [], ?string $afterField = null): string
     {
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
         $missing = $this->qualification->getMissingFields($lead);
@@ -90,7 +95,7 @@ class ConversationOrchestrator
             return '';
         }
 
-        $nextField = $this->qualification->getNextField($lead);
+        $nextField = $this->qualification->getNextField($lead, $afterField);
 
         // Track which field the bot is asking about — smartExtract reads this
         // directly instead of fragile prompt-matching.
@@ -261,7 +266,9 @@ class ConversationOrchestrator
             return $this->buildResponse($lead, $config, $reply);
         }
 
-        // Optional field — store declined and move on
+        // Optional field — store declined and move on.
+        // Also skip any conditional children whose "when" references this field,
+        // since a declined parent means the children should never be asked.
         $leadServiceId = $this->getCurrentLeadServiceId($lead);
         $isShared = in_array($nextField['key'], $config['shared_fields']['qualification'] ?? [])
                  || in_array($nextField['key'], $config['shared_fields']['contact'] ?? []);
@@ -277,23 +284,50 @@ class ConversationOrchestrator
         $lead->unsetRelation('fields');
         Log::channel('ai')->debug('AI: field skipped', ['key' => $nextField['key']]);
 
-        $reply = $this->buildReply($lead, $config, $locale);
+        // Skip conditional children of the skipped parent field.
+        // Their "when" conditions can't match __declined__, but we explicitly
+        // mark them as declined too to prevent any edge cases.
+        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
+        foreach ($config['field_definitions'] ?? [] as $childKey => $def) {
+            if (empty($def['when']) || ! array_key_exists($nextField['key'], $def['when'])) {
+                continue;
+            }
+            if ($lead->fields()->where('field_key', $childKey)->exists()) {
+                continue;
+            }
+            $lead->fields()->create([
+                'lead_service_id' => $isShared ? null : $leadServiceId,
+                'field_key' => $childKey,
+                'field_type' => $definitions[$childKey]['type'] ?? 'text',
+                'field_value' => Lead::DECLINED,
+                'confidence' => 0.0,
+                'is_required' => false,
+            ]);
+            Log::channel('ai')->debug('AI: conditional child skipped', [
+                'parent' => $nextField['key'],
+                'child' => $childKey,
+            ]);
+        }
+        $lead->unsetRelation('fields');
+
+        $skippedKey = $nextField['key'];
+        $reply = $this->buildReply($lead, $config, $locale, [], $skippedKey);
         $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
 
-        return $this->buildResponse($lead, $config, $reply);
+        return $this->buildResponse($lead, $config, $reply, null, $skippedKey);
     }
 
     /**
      * Build the standard response array after qualification processing.
      */
-    private function buildResponse(Lead $lead, array $config, string $reply, ?array $summary = null): array
+    private function buildResponse(Lead $lead, array $config, string $reply, ?array $summary = null, ?string $afterField = null): array
     {
         $this->qualification->maybeComplete($lead);
         $lead->refresh();
 
         // Only transition to the next service when there are truly no more fields
         // to ask (required + optional + conditional).
-        $nextField = $this->qualification->getNextField($lead);
+        $nextField = $this->qualification->getNextField($lead, $afterField);
 
         // When all fields are collected and there are no missing fields, show
         // the structured summary for the user to review — regardless of whether

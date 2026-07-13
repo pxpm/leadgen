@@ -17,6 +17,7 @@ export class LeadIntakeWidget {
         this.turnstileSiteKey = null;
         this.turnstileToken = null;
         this.healthTimer = null;
+        this.lastNextField = null;  // preserved across rate-limit retries so chips can be restored
     }
 
     /** Get a translated string for the current tenant locale. Falls back to pt. */
@@ -141,7 +142,7 @@ export class LeadIntakeWidget {
 
             let d = null;
             let attempt = 0;
-            const delays = [5, 10]; // seconds to wait before retrying
+            const delays = [5, 10, 30]; // seconds to wait before retrying
 
             while (attempt <= delays.length) {
                 const token = await this.getTurnstileToken();
@@ -167,8 +168,17 @@ export class LeadIntakeWidget {
                     continue;
                 }
 
+                // Final failure — show message but restore the previous chips/input
+                // so the user can retry answering the same question.
                 const msg = resp.status === 429 ? this.t('rate_limit_final') : this.t('connection_error');
-                this.setTyping(false); this.addMessage('bot', msg); return;
+                this.setTyping(false);
+                this.addMessage('bot', msg);
+                if (this.lastNextField) {
+                    this.renderChips(this.lastNextField);
+                } else {
+                    this.showInput();
+                }
+                return;
             }
             this.setTyping(false);
             if (d.is_complete) { this.isComplete = true; this.addMessage('bot', d.reply); this.showDone(); }
@@ -300,6 +310,7 @@ export class LeadIntakeWidget {
     }
 
     renderChips(nextField) {
+        this.lastNextField = nextField;  // preserve so rate-limit recovery can re-render
         const ex = this.panel.querySelector('.lgw-chips'); if (ex) ex.remove();
         if (!nextField) { this.showInput(); return; }
 
