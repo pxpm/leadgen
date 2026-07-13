@@ -5,11 +5,11 @@ import { LeadIntakeWidget } from './LeadIntakeWidget';
     var s = document.currentScript;
     var tenant = (s && s.getAttribute('data-tenant')) || window.LEADGEN_TENANT;
 
-    // Missed call full-screen mode
-    var mc = window.__LEADGEN_MISSED_CALL__;
-    if (mc && mc.token) {
+    // Full-screen intake mode (missed call or direct share link)
+    var intake = window.__LEADGEN_INTAKE__;
+    if (intake && intake.token) {
         var w2 = new LeadIntakeWidget();
-        w2.initMissedCall(mc);
+        w2.initIntake(intake);
         window.LeadIntakeWidget = { open: function () { w2.open(); }, close: function () { w2.close(); }, toggle: function () { w2.toggle(); }, isOpen: function () { return w2.isOpen; } };
         return;
     }

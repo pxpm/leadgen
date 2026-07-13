@@ -17,14 +17,12 @@
             position:relative;
         }
         .lgw-shapes { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
-        /* Large rotated rounded square - top right */
         .lgw-shapes .s1 {
             position:absolute; top:-100px; right:-80px;
             width:380px; height:380px; border-radius:60px;
             background: linear-gradient(135deg, {{ $primaryColor }}18, {{ $primaryColor }}0a);
             transform:rotate(25deg);
         }
-        /* Triangle - bottom left */
         .lgw-shapes .s2 {
             position:absolute; bottom:-40px; left:-60px;
             width:0; height:0;
@@ -33,27 +31,23 @@
             border-bottom:350px solid {{ $primaryColor }}0d;
             transform:rotate(-10deg);
         }
-        /* Circle - near top left */
         .lgw-shapes .s3 {
             position:absolute; top:8%; left:5%;
             width:180px; height:180px; border-radius:50%;
             background: radial-gradient(circle, {{ $primaryColor }}14 0%, transparent 70%);
             transform:translateY(-20px);
         }
-        /* Small rounded square - bottom right */
         .lgw-shapes .s4 {
             position:absolute; bottom:15%; right:3%;
             width:120px; height:120px; border-radius:30px;
             background: {{ $primaryColor }}0c;
             transform:rotate(45deg);
         }
-        /* Tiny circle - middle left */
         .lgw-shapes .s5 {
             position:absolute; top:55%; left:12%;
             width:60px; height:60px; border-radius:50%;
             background: {{ $primaryColor }}10;
         }
-        /* Horizontal accent bar - center */
         .lgw-shapes .s6 {
             position:absolute; top:45%; left:-20px;
             width:180px; height:3px; border-radius:2px;

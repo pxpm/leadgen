@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\MissedCallController;
+use App\Http\Controllers\IntakeController;
 use App\Models\MissedCall;
+use App\Models\ShortLink;
 use App\Models\Tenant;
 use App\Services\MagicLinkService;
 use Illuminate\Support\Facades\Route;
@@ -47,17 +50,34 @@ if (app()->environment('local')) {
             'matched_by' => 'test',
         ]);
 
-        $intakeUrl = URL::temporarySignedRoute(
-            'missed-call.intake',
-            now()->addHours(48),
-            ['missedCall' => $missedCall->id]
-        );
+        $shortLink = ShortLink::forMissedCallIntake($missedCall);
+        $url = '/s/'.$shortLink->hash;
 
-        if ($intent = request('intent')) {
-            $intakeUrl .= '&intent='.$intent;
+        $intent = request('intent');
+        if ($intent) {
+            $url .= '?intent='.$intent;
         }
 
-        return redirect($intakeUrl);
+        return redirect($url);
+    });
+
+    // Test the direct intake (shareable link) flow
+    Route::get('/intake-test', function () {
+        $tenant = Tenant::first();
+        if (! $tenant) {
+            return response('No tenant found. Seed the database first.', 500);
+        }
+
+        $shortLink = ShortLink::forDirectLink($tenant);
+
+        $url = '/s/'.$shortLink->hash;
+
+        $intent = request('intent');
+        if ($intent) {
+            $url .= '?intent='.$intent;
+        }
+
+        return redirect($url);
     });
 }
 
@@ -65,26 +85,36 @@ if (app()->environment('local')) {
 
 // Missed call landing page
 Route::get('/missed-call/{missedCall}', function (MissedCall $missedCall) {
+    $token = session('lgw_token_'.$missedCall->id);
+    if (! $token) {
+        abort(403, 'Link inválido ou expirado.');
+    }
+
     $tenant = $missedCall->tenant;
 
     return view('missed-call-landing', [
         'tenantName' => $tenant?->name ?? 'Empresa',
         'tenantSlug' => $tenant?->slug ?? '',
         'primaryColor' => $tenant?->branding_config['primary_color'] ?? '#2563eb',
-        'token' => session('lgw_token_'.$missedCall->id),
+        'token' => $token,
         'intent' => request('intent'),
     ]);
 })->name('missed-call.landing');
 
 // Missed call full-screen widget page
 Route::get('/missed-call/{missedCall}/widget', function (MissedCall $missedCall) {
+    $token = session('lgw_token_'.$missedCall->id);
+    if (! $token) {
+        abort(403, 'Link inválido ou expirado.');
+    }
+
     $tenant = $missedCall->tenant;
 
     return view('missed-call-landing', [
         'tenantName' => $tenant?->name ?? 'Empresa',
         'tenantSlug' => $tenant?->slug ?? '',
         'primaryColor' => $tenant?->branding_config['primary_color'] ?? '#2563eb',
-        'token' => session('lgw_token_'.$missedCall->id),
+        'token' => $token,
         'intent' => request('intent'),
     ]);
 })->name('missed-call.widget');
@@ -95,6 +125,20 @@ Route::get('/missed-call/{missedCall}/sent', function (MissedCall $missedCall) {
         'tenantName' => $missedCall->tenant?->name ?? 'Empresa',
     ]);
 })->name('missed-call.sent');
+
+// Missed call intake (signed URL — needs session middleware for token handoff)
+Route::get('/missed-calls/{missedCall}/intake', [MissedCallController::class, 'intake'])
+    ->name('missed-call.intake');
+Route::get('/missed-calls/{missedCall}/send-sms', [MissedCallController::class, 'sendSms'])
+    ->name('missed-call.send-sms');
+
+// Short link resolver (public, no auth — like bit.ly but for intake)
+Route::get('/s/{shortLink:hash}', [IntakeController::class, 'resolve'])
+    ->name('short-link.resolve');
+
+// Direct intake (shareable link — short link based, 24h expiry)
+Route::get('/intake/{tenant:slug}/widget', [IntakeController::class, 'widget'])
+    ->name('intake.widget');
 
 // Magic link auth
 Route::get('/magic-link/{token}', function (string $token) {

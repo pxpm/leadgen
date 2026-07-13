@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\MissedCallController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WidgetController;
+use App\Http\Controllers\IntakeController;
 use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,8 +26,7 @@ Route::post('/webhooks/twilio/incoming-call', [WebhookController::class, 'incomi
 // Stripe webhooks
 Route::post('/webhooks/stripe', StripeWebhookController::class);
 
-// Missed call intake (signed URL)
-Route::get('/missed-calls/{missedCall}/intake', [MissedCallController::class, 'intake'])
-    ->name('missed-call.intake');
-Route::get('/missed-calls/{missedCall}/send-sms', [MissedCallController::class, 'sendSms'])
-    ->name('missed-call.send-sms');
+// Shareable intake link generation (authenticated, tenant-scoped)
+Route::middleware(['auth', 'active-subscription'])->group(function () {
+    Route::get('/intake/{tenant:slug}/generate-url', [IntakeController::class, 'generateUrl']);
+});

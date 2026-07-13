@@ -41,12 +41,12 @@ export class LeadIntakeWidget {
         } catch (e) { /* silent */ }
     }
 
-    async initMissedCall(mc) {
+    async initIntake(data) {
         this.isFullscreen = true;
         try {
             const [convResp, cfgResp] = await Promise.all([
-                fetch('/api/widget/conversations/' + mc.token),
-                fetch('/api/widget/' + mc.tenantSlug + '/config'),
+                fetch('/api/widget/conversations/' + data.token),
+                fetch('/api/widget/' + data.tenantSlug + '/config'),
             ]);
             if (!convResp.ok) return;
             const d = await convResp.json();
@@ -55,7 +55,7 @@ export class LeadIntakeWidget {
             if (cfgResp.ok) {
                 this.config = await cfgResp.json();
             } else {
-                this.config = { tenant: { name: mc.tenantName || 'Assistente', primary_color: '#2563eb', locale: 'pt' }, greeting: null, services: [] };
+                this.config = { tenant: { name: data.tenantName || 'Assistente', primary_color: '#2563eb', locale: 'pt' }, greeting: null, services: [] };
             }
 
             this.buildUI(true);
@@ -66,6 +66,16 @@ export class LeadIntakeWidget {
             }
 
             (d.messages || []).forEach(m => this.addMessage(m.role === 'assistant' ? 'bot' : 'user', m.content));
+
+            // For fresh intakes (no messages, no intent selection), show the standard
+            // greeting and service chips — same experience as the embedded widget.
+            if (!d.intent_selection && (!d.messages || d.messages.length === 0)) {
+                this.addMessage('bot', this.config.greeting || this.t('greeting_fallback'));
+                if (this.config.services && this.config.services.length) {
+                    this.renderServiceChips(this.config.services);
+                }
+            }
+
             this.open();
             this.startHealthPing();
         } catch (e) { /* silent */ }

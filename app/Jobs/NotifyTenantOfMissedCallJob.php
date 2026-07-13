@@ -6,10 +6,10 @@ namespace App\Jobs;
 
 use App\Contracts\SmsProvider;
 use App\Models\MissedCall;
+use App\Models\ShortLink;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 
 class NotifyTenantOfMissedCallJob implements ShouldQueue
 {
@@ -29,11 +29,8 @@ class NotifyTenantOfMissedCallJob implements ShouldQueue
         $config = $tenant->notification_config['missed_call_notification'] ?? [];
         $method = $config['method'] ?? 'sms';
 
-        $actionUrl = URL::temporarySignedRoute(
-            'missed-call.send-sms',
-            now()->addHours(24),
-            ['missedCall' => $this->missedCall->id]
-        );
+        $shortLink = ShortLink::forMissedCallSendSms($this->missedCall);
+        $actionUrl = url('/s/'.$shortLink->hash);
 
         $message = "Perdeu uma chamada de {$this->missedCall->caller_number}. Clique para enviar SMS de follow-up: {$actionUrl}";
 

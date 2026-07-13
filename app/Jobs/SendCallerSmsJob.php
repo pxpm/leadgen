@@ -6,10 +6,10 @@ namespace App\Jobs;
 
 use App\Contracts\SmsProvider;
 use App\Models\MissedCall;
+use App\Models\ShortLink;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 
 class SendCallerSmsJob implements ShouldQueue
 {
@@ -27,11 +27,8 @@ class SendCallerSmsJob implements ShouldQueue
 
         $tenant = $this->missedCall->tenant;
 
-        $intakeUrl = URL::temporarySignedRoute(
-            'missed-call.intake',
-            now()->addHours(48),
-            ['missedCall' => $this->missedCall->id]
-        );
+        $shortLink = ShortLink::forMissedCallIntake($this->missedCall);
+        $intakeUrl = url('/s/'.$shortLink->hash);
 
         $message = $tenant->notification_config['missed_call_sms_template']
             ?? 'Desculpe, não podemos atender agora. Toque aqui para nos deixar uma mensagem: {intake_url}';
