@@ -94,7 +94,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <a href="/admin" class="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
+                <a href="/manage-backoffice/login" class="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
                     {{ __('landing.nav.login') }}
                 </a>
                 <a href="#demo" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors shadow-sm">

@@ -48,7 +48,7 @@ class GoogleOAuthController extends Controller
         if ($request->has('error')) {
             Log::error('Google OAuth denied', ['error' => $request->get('error')]);
 
-            return redirect()->to('/admin')->with('error', 'Autorização Google cancelada.');
+            return redirect()->to('/manage-backoffice')->with('error', 'Autorização Google cancelada.');
         }
 
         try {
@@ -58,7 +58,7 @@ class GoogleOAuthController extends Controller
             if (isset($token['error'])) {
                 Log::error('Google OAuth token exchange failed', ['error' => $token['error']]);
 
-                return redirect()->to('/admin')->with('error', 'Falha na autorização Google.');
+                return redirect()->to('/manage-backoffice')->with('error', 'Falha na autorização Google.');
             }
 
             // Get user info to determine email
@@ -94,11 +94,11 @@ class GoogleOAuthController extends Controller
                 'email' => $userInfo->email,
             ]);
 
-            return redirect()->to('/admin')->with('success', 'Conta Google conectada com sucesso!');
+            return redirect()->to('/manage-backoffice')->with('success', 'Conta Google conectada com sucesso!');
         } catch (\Throwable $e) {
             Log::error('Google OAuth callback failed', ['error' => $e->getMessage()]);
 
-            return redirect()->to('/admin')->with('error', 'Erro ao conectar conta Google.');
+            return redirect()->to('/manage-backoffice')->with('error', 'Erro ao conectar conta Google.');
         }
     }
 

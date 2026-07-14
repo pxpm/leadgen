@@ -37,7 +37,6 @@
 @include('landing.partials._time_saved')
 @include('landing.partials._negative_reviews')
 @include('landing.partials._faq')
-@include('landing.partials._interactive_demo')
 @include('landing.partials._final_cta')
 
 @endsection

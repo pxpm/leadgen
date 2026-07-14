@@ -78,7 +78,7 @@ test('user with canceled subscription gets redirected for web', function () {
         'is_super_admin' => false,
     ]);
 
-    $request = Request::create('/admin', 'GET');
+    $request = Request::create('/manage-backoffice', 'GET');
     $request->setUserResolver(fn () => $user);
 
     $middleware = app(EnsureActiveSubscription::class);

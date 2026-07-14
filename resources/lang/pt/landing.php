@@ -41,7 +41,7 @@ return [
     ],
 
     'problem' => [
-        'headline' => 'Dois Problemas.',
+        'headline' => 'Dois problemas.',
         'headline_2' => 'Uma Solução.',
         'left_title' => 'Perde Clientes',
         'left_subtitle' => 'O problema da resposta',
@@ -87,7 +87,7 @@ return [
     ],
 
     'pipeline' => [
-        'headline' => 'O Percurso De Um Contacto',
+        'headline' => 'O percurso de um contacto',
         'steps' => [
             'missed_call' => 'Chamada Perdida',
             'instant_response' => 'Resposta Instantânea',
@@ -98,7 +98,7 @@ return [
     ],
 
     'time_saved' => [
-        'headline' => 'Quanto Vale Responder a Tempo?',
+        'headline' => 'Quanto vale responder a tempo?',
         'subtitle' => 'O mesmo contacto. Duas formas de responder.',
         'without' => [
             'title' => 'Sem o assistente',
@@ -125,7 +125,7 @@ return [
     ],
 
     'before_after' => [
-        'headline' => 'Antes E Depois',
+        'headline' => 'Antes e depois',
         'before' => [
             'title' => 'Antes',
             'item_1' => 'Chamadas perdidas',
@@ -186,7 +186,7 @@ return [
     ],
 
     'trust' => [
-        'headline' => 'Resultados Que Falam',
+        'headline' => 'Resultados que falam',
         'cta' => 'Quer ser o próximo caso de sucesso?',
     ],
 
@@ -222,7 +222,7 @@ return [
     ],
 
     'faq' => [
-        'headline' => 'Perguntas Frequentes',
+        'headline' => 'Perguntas frequentes',
         'items' => [
             [
                 'question' => 'Como é que isto é diferente de um formulário de contacto?',

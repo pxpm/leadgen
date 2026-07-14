@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('manage-backoffice')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->colors(['primary' => Color::Amber])
@@ -36,8 +36,8 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->homeUrl(fn (): string => auth()->user()?->isSuperAdmin()
-                ? '/admin'
-                : '/admin/tenant-dashboard')
+                ? '/manage-backoffice'
+                : '/manage-backoffice/tenant-dashboard')
             ->navigationItems([
                 NavigationItem::make('Configuração')
                     ->icon('heroicon-o-cog-6-tooth')

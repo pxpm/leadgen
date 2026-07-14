@@ -152,7 +152,7 @@ Route::get('/magic-link/{token}', function (string $token) {
 
     auth()->login($user);
 
-    return redirect($service->getRedirectUrl($token) ?? '/admin');
+    return redirect($service->getRedirectUrl($token) ?? '/manage-backoffice');
 })->name('magic-link');
 
 // ─── SEO Landing Page Routes (must be last — catch-all patterns) ───
