@@ -66,21 +66,6 @@
             </div>
         </div>
 
-        {{-- Simple calculator --}}
-        <div x-data="{ count: 20, get hours() { return Math.round(this.count * 16 / 60) }, get days() { return Math.round(this.count * 16 / 60 * 12 / 8) } }"
-             class="mt-10 bg-white border border-gray-200 rounded-3xl p-8 shadow-lg shadow-gray-200/40 text-center max-w-xl mx-auto">
-            <p class="text-sm font-semibold text-gray-700 mb-4">{{ __('landing.time_saved.calculator.label') }}</p>
-            <div class="flex items-center justify-center gap-4">
-                <input type="range" x-model="count" min="5" max="100" step="5" class="w-48 accent-amber-500">
-                <span class="text-2xl font-bold text-amber-600 w-12" x-text="count"></span>
-            </div>
-            <p class="mt-4 text-gray-600 text-sm leading-relaxed">
-                {!! str_replace(
-                    ['{hours}', '{days}'],
-                    ['<strong class="text-amber-600" x-text="hours"></strong>', '<strong class="text-amber-600" x-text="days"></strong>'],
-                    __('landing.time_saved.calculator.results')
-                ) !!}
-            </p>
-        </div>
+
     </div>
 </section>

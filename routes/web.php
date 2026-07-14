@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\MissedCallController;
+use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\IntakeController;
 use App\Models\MissedCall;
 use App\Models\ShortLink;
@@ -153,3 +154,146 @@ Route::get('/magic-link/{token}', function (string $token) {
 
     return redirect($service->getRedirectUrl($token) ?? '/admin');
 })->name('magic-link');
+
+// ─── SEO Landing Page Routes (must be last — catch-all patterns) ───
+
+// Generic single-segment pages: How It Works + Industries overview (locale-aware)
+Route::get('/{pageSlug}', function (string $pageSlug) {
+    // Check if it's the How It Works page slug
+    $howItWorksSlugs = collect(['pt', 'en'])->map(fn ($l) => __('landing.how_it_works_slug', [], $l));
+    if ($howItWorksSlugs->contains($pageSlug)) {
+        return view('landing.how-it-works');
+    }
+
+    // Check if it's the Industries overview page slug
+    $industriesSlugs = collect(['pt', 'en'])->map(fn ($l) => __('landing.industrias_slug', [], $l));
+    if ($industriesSlugs->contains($pageSlug)) {
+        return view('landing.industries');
+    }
+
+    abort(404);
+})->where('pageSlug', '[a-z-]+')->name('landing.page');
+
+// Industry-specific SEO landing pages — locale-aware prefix & slug
+Route::get('/{prefix}/{slug}', function (string $prefix, string $slug) {
+    $validPrefixes = collect(['pt', 'en'])->map(fn ($l) => __('landing.route_prefix', [], $l));
+    if (! $validPrefixes->contains($prefix)) {
+        abort(404);
+    }
+
+    // Search across all locales to find the industry by slug
+    $industryKey = null;
+    foreach (['pt', 'en'] as $locale) {
+        $industries = __('landing.industries_section', [], $locale);
+        $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
+        foreach ($trades as $key => $trade) {
+            if (($trade['slug'] ?? '') === $slug) {
+                $industryKey = $key;
+                break 2;
+            }
+        }
+    }
+
+    if (! $industryKey || ! isset(__('landing.industry_pages.'.$industryKey)['hero_headline'])) {
+        abort(404);
+    }
+
+    return view('landing.industry', ['industryKey' => $industryKey]);
+})->where(['prefix' => '[a-z-]+', 'slug' => '[a-z-]+'])->name('landing.industry');
+
+// Service-specific SEO landing pages (e.g. /solucoes-para/telhados/reparacao-telhados)
+Route::get('/{prefix}/{industry}/{service}', function (string $prefix, string $industry, string $service) {
+    $validPrefixes = collect(['pt', 'en'])->map(fn ($l) => __('landing.route_prefix', [], $l));
+    if (! $validPrefixes->contains($prefix)) {
+        abort(404);
+    }
+
+    // Search across all locales to find the industry by slug
+    $industryKey = null;
+    foreach (['pt', 'en'] as $locale) {
+        $industries = __('landing.industries_section', [], $locale);
+        $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
+        foreach ($trades as $key => $trade) {
+            if (($trade['slug'] ?? '') === $industry) {
+                $industryKey = $key;
+                break 2;
+            }
+        }
+    }
+
+    if (! $industryKey) {
+        abort(404);
+    }
+
+    // Search across all locales for the service slug
+    $serviceData = null;
+    foreach (['pt', 'en'] as $locale) {
+        $services = __('landing.industry_pages.'.$industryKey.'.services', [], $locale) ?? [];
+        $found = collect($services)->first(fn ($s) => ($s['slug'] ?? '') === $service);
+        if ($found) {
+            $serviceData = $found;
+            break;
+        }
+    }
+
+    if (! $serviceData) {
+        abort(404);
+    }
+
+    return view('landing.service', [
+        'industryKey' => $industryKey,
+        'serviceData' => $serviceData,
+    ]);
+})->where(['prefix' => '[a-z-]+', 'industry' => '[a-z-]+', 'service' => '[a-z-]+'])->name('landing.service');
+
+// Sitemap XML
+Route::get('/sitemap.xml', function () {
+    $industries = __('landing.industries_section');
+    $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
+
+    $urls = [
+        ['loc' => url('/'), 'priority' => '1.0', 'changefreq' => 'weekly'],
+        ['loc' => how_it_works_url(), 'priority' => '0.9', 'changefreq' => 'monthly'],
+        ['loc' => industries_url(), 'priority' => '0.9', 'changefreq' => 'weekly'],
+    ];
+
+    foreach ($trades as $key => $trade) {
+        $slug = $trade['slug'] ?? '';
+        if ($slug) {
+            $urls[] = [
+                'loc' => industry_url($key),
+                'priority' => '0.8',
+                'changefreq' => 'weekly',
+            ];
+        }
+
+        // Service sub-pages
+        $services = __('landing.industry_pages.'.$key.'.services') ?? [];
+        foreach ($services as $svc) {
+            $svcSlug = $svc['slug'] ?? '';
+            if ($svcSlug) {
+                $urls[] = [
+                    'loc' => service_url($key, $svcSlug),
+                    'priority' => '0.7',
+                    'changefreq' => 'monthly',
+                ];
+            }
+        }
+    }
+
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+    foreach ($urls as $url) {
+        $xml .= '  <url>'."\n";
+        $xml .= '    <loc>'.e($url['loc']).'</loc>'."\n";
+        $xml .= '    <changefreq>'.$url['changefreq'].'</changefreq>'."\n";
+        $xml .= '    <priority>'.$url['priority'].'</priority>'."\n";
+        $xml .= '  </url>'."\n";
+    }
+    $xml .= '</urlset>';
+
+    return response($xml, 200, ['Content-Type' => 'application/xml']);
+})->name('sitemap');
+
+// Demo request form submission
+Route::post('/demo-request', [DemoRequestController::class, 'store'])->name('demo.request');

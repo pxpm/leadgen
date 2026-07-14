@@ -29,7 +29,7 @@
                 </div>
             </div>
 
-            {{-- Card 2: Follow-up with AI — center, elevated, hero --}}
+            {{-- Card 2: Follow-up automático — center, elevated, hero --}}
             <div class="card-lift relative bg-white border-2 border-amber-300 rounded-2xl overflow-hidden -mt-4 md:-mt-8 shadow-xl shadow-amber-100/50">
                 <div class="h-1.5 bg-amber-500"></div>
                 <div class="p-6 sm:p-8">
