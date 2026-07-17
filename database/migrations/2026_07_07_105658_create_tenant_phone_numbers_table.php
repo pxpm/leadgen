@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tenant_phone_numbers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->string('phone_number', 50);
             $table->boolean('is_primary')->default(false);
             $table->timestamps();

@@ -89,7 +89,7 @@
             <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
                 <a href="{{ how_it_works_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.how_it_works') }}</a>
                 <a href="{{ industries_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.industries') }}</a>
-                <a href="#pricing" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.pricing') }}</a>
+                <a href="{{ pricing_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.pricing') }}</a>
                 <a href="#demo" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.demo') }}</a>
             </div>
 

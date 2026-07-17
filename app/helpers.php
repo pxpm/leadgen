@@ -71,3 +71,15 @@ if (! function_exists('how_it_works_url')) {
         return url('/'.__('landing.how_it_works_slug'));
     }
 }
+
+if (! function_exists('pricing_url')) {
+    /**
+     * Build a locale-aware URL for the Pricing page.
+     *
+     * Example: pricing_url() → '/precos' (pt) or '/pricing' (en)
+     */
+    function pricing_url(): string
+    {
+        return url('/'.__('landing.pricing_slug'));
+    }
+}

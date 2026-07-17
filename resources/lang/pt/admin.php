@@ -94,6 +94,13 @@ return [
         'section_status' => 'Estado',
         'section_notes' => 'Notas',
 
+        // Status labels
+        'status_new' => 'Novo',
+        'status_in_progress' => 'Em progresso',
+        'status_qualified' => 'Qualificado',
+        'status_delivered' => 'Entregue',
+        'status_unknown' => 'Desconhecido',
+
         // Fields
         'contact_name' => 'Nome',
         'phone' => 'Telefone',
@@ -267,9 +274,11 @@ return [
 
     // ── Manual Lead Intake ──
     'manual_lead_intake' => [
-        'title' => 'Novo Lead por Email',
-        'navigation_label' => 'Lead por Email',
+        'title' => 'Criar Lead',
+        'navigation_label' => 'Criar Lead',
+        'modal_description' => 'Cola o email do cliente. O serviço é detetado automaticamente.',
         'lead_created' => 'Lead criado! Link enviado para o cliente.',
+        'new_lead' => 'Novo Lead',
 
         'section_email' => 'Email do Cliente',
         'service_type' => 'Tipo de Serviço',

@@ -52,6 +52,7 @@ class WidgetController extends Controller
             'status' => LeadStatus::New,
             'source' => LeadSource::Widget,
             'session_token' => Str::random(64),
+            'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
         ]);
 
         return response()->json([
@@ -64,6 +65,13 @@ class WidgetController extends Controller
      */
     public function resumeConversation(Lead $lead): JsonResponse
     {
+        if ($lead->isTokenExpired()) {
+            return response()->json([
+                'error' => 'session_expired',
+                'message' => __('app.widget_api.session_expired'),
+            ], 410);
+        }
+
         if ($lead->status === LeadStatus::Delivered) {
             return response()->json([
                 'error' => 'session_expired',
@@ -77,7 +85,7 @@ class WidgetController extends Controller
         $fields = $lead->fields->mapWithKeys(fn ($f) => [$f->field_key => $f->field_value]);
 
         $response = [
-            'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'status' => $lead->status->value, 'source' => $lead->source->value],
+            'lead' => ['id' => $lead->id, 'status' => $lead->status->value, 'source' => $lead->source->value],
             'messages' => $messages,
             'collected_fields' => $fields,
         ];
@@ -111,6 +119,16 @@ class WidgetController extends Controller
     {
         $request->validate(['message' => 'required|string|max:2000']);
 
+        // Eager-load all relationships the orchestrator needs — eliminates 30+ N+1 queries per message
+        $lead->loadMissing(['tenant', 'fields', 'leadServices.fields', 'messages']);
+
+        if ($lead->isTokenExpired()) {
+            return response()->json([
+                'error' => 'session_expired',
+                'message' => __('app.widget_api.session_expired'),
+            ], 410);
+        }
+
         if ($lead->status === LeadStatus::Delivered) {
             return response()->json(['error' => 'session_expired', 'message' => 'Esta sessão expirou.'], 410);
         }
@@ -130,6 +148,9 @@ class WidgetController extends Controller
 
         $lead->messages()->create(['role' => 'user', 'content' => $request->input('message')]);
 
+        // Extend token on every message — keeps active conversations alive
+        $lead->extendToken();
+
         $orchestrator = app(ConversationOrchestrator::class);
         $serviceKeys = $request->input('service_keys', []);
         $result = $orchestrator->process($lead, $request->input('message'), $serviceKeys);
@@ -143,6 +164,13 @@ class WidgetController extends Controller
     public function upload(Lead $lead, Request $request): JsonResponse
     {
         $request->validate(['file' => 'required|image|max:10240']);
+
+        if ($lead->isTokenExpired()) {
+            return response()->json([
+                'error' => 'session_expired',
+                'message' => __('app.widget_api.session_expired'),
+            ], 410);
+        }
 
         $media = $lead->addMediaFromRequest('file')->toMediaCollection('photos');
 

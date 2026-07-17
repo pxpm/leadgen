@@ -10,7 +10,6 @@
         format(n) { return new Intl.NumberFormat('pt-PT').format(n); }
     }">
         <div class="text-center">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-bold tracking-wider uppercase rounded-full mb-6">Calculadora de Receita</span>
             <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-white leading-tight">
                 {{ __('landing.calculator.title') }}
             </h2>

@@ -79,13 +79,13 @@ test('process with valid service_key activates service directly', function () {
         'status' => LeadStatus::New,
     ]);
 
-    // No service_type yet, but valid service_key provided
+    // No services yet, but valid service_key provided
     $result = $this->orchestrator->process($lead, 'Telhados', 'roofing');
 
     $lead->refresh();
-    expect($lead->service_type)->toBe('roofing');
+    expect($lead->services[0])->toBe('roofing');
     expect($result['phase'])->toBe('qualification');
-    expect($result['lead']['service_type'])->toBe('roofing');
+    expect($result['lead']['services'][0])->toBe('roofing');
 });
 
 // --- Service key validation: invalid key should be rejected ---
@@ -100,8 +100,8 @@ test('process with invalid service_key falls back to classification', function (
     $result = $this->orchestrator->process($lead, 'Remodelações', 'remodeling');
 
     $lead->refresh();
-    // Service_type should still be null (invalid key rejected)
-    expect($lead->service_type)->toBeNull();
+    // Services should still be empty (invalid key rejected)
+    expect($lead->services)->toBeEmpty();
 });
 
 // --- process with service_type already set falls through to qualification ---
@@ -110,7 +110,7 @@ test('process with existing service_type does qualification', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::New,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // With AI unavailable, falls back to fallbackReply
@@ -144,7 +144,7 @@ test('smartExtract stores long address when AI asked about property_address', fu
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $lead->update(['current_field_key' => 'property_address']);
@@ -166,7 +166,7 @@ test('smartExtract still limits long messages for select fields', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $lead->update(['current_field_key' => 'problem_type']);
@@ -187,7 +187,7 @@ test('smartExtract does not store email-request as phone', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $lead->update(['current_field_key' => 'phone']);
@@ -257,7 +257,7 @@ test('applyExtracted does not store invalid phone', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $engine = new IndustryConfigEngine;
@@ -276,7 +276,7 @@ test('applyExtracted stores valid phone', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $engine = new IndustryConfigEngine;
@@ -298,7 +298,7 @@ test('smartExtract auto-detects email when AI question does not match any prompt
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // AI's last message was about phone, but user gives email
@@ -323,7 +323,7 @@ test('smartExtract auto-detects phone even when AI question does not match', fun
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $lead->messages()->create([
@@ -349,7 +349,7 @@ test('applyExtracted returns rejected email key', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $engine = new IndustryConfigEngine;
@@ -367,7 +367,7 @@ test('applyExtracted returns rejected phone key', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $engine = new IndustryConfigEngine;
@@ -385,7 +385,7 @@ test('applyExtracted returns empty array when all valid', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $engine = new IndustryConfigEngine;
@@ -410,7 +410,7 @@ test('buildReply gives validation nack when email rejected', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Pre-collect all fields before email so email is the next field to ask
@@ -442,7 +442,7 @@ test('buildReply uses normal acknowledgment when no fields rejected', function (
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Pre-collect a field so acknowledgment fires
@@ -474,7 +474,7 @@ test('handleSkip declines optional field and lead completes', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Pre-collect all required fields (service + qualification + contact) — first optional becomes next
@@ -512,7 +512,7 @@ test('handleSkip blocks required field with field_required message', function ()
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     $engine = new IndustryConfigEngine;
@@ -527,6 +527,59 @@ test('handleSkip blocks required field with field_required message', function ()
     // Field should NOT have been stored
     $field = $lead->fields()->where('field_key', 'problem_type')->first();
     expect($field)->toBeNull();
+});
+
+test('handleSkip returns summary when last remaining field is skipped', function () {
+    $transService = new TranslationService;
+    $transService->seedFromFile('pt', 'orchestrator', require lang_path('pt/orchestrator.php'));
+
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'services' => ['roofing'],
+    ]);
+
+    // Pre-fill ALL fields except the LAST optional field (material_supplied).
+    // Required fields: problem_type, roof_type, property_type, urgency
+    // Optional fields: property_type(already req), roof_age, insurance_claim, material_supplied
+    // Contact fields: contact_name, phone, email, property_address, postal_code
+    $allButLast = [
+        'problem_type', 'roof_type', 'property_type', 'urgency',
+        'contact_name', 'phone', 'email', 'property_address', 'postal_code',
+        'roof_age', 'insurance_claim',
+    ];
+    foreach ($allButLast as $key) {
+        $lead->fields()->create([
+            'field_key' => $key,
+            'field_type' => 'text',
+            'field_value' => 'test',
+            'confidence' => 0.9,
+            'is_required' => true,
+        ]);
+    }
+
+    // The next (and last remaining) field is material_supplied.
+    // Set current_field_key so getNextField resolves cleanly.
+    $lead->update(['current_field_key' => 'insurance_claim']);
+    $lead->refresh();
+
+    $engine = new IndustryConfigEngine;
+    $config = $engine->resolve($this->tenant, 'roofing');
+
+    $method = reflectMethod(ConversationOrchestrator::class, 'handleSkip');
+    $result = $method->invoke($this->orchestrator, $lead, $config, 'pt');
+
+    // material_supplied should have been stored as __declined__
+    $declinedField = $lead->fields()->where('field_key', 'material_supplied')->first();
+    expect($declinedField)->not->toBeNull();
+    expect($declinedField->field_value)->toBe('__declined__');
+
+    // No more fields to ask → summary should be present
+    expect($result['summary'])->not->toBeNull();
+    expect($result['summary']['footer'])->toContain('Está tudo correto');
+    expect($result['reply'])->not->toBe('');
+    expect($result['is_complete'])->toBeFalse(); // awaiting confirmation
+    expect($result['next_field'])->toBeNull();
 });
 
 // --- Helper ---

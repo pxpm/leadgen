@@ -5,25 +5,22 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\TenantEmailAccount;
-use Google\Client;
-use Google\Service\Gmail;
-use Google\Service\Gmail\Message;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class GoogleSendService
 {
+    private const GMAIL_SEND_URL = 'https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send';
+
     /**
      * Send an email via the Gmail API using the tenant's OAuth token.
-     * Falls back to SMTP if Gmail API fails.
      *
      * @return string The Gmail message ID if successful.
      */
     public function send(TenantEmailAccount $account, string $to, string $subject, string $bodyText, ?string $bodyHtml = null, ?string $inReplyTo = null, ?string $references = null): string
     {
-        $client = $this->buildClient($account);
-
-        $gmail = new Gmail($client);
+        $token = $this->resolveAccessToken($account);
 
         $rawMessage = $this->buildMimeMessage(
             from: $account->email,
@@ -36,65 +33,46 @@ class GoogleSendService
             references: $references,
         );
 
+        // Gmail API raw format: URL-safe base64 without padding
         $encoded = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($rawMessage));
 
-        try {
-            $message = $gmail->users_messages->send('me', new Message([
-                'raw' => $encoded,
-            ]));
+        $response = Http::withToken($token)
+            ->withBody(json_encode(['raw' => $encoded]), 'application/json')
+            ->post(self::GMAIL_SEND_URL);
 
-            Log::info('Email sent via Gmail API', [
+        if ($response->failed()) {
+            Log::error('Gmail API send failed', [
                 'account_id' => $account->id,
-                'to' => $to,
-                'gmail_message_id' => $message->getId(),
+                'status' => $response->status(),
+                'body' => $response->body(),
             ]);
 
-            return $message->getId();
-        } catch (\Throwable $e) {
-            Log::error('Gmail API send failed, falling back to SMTP', [
-                'account_id' => $account->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw $e; // Let the caller handle the fallback
+            throw new \RuntimeException('Gmail API send failed: '.$response->status());
         }
+
+        $messageId = $response->json('id') ?? 'sent';
+
+        Log::info('Email sent via Gmail API', [
+            'account_id' => $account->id,
+            'to' => $to,
+            'gmail_message_id' => $messageId,
+        ]);
+
+        return $messageId;
     }
 
     /**
-     * Build and configure the Google API client with stored tokens.
+     * Extract the access token from the encrypted token storage.
      */
-    private function buildClient(TenantEmailAccount $account): Client
+    private function resolveAccessToken(TenantEmailAccount $account): string
     {
-        $client = new Client;
-        $client->setClientId(config('services.google.client_id'));
-        $client->setClientSecret(config('services.google.client_secret'));
-        $client->setAccessType('offline');
-
-        // Restore stored access token
-        if ($account->access_token) {
-            $token = json_decode(Crypt::decryptString($account->access_token), true);
-            if ($token) {
-                $client->setAccessToken($token);
-            }
+        if (! $account->access_token) {
+            throw new \RuntimeException('No access token for account '.$account->id);
         }
 
-        // Hook into token refresh to persist new tokens
-        $client->setTokenCallback(function ($cacheKey, $newToken) use ($account): void {
-            $account->update([
-                'access_token' => Crypt::encryptString(json_encode($newToken)),
-                'token_metadata' => array_merge($account->token_metadata ?? [], [
-                    'expires_at' => isset($newToken['expires_in'])
-                        ? now()->addSeconds($newToken['expires_in'])->toIso8601String()
-                        : null,
-                ]),
-            ]);
+        $token = json_decode(Crypt::decryptString($account->access_token), true);
 
-            Log::info('Google OAuth token refreshed', [
-                'account_id' => $account->id,
-            ]);
-        });
-
-        return $client;
+        return $token['access_token'] ?? (is_string($token) ? Crypt::decryptString($account->access_token) : '');
     }
 
     /**

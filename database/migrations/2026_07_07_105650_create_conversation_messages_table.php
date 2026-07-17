@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('conversation_messages', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained();
             $table->foreignId('lead_id')->constrained()->cascadeOnDelete();
             $table->string('role', 20);
             $table->text('content');

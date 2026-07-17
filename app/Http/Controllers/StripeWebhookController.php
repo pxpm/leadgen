@@ -9,6 +9,7 @@ use App\Models\Subscription;
 use App\Services\TenantService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Stripe\Webhook;
@@ -27,6 +28,14 @@ class StripeWebhookController extends Controller
             Log::error('Stripe webhook signature verification failed');
 
             return response('', 400);
+        }
+
+        // Idempotency: skip already-processed events (Stripe may retry)
+        $eventKey = 'stripe_event:'.$event->id;
+        if (! Cache::add($eventKey, true, now()->addHours(24))) {
+            Log::info('Stripe webhook: duplicate event skipped', ['event_id' => $event->id]);
+
+            return response()->noContent();
         }
 
         match ($event->type) {

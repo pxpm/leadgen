@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\TenantResource\RelationManagers;
 
+use App\Jobs\SendEmailVerificationJob;
 use App\Models\TenantEmailAccount;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -88,27 +91,49 @@ class EmailAccountsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('provider')
                     ->label('Fornecedor')
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'google' => '🔵 Google',
-                        'microsoft' => '🔷 Microsoft',
-                        'custom' => '⚙️ Custom',
-                        default => $state,
+                    ->formatStateUsing(function (TenantEmailAccount $record): string {
+                        $icon = match ($record->provider) {
+                            'google' => '🔵',
+                            'microsoft' => '🔷',
+                            default => '⚙️',
+                        };
+                        $type = match ($record->connection_type) {
+                            'google_oauth', 'microsoft_oauth' => ' (OAuth)',
+                            'imap_password' => ' (App Password)',
+                            default => '',
+                        };
+
+                        return $icon.' '.ucfirst($record->provider).$type;
                     }),
 
                 TextColumn::make('email')
                     ->label('Email')
                     ->searchable(),
 
+                IconColumn::make('verified_at')
+                    ->label('Verificado')
+                    ->icon(fn (?string $state): string => $state
+                        ? 'heroicon-o-check-badge'
+                        : 'heroicon-o-clock')
+                    ->color(fn (?string $state): string => $state
+                        ? 'success'
+                        : 'warning')
+                    ->tooltip(fn (?string $state): string => $state
+                        ? 'Email verificado'
+                        : 'Aguardando verificação'),
+
                 IconColumn::make('status')
                     ->label('Estado')
                     ->icon(fn (string $state): string => match ($state) {
                         'active' => 'heroicon-o-check-circle',
+                        'pending_verification' => 'heroicon-o-clock',
                         'error' => 'heroicon-o-exclamation-circle',
                         'disconnected' => 'heroicon-o-x-circle',
                         default => 'heroicon-o-question-mark-circle',
                     })
                     ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
+                        'pending_verification' => 'warning',
                         'error' => 'danger',
                         'disconnected' => 'warning',
                         default => 'gray',
@@ -130,14 +155,85 @@ class EmailAccountsRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->headerActions([
+                Action::make('connectGoogle')
+                    ->label('Conectar Gmail')
+                    ->icon('heroicon-o-envelope')
+                    ->color('primary')
+                    ->url(fn () => url('/api/oauth/google/redirect'))
+                    ->visible(fn (): bool => ! TenantEmailAccount::where('tenant_id', auth()->user()?->tenant_id)
+                        ->where('provider', 'google')
+                        ->where('connection_type', 'google_oauth')
+                        ->exists()),
+
+                Action::make('connectMicrosoft')
+                    ->label('Conectar Outlook')
+                    ->icon('heroicon-o-envelope-open')
+                    ->color('info')
+                    ->url(fn () => url('/api/oauth/microsoft/redirect'))
+                    ->visible(fn (): bool => ! TenantEmailAccount::where('tenant_id', auth()->user()?->tenant_id)
+                        ->where('provider', 'microsoft')
+                        ->where('connection_type', 'microsoft_oauth')
+                        ->exists()),
+
                 CreateAction::make()
-                    ->label('Conectar conta')
+                    ->label('Adicionar manualmente')
                     ->icon('heroicon-o-plus')
                     ->modalWidth('lg')
-                    ->createAnother(false),
+                    ->createAnother(false)
+                    ->after(function (TenantEmailAccount $record): void {
+                        SendEmailVerificationJob::dispatch($record);
+
+                        Notification::make()
+                            ->title('Conta criada!')
+                            ->body('Enviamos um link de verificação para '.$record->email.'. Clica no link no email para ativares a conta.')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->recordActions([
                 EditAction::make()->modalWidth('lg'),
+
+                Action::make('checkVerification')
+                    ->label('Verificar agora')
+                    ->icon('heroicon-o-arrow-path')
+                    ->visible(fn (TenantEmailAccount $record): bool => $record->isPendingVerification())
+                    ->color('gray')
+                    ->action(function (TenantEmailAccount $record): void {
+                        $record->refresh();
+
+                        if ($record->isVerified()) {
+                            Notification::make()
+                                ->title('Email verificado!')
+                                ->body('A conta '.$record->email.' está agora ativa.')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Ainda não verificado')
+                                ->body('Clica no link que enviamos para '.$record->email.'. Se não o encontrares, reenvia.')
+                                ->warning()
+                                ->send();
+                        }
+                    }),
+
+                Action::make('resendVerification')
+                    ->label('Reenviar link')
+                    ->icon('heroicon-o-envelope')
+                    ->visible(fn (TenantEmailAccount $record): bool => $record->isPendingVerification())
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Reenviar link de verificação')
+                    ->modalDescription('Um novo link será enviado para '.fn (TenantEmailAccount $record): string => $record->email)
+                    ->action(function (TenantEmailAccount $record): void {
+                        SendEmailVerificationJob::dispatch($record);
+
+                        Notification::make()
+                            ->title('Link reenviado!')
+                            ->body('Verifica o teu email '.$record->email.' e clica no link.')
+                            ->success()
+                            ->send();
+                    }),
+
                 DeleteAction::make()
                     ->label('Desconectar')
                     ->requiresConfirmation(),

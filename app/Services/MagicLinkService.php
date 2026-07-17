@@ -31,7 +31,7 @@ class MagicLinkService
             'user_id' => $user->id,
             'token' => Str::random(64),
             'redirect_to' => route('filament.admin.resources.leads.view', $lead),
-            'expires_at' => now()->addDays(7),
+            'expires_at' => now()->addHours(24),
         ]);
 
         return route('magic-link', $magicLink->token);
@@ -73,7 +73,7 @@ class MagicLinkService
             'user_id' => $user->id,
             'token' => Str::random(64),
             'redirect_to' => url('/manage-backoffice'),
-            'expires_at' => now()->addDays(7),
+            'expires_at' => now()->addHours(24),
         ]);
 
         return route('magic-link', $magicLink->token);

@@ -10,4 +10,5 @@ enum LeadSource: string
     case MissedCall = 'missed_call';
     case DirectLink = 'direct_link';
     case Manual = 'manual';
+    case Email = 'email';
 }

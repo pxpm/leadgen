@@ -118,6 +118,44 @@ test('recordUsage increments correctly', function () {
     expect($this->planLimitService->getUsage($this->tenant, 'sms_monthly'))->toBe(3);
 });
 
+// ─── TOCTOU protection ────────────────────────────────────────
+
+test('tryUse atomically checks and increments preventing race', function () {
+    // Set usage to 99 — one away from limit of 100
+    UsageLog::upsert(
+        ['tenant_id' => $this->tenant->id, 'type' => 'sms_monthly', 'period' => now()->format('Y-m'), 'count' => 99],
+        ['tenant_id', 'type', 'period'],
+        ['count' => 99]
+    );
+
+    // First call should succeed (99 < 100)
+    $first = $this->planLimitService->trySendSms($this->tenant);
+    expect($first)->toBeTrue();
+
+    // Second call should fail (100 >= 100) — atomic check prevents overshoot
+    $second = $this->planLimitService->trySendSms($this->tenant);
+    expect($second)->toBeFalse();
+
+    // Usage should be exactly 100, not 101
+    expect($this->planLimitService->getUsage($this->tenant, 'sms_monthly'))->toBe(100);
+});
+
+test('tryUse returns false when limit is zero', function () {
+    $plan = Plan::factory()->create([
+        'limits' => ['sms_monthly' => 0, 'email_monthly' => 500, 'ai_ingestion_monthly' => 50],
+        'is_active' => true,
+    ]);
+    $tenant = Tenant::factory()->create();
+    Subscription::factory()->active()->create([
+        'tenant_id' => $tenant->id,
+        'plan_id' => $plan->id,
+    ]);
+    $tenant->load('subscriptions.plan');
+
+    expect($this->planLimitService->trySendSms($tenant))->toBeFalse();
+    expect($this->planLimitService->getUsage($tenant, 'sms_monthly'))->toBe(0);
+});
+
 test('usage from previous month does not affect current', function () {
     UsageLog::create([
         'tenant_id' => $this->tenant->id,

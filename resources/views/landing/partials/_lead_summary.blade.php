@@ -3,7 +3,6 @@
 
     <div class="relative max-w-4xl mx-auto">
         <div class="text-center max-w-2xl mx-auto">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-600 text-xs font-bold tracking-wider uppercase rounded-full mb-6">O Resultado</span>
             <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight">
                 {{ __('landing.lead_summary.headline') }}
             </h2>

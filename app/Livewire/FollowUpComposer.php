@@ -121,7 +121,9 @@ class FollowUpComposer extends Component
         $config = config("follow_up.scenarios.{$scenario->value}");
         $locale = $this->lead->tenant->locale ?? 'pt';
         $locales = $config['locales'][$locale] ?? $config['locales']['pt'];
-        $subject = str_replace(':tenant', $this->lead->tenant->name, $locales['subject']);
+        // Sanitize tenant name — strip CR/LF to prevent SMTP header injection
+        $safeName = str_replace(["\r", "\n"], '', $this->lead->tenant->name);
+        $subject = str_replace(':tenant', $safeName, $locales['subject']);
 
         // Send email
         Mail::to($recipientEmail)->send(new FollowUpMail(

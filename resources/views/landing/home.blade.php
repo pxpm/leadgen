@@ -29,7 +29,6 @@
 @include('landing.partials._trust_strip')
 @include('landing.partials._problem')
 @include('landing.partials._solution')
-@include('landing.partials._pipeline')
 @include('landing.partials._before_after')
 @include('landing.partials._lead_summary')
 @include('landing.partials._why_not_forms')

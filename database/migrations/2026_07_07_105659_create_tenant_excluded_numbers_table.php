@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tenant_excluded_numbers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->string('phone_number', 50);
             $table->string('label')->nullable();
             $table->timestamps();

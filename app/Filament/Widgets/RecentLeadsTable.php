@@ -33,19 +33,23 @@ class RecentLeadsTable extends TableWidget
                     ->label(__('admin.leads_table.column_hash'))
                     ->sortable(),
 
-                TextColumn::make('service_type')
-                    ->label(__('admin.leads_table.column_service'))
+                TextColumn::make('services')
+                    ->label(__('admin.lead.column_service'))
                     ->badge()
-                    ->formatStateUsing(fn (?string $state) => match ($state) {
-                        'roofing' => __('admin.lead.service_roofing'),
-                        'waterproofing' => __('admin.lead.service_waterproofing'),
-                        'painting' => __('admin.lead.service_painting'),
-                        'insulation' => __('admin.lead.service_insulation'),
-                        'facades' => __('admin.lead.service_facades'),
-                        'terraces' => __('admin.lead.service_terraces'),
-                        'gutters' => __('admin.lead.service_gutters'),
-                        'remodeling' => __('admin.lead.service_remodeling'),
-                        default => $state ?? '—',
+                    ->formatStateUsing(function ($state) {
+                        $service = is_array($state) ? ($state[0] ?? null) : $state;
+
+                        return match ($service) {
+                            'roofing' => __('admin.lead.service_roofing'),
+                            'waterproofing' => __('admin.lead.service_waterproofing'),
+                            'painting' => __('admin.lead.service_painting'),
+                            'insulation' => __('admin.lead.service_insulation'),
+                            'facades' => __('admin.lead.service_facades'),
+                            'terraces' => __('admin.lead.service_terraces'),
+                            'gutters' => __('admin.lead.service_gutters'),
+                            'remodeling' => __('admin.lead.service_remodeling'),
+                            default => $service ?? '—',
+                        };
                     }),
 
                 TextColumn::make('contact_name')
@@ -70,7 +74,8 @@ class RecentLeadsTable extends TableWidget
                         LeadStatus::Qualified => 'success',
                         LeadStatus::Delivered => 'info',
                         LeadStatus::Archived => 'danger',
-                    }),
+                    })
+                    ->formatStateUsing(fn (LeadStatus $state) => __('admin.lead.status_'.$state->value)),
 
                 TextColumn::make('source')
                     ->label(__('admin.leads_table.column_source'))

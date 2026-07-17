@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('short_links', function (Blueprint $table) {
             $table->id();
             $table->string('hash', 8)->unique();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->string('source', 30);
             $table->json('metadata')->nullable();
             $table->timestamp('expires_at');

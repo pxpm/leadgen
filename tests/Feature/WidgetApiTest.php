@@ -151,7 +151,7 @@ test('GenerateSummaryJob is dispatched when lead qualifies', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'status' => LeadStatus::InProgress,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Collect all required fields so the lead qualifies
@@ -169,4 +169,62 @@ test('GenerateSummaryJob is dispatched when lead qualifies', function () {
     $engine->maybeComplete($lead);
 
     Queue::assertPushed(GenerateSummaryJob::class);
+});
+
+// ─── Security edge cases ──────────────────────────────────────
+
+test('session token is NOT leaked in sendMessage response', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'services' => ['roofing'],
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/messages", [
+        'message' => 'Olá',
+    ]);
+
+    $response->assertOk();
+    expect($response->json('lead.session_token'))->toBeNull();
+});
+
+test('session token is NOT leaked in resume response', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->getJson("/api/widget/conversations/{$lead->session_token}");
+
+    $response->assertOk();
+    expect($response->json('lead.session_token'))->toBeNull();
+});
+
+test('expired token returns 410 on sendMessage', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'token_expires_at' => now()->subHour(),
+    ]);
+
+    $this->postJson("/api/widget/conversations/{$lead->session_token}/messages", [
+        'message' => 'Hello',
+    ])->assertStatus(410);
+});
+
+test('expired token returns 410 on resume', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'token_expires_at' => now()->subHour(),
+    ]);
+
+    $this->getJson("/api/widget/conversations/{$lead->session_token}")
+        ->assertStatus(410);
+});
+
+test('invalid session token returns 404', function () {
+    $this->postJson('/api/widget/conversations/fake-token-12345/messages', [
+        'message' => 'Hello',
+    ])->assertNotFound();
 });

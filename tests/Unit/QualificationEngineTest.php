@@ -18,13 +18,13 @@ beforeEach(function () {
 });
 
 test('lead is not complete when no fields collected', function () {
-    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'service_type' => 'roofing']);
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'services' => ['roofing']]);
 
     expect($this->engine->isComplete($lead))->toBeFalse();
 });
 
 test('lead is complete when all required fields collected', function () {
-    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'service_type' => 'roofing']);
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'services' => ['roofing']]);
 
     // Service required: problem_type, roof_type.
     // Qualification: property_type, urgency.
@@ -37,7 +37,7 @@ test('lead is complete when all required fields collected', function () {
 });
 
 test('missing fields returns correct list', function () {
-    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'service_type' => 'roofing']);
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'services' => ['roofing']]);
     $lead->fields()->create(['field_key' => 'contact_name', 'field_value' => 'João', 'field_type' => 'text']);
 
     $missing = $this->engine->getMissingFields($lead);
@@ -48,7 +48,7 @@ test('missing fields returns correct list', function () {
 });
 
 test('conditional requirements add fields when condition met', function () {
-    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'service_type' => 'roofing']);
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'services' => ['roofing']]);
     $lead->fields()->create(['field_key' => 'problem_type', 'field_value' => 'replacement', 'field_type' => 'select']);
 
     $missing = $this->engine->getMissingFields($lead);
@@ -57,7 +57,7 @@ test('conditional requirements add fields when condition met', function () {
 });
 
 test('maybeComplete transitions status when complete', function () {
-    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'status' => LeadStatus::InProgress, 'service_type' => 'roofing']);
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'status' => LeadStatus::InProgress, 'services' => ['roofing']]);
 
     foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
         $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'text']);
@@ -74,7 +74,7 @@ test('maybeComplete transitions status when complete', function () {
 test('getNextField returns first missing field', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // No fields collected — first missing is problem_type (service fields come first)
@@ -88,7 +88,7 @@ test('getNextField returns first missing field', function () {
 test('getNextField advances after fields are collected', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Collect problem_type and roof_type (service fields)
@@ -105,7 +105,7 @@ test('getNextField advances after fields are collected', function () {
 test('getNextField returns null when all fields collected', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Collect ALL fields: required + contact + optionals
@@ -123,7 +123,7 @@ test('getNextField returns null when all fields collected', function () {
 test('getNextField includes options for select fields', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // First field is problem_type (service select) — no need to collect anything first
@@ -138,7 +138,7 @@ test('getNextField includes options for select fields', function () {
 test('getNextField does not include options for text fields', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Collect all select fields (service + qualification + optionals) so next is text (contact_name)
@@ -159,7 +159,7 @@ test('getNextField does not include options for text fields', function () {
 test('getNextField returns correct field after partial address collection', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
     ]);
 
     // Collect service fields and contact_name

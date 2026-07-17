@@ -43,27 +43,23 @@ class ProcessIncomingEmailJob implements ShouldQueue
 
     /**
      * Webhook path — from InboundEmailController.
+     * Uses reflection to create instance without calling the IMAP constructor,
+     * since webhooks don't have a TenantEmailAccount.
      */
     public static function dispatchFromWebhook(Tenant $tenant, array $messageData): void
     {
-        // We need to construct the job differently for webhook.
-        // Using a static factory that creates and dispatches a dedicated internal instance.
-        (new self)->handleWebhook($tenant, $messageData);
-    }
+        $reflection = new \ReflectionClass(self::class);
 
-    /**
-     * Handle webhook-based email processing directly (not through queue handle()).
-     * We use this approach so the constructor stays clean for both paths.
-     */
-    private function handleWebhook(Tenant $tenant, array $messageData): void
-    {
-        $this->account = null;
-        $this->tenant = $tenant;
-        $this->messageData = $messageData;
-        $this->isFromWatchFolder = true; // webhook emails are always eligible for lead creation
-        $this->isWebhook = true;
+        /** @var self $instance */
+        $instance = $reflection->newInstanceWithoutConstructor();
 
-        $this->process();
+        $instance->account = null;
+        $instance->tenant = $tenant;
+        $instance->messageData = $messageData;
+        $instance->isFromWatchFolder = true; // webhook emails are always eligible for lead creation
+        $instance->isWebhook = true;
+
+        $instance->process();
     }
 
     public function handle(): void
@@ -75,8 +71,20 @@ class ProcessIncomingEmailJob implements ShouldQueue
     {
         $fromAddress = $this->messageData['from_address'];
 
+        Log::channel('email_webhook')->info('🔍 ProcessIncomingEmailJob: processing', [
+            'tenant_id' => $this->tenant->id,
+            'from' => $fromAddress,
+            'subject' => $this->messageData['subject'] ?? '',
+            'is_webhook' => $this->isWebhook,
+            'is_watch_folder' => $this->isFromWatchFolder,
+        ]);
+
         // Dedup
         if ($this->isDuplicate()) {
+            Log::channel('email_webhook')->info('⏭️ Skipped — duplicate message', [
+                'message_id' => $this->messageData['message_id'] ?? 'none',
+            ]);
+
             return;
         }
 
@@ -89,6 +97,11 @@ class ProcessIncomingEmailJob implements ShouldQueue
 
         // Rule: Known lead → always store the message
         if ($lead) {
+            Log::channel('email_webhook')->info('✅ Known lead — storing message', [
+                'lead_id' => $lead->id,
+                'from' => $fromAddress,
+            ]);
+
             $this->storeMessage($lead);
 
             return;
@@ -96,10 +109,8 @@ class ProcessIncomingEmailJob implements ShouldQueue
 
         // Rule: Unknown sender in general inbox → discard (never auto-create)
         if (! $this->isFromWatchFolder) {
-            Log::info('Incoming email from unknown sender discarded (general inbox)', [
-                'account_id' => $this->account?->id,
+            Log::channel('email_webhook')->info('🗑️ Unknown sender, not watch folder — discarded', [
                 'from' => $fromAddress,
-                'subject' => $this->messageData['subject'] ?? '',
             ]);
 
             return;
@@ -111,15 +122,18 @@ class ProcessIncomingEmailJob implements ShouldQueue
             : true; // webhook emails always auto-create by default
 
         if ($autoCreate) {
+            Log::channel('email_webhook')->info('🤖 Unknown sender — dispatching AI lead creation', [
+                'from' => $fromAddress,
+                'subject' => $this->messageData['subject'] ?? '',
+            ]);
+
             AiParseEmailForLeadCreationJob::dispatchFromWebhook($this->tenant, $this->messageData);
 
             return;
         }
 
-        Log::info('Incoming email ignored (auto_create disabled)', [
-            'account_id' => $this->account?->id,
+        Log::channel('email_webhook')->info('⏸️ Auto-create disabled — ignored', [
             'from' => $fromAddress,
-            'subject' => $this->messageData['subject'] ?? '',
         ]);
     }
 

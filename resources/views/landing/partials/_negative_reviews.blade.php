@@ -1,9 +1,6 @@
 <section class="py-24 px-6 bg-white overflow-hidden">
     <div class="max-w-6xl mx-auto">
         <div class="text-center max-w-2xl mx-auto">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-500 text-xs font-bold tracking-wider uppercase rounded-full mb-6">
-                ⚠️ Não deixe isto acontecer
-            </span>
             <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight">
                 {{ __('landing.negative_reviews.headline') }}
             </h2>

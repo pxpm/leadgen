@@ -34,7 +34,7 @@ beforeEach(function () {
     $this->lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
         'industry_id' => $industry->id,
-        'service_type' => 'roofing',
+        'services' => ['roofing'],
         'status' => LeadStatus::InProgress,
     ]);
 

@@ -8,7 +8,9 @@ use App\Http\Controllers\IntakeController;
 use App\Models\MissedCall;
 use App\Models\ShortLink;
 use App\Models\Tenant;
+use App\Models\TenantEmailAccount;
 use App\Services\MagicLinkService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -155,44 +157,65 @@ Route::get('/magic-link/{token}', function (string $token) {
     return redirect($service->getRedirectUrl($token) ?? '/manage-backoffice');
 })->name('magic-link');
 
+// Email account verification (signed URL, one-time token)
+Route::get('/verify-email-account/{account}/{token}', function (TenantEmailAccount $account, string $token) {
+    if (! request()->hasValidSignature()) {
+        abort(403, 'Link inválido ou expirado.');
+    }
+
+    if (! $account->isPendingVerification() && ! $account->isVerified()) {
+        abort(410, 'Esta conta já não está pendente de verificação.');
+    }
+
+    if ($account->verify($token)) {
+        return redirect('/manage-backoffice?verified='.$account->id);
+    }
+
+    abort(410, 'Link inválido ou expirado. Solicita um novo email de verificação.');
+})->name('email-account.verify');
+
 // ─── SEO Landing Page Routes (must be last — catch-all patterns) ───
+// Slug mappings are resolved once and cached to avoid N+1 locale lookups.
 
-// Generic single-segment pages: How It Works + Industries overview (locale-aware)
 Route::get('/{pageSlug}', function (string $pageSlug) {
-    // Check if it's the How It Works page slug
-    $howItWorksSlugs = collect(['pt', 'en'])->map(fn ($l) => __('landing.how_it_works_slug', [], $l));
-    if ($howItWorksSlugs->contains($pageSlug)) {
-        return view('landing.how-it-works');
-    }
+    $map = Cache::rememberForever('landing:page_slugs', fn () => collect(['pt', 'en'])
+        ->flatMap(fn ($l) => [
+            __('landing.how_it_works_slug', [], $l) => 'landing.how-it-works',
+            __('landing.pricing_slug', [], $l) => 'landing.pricing',
+            __('landing.industrias_slug', [], $l) => 'landing.industries',
+        ])->toArray()
+    );
 
-    // Check if it's the Industries overview page slug
-    $industriesSlugs = collect(['pt', 'en'])->map(fn ($l) => __('landing.industrias_slug', [], $l));
-    if ($industriesSlugs->contains($pageSlug)) {
-        return view('landing.industries');
-    }
+    return isset($map[$pageSlug]) ? view($map[$pageSlug]) : abort(404);
+})->where('pageSlug', '^(?!manage-)[a-z-]+$')->name('landing.page');
 
-    abort(404);
-})->where('pageSlug', '[a-z-]+')->name('landing.page');
-
-// Industry-specific SEO landing pages — locale-aware prefix & slug
 Route::get('/{prefix}/{slug}', function (string $prefix, string $slug) {
-    $validPrefixes = collect(['pt', 'en'])->map(fn ($l) => __('landing.route_prefix', [], $l));
-    if (! $validPrefixes->contains($prefix)) {
+    $validPrefixes = Cache::rememberForever('landing:route_prefixes', fn () => collect(['pt', 'en'])
+        ->map(fn ($l) => __('landing.route_prefix', [], $l))
+        ->filter()
+        ->values()
+        ->toArray()
+    );
+
+    if (! in_array($prefix, $validPrefixes)) {
         abort(404);
     }
 
-    // Search across all locales to find the industry by slug
-    $industryKey = null;
-    foreach (['pt', 'en'] as $locale) {
-        $industries = __('landing.industries_section', [], $locale);
-        $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
-        foreach ($trades as $key => $trade) {
-            if (($trade['slug'] ?? '') === $slug) {
-                $industryKey = $key;
-                break 2;
+    $map = Cache::rememberForever('landing:industry_slugs', fn () => collect(['pt', 'en'])
+        ->flatMap(function ($locale) {
+            $industries = __('landing.industries_section', [], $locale);
+            $result = [];
+            foreach ($industries as $key => $trade) {
+                if (is_array($trade) && isset($trade['slug'])) {
+                    $result[$trade['slug']] = $key;
+                }
             }
-        }
-    }
+
+            return $result;
+        })->toArray()
+    );
+
+    $industryKey = $map[$slug] ?? null;
 
     if (! $industryKey || ! isset(__('landing.industry_pages.'.$industryKey)['hero_headline'])) {
         abort(404);
@@ -296,4 +319,4 @@ Route::get('/sitemap.xml', function () {
 })->name('sitemap');
 
 // Demo request form submission
-Route::post('/demo-request', [DemoRequestController::class, 'store'])->name('demo.request');
+Route::post('/demo-request', [DemoRequestController::class, 'store'])->middleware('throttle:5,15')->name('demo.request');

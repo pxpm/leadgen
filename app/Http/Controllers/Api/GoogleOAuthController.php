@@ -6,13 +6,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\TenantEmailAccount;
-use Google\Client;
-use Google\Service\Gmail;
-use Google\Service\Oauth2;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Socialite;
 
 class GoogleOAuthController extends Controller
 {
@@ -27,11 +26,24 @@ class GoogleOAuthController extends Controller
             abort(403, 'No tenant associated with your account.');
         }
 
-        $client = $this->createClient();
+        // Generate a random nonce to prevent CSRF on the OAuth callback.
+        // Socialite handles state internally, but we also store it for double verification.
+        $state = Str::random(40);
+        session(['google_oauth_state' => $state]);
 
-        $authUrl = $client->createAuthUrl();
-
-        return redirect($authUrl);
+        return Socialite::driver('google')
+            ->scopes([
+                'openid',
+                'profile',
+                'email',
+                'https://www.googleapis.com/auth/gmail.send',
+            ])
+            ->with([
+                'access_type' => 'offline',
+                'prompt' => 'consent',
+                'state' => $state,
+            ])
+            ->redirect();
     }
 
     /**
@@ -45,6 +57,14 @@ class GoogleOAuthController extends Controller
             abort(403, 'No tenant associated with your account.');
         }
 
+        // Validate CSRF state nonce
+        $expectedState = session()->pull('google_oauth_state');
+        if (! $expectedState || ! hash_equals($expectedState, (string) $request->get('state'))) {
+            Log::warning('Google OAuth: invalid state parameter — possible CSRF');
+
+            return redirect()->to('/manage-backoffice')->with('error', 'Falha na validação de segurança. Tenta novamente.');
+        }
+
         if ($request->has('error')) {
             Log::error('Google OAuth denied', ['error' => $request->get('error')]);
 
@@ -52,35 +72,27 @@ class GoogleOAuthController extends Controller
         }
 
         try {
-            $client = $this->createClient();
-            $token = $client->fetchAccessTokenWithAuthCode($request->get('code'));
-
-            if (isset($token['error'])) {
-                Log::error('Google OAuth token exchange failed', ['error' => $token['error']]);
-
-                return redirect()->to('/manage-backoffice')->with('error', 'Falha na autorização Google.');
-            }
-
-            // Get user info to determine email
-            $client->setAccessToken($token);
-            $oauth2 = new Oauth2($client);
-            $userInfo = $oauth2->userinfo->get();
+            $socialiteUser = Socialite::driver('google')->user();
 
             // Store or update the tenant email account with OAuth tokens
             $account = TenantEmailAccount::firstOrNew([
                 'tenant_id' => $tenant->id,
-                'email' => $userInfo->email,
+                'email' => $socialiteUser->getEmail(),
             ]);
 
             $account->fill([
                 'provider' => 'google',
                 'connection_type' => 'google_oauth',
-                'name' => $userInfo->name ?? $userInfo->email,
-                'access_token' => Crypt::encryptString(json_encode($token)),
-                'refresh_token' => isset($token['refresh_token']) ? Crypt::encryptString($token['refresh_token']) : $account->refresh_token,
+                'name' => $socialiteUser->getName() ?? $socialiteUser->getEmail(),
+                'access_token' => Crypt::encryptString($socialiteUser->token),
+                'refresh_token' => $socialiteUser->refreshToken
+                    ? Crypt::encryptString($socialiteUser->refreshToken)
+                    : $account->refresh_token,
                 'token_metadata' => [
-                    'scopes' => $token['scope'] ?? '',
-                    'expires_at' => isset($token['expires_in']) ? now()->addSeconds($token['expires_in'])->toIso8601String() : null,
+                    'scopes' => $socialiteUser->approvedScopes,
+                    'expires_at' => $socialiteUser->expiresIn
+                        ? now()->addSeconds($socialiteUser->expiresIn)->toIso8601String()
+                        : null,
                 ],
                 'imap_config' => TenantEmailAccount::defaultImapConfig('google'),
                 'smtp_config' => TenantEmailAccount::defaultSmtpConfig('google'),
@@ -91,7 +103,7 @@ class GoogleOAuthController extends Controller
 
             Log::info('Google OAuth connected', [
                 'tenant_id' => $tenant->id,
-                'email' => $userInfo->email,
+                'email' => $socialiteUser->getEmail(),
             ]);
 
             return redirect()->to('/manage-backoffice')->with('success', 'Conta Google conectada com sucesso!');
@@ -100,24 +112,5 @@ class GoogleOAuthController extends Controller
 
             return redirect()->to('/manage-backoffice')->with('error', 'Erro ao conectar conta Google.');
         }
-    }
-
-    private function createClient(): Client
-    {
-        $client = new Client;
-        $client->setClientId(config('services.google.client_id'));
-        $client->setClientSecret(config('services.google.client_secret'));
-        $client->setRedirectUri(config('services.google.redirect_uri'));
-        $client->setAccessType('offline');
-        $client->setPrompt('consent');
-        $client->setIncludeGrantedScopes(true);
-        $client->addScope([
-            'openid',
-            'profile',
-            'email',
-            Gmail::GMAIL_SEND,
-        ]);
-
-        return $client;
     }
 }

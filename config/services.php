@@ -18,8 +18,17 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    'inbound_email' => [
+        'skip_verification' => env('INBOUND_EMAIL_SKIP_VERIFICATION', false),
+    ],
+
+    'mailgun' => [
+        'webhook_signing_key' => env('MAILGUN_WEBHOOK_SIGNING_KEY'),
+    ],
+
     'resend' => [
-        'key' => env('RESEND_API_KEY'),
+        'key' => env('RESEND_KEY'),
+        'webhook_secret' => env('RESEND_WEBHOOK_SECRET'),
     ],
 
     'ses' => [
@@ -55,7 +64,13 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect_uri' => env('GOOGLE_REDIRECT_URI', '/api/oauth/google/callback'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/api/oauth/google/callback'),
+    ],
+
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'redirect' => env('MICROSOFT_REDIRECT_URI', '/api/oauth/microsoft/callback'),
     ],
 
 ];

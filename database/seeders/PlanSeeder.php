@@ -11,46 +11,61 @@ class PlanSeeder extends Seeder
 {
     public function run(): void
     {
-        Plan::create([
-            'name' => 'Starter',
-            'slug' => 'starter',
-            'description' => 'Para pequenos negócios a começar.',
-            'limits' => [
-                'sms_monthly' => 100,
-                'email_monthly' => 500,
-                'ai_ingestion_monthly' => 50,
+        Plan::updateOrCreate(
+            ['slug' => 'starter'],
+            [
+                'name' => 'Starter',
+                'description' => 'Para pequenos negócios a começar.',
+                'monthly_price' => 39,
+                'yearly_price_per_month' => 29,
+                'limits' => [
+                    'sms_monthly' => 30,
+                    'email_monthly' => 30,
+                    'email_ingestion_monthly' => 30,
+                    'recovery_call' => false,
+                ],
+                'is_public' => true,
+                'sort_order' => 1,
+                'is_active' => true,
             ],
-            'is_public' => true,
-            'sort_order' => 1,
-            'is_active' => true,
-        ]);
+        );
 
-        Plan::create([
-            'name' => 'Professional',
-            'slug' => 'professional',
-            'description' => 'Para negócios em crescimento com mais volume.',
-            'limits' => [
-                'sms_monthly' => 500,
-                'email_monthly' => 2000,
-                'ai_ingestion_monthly' => 200,
+        Plan::updateOrCreate(
+            ['slug' => 'professional'],
+            [
+                'name' => 'Professional',
+                'description' => 'Para negócios em crescimento com mais volume.',
+                'monthly_price' => 65,
+                'yearly_price_per_month' => 49,
+                'limits' => [
+                    'sms_monthly' => 100,
+                    'email_monthly' => 150,
+                    'email_ingestion_monthly' => 150,
+                    'recovery_call' => true,
+                ],
+                'is_public' => true,
+                'sort_order' => 2,
+                'is_active' => true,
             ],
-            'is_public' => true,
-            'sort_order' => 2,
-            'is_active' => true,
-        ]);
+        );
 
-        Plan::create([
-            'name' => 'Enterprise',
-            'slug' => 'enterprise',
-            'description' => 'Para operações de alto volume com necessidades customizadas.',
-            'limits' => [
-                'sms_monthly' => 5000,
-                'email_monthly' => 10000,
-                'ai_ingestion_monthly' => 1000,
+        Plan::updateOrCreate(
+            ['slug' => 'enterprise'],
+            [
+                'name' => 'Enterprise',
+                'description' => 'Para operações de alto volume com necessidades customizadas.',
+                'monthly_price' => 129,
+                'yearly_price_per_month' => 99,
+                'limits' => [
+                    'sms_monthly' => 300,
+                    'email_monthly' => 1000,
+                    'email_ingestion_monthly' => 1000,
+                    'recovery_call' => true,
+                ],
+                'is_public' => true,
+                'sort_order' => 3,
+                'is_active' => true,
             ],
-            'is_public' => true,
-            'sort_order' => 3,
-            'is_active' => true,
-        ]);
+        );
     }
 }

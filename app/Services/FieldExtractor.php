@@ -119,7 +119,7 @@ class FieldExtractor
         }
 
         $missing = $this->qualification->getMissingFields($lead);
-        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
+        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->services[0] ?? null);
         $options = $config['locales'][$locale]['field_options'] ?? [];
 
         // The bot tracks which field it's asking via lead.current_field_key — no fragile prompt-matching.

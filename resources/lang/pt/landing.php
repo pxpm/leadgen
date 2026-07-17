@@ -157,6 +157,7 @@ return [
     'route_prefix' => 'solucoes-para',
     'industrias_slug' => 'industrias',
     'how_it_works_slug' => 'como-funciona',
+    'pricing_slug' => 'precos',
 
     'industries_section' => [
         'headline' => 'Feito Para O Seu Negócio',
@@ -348,6 +349,47 @@ return [
         'success_title' => 'Obrigado!',
         'success_message' => 'Recebemos o seu pedido. Entraremos em contacto em menos de 24 horas.',
         'error_message' => 'Ocorreu um erro. Por favor tente novamente ou contacte-nos por email.',
+    ],
+
+    'pricing_page' => [
+        'seo_title' => 'Preços — Lead Intake Assistant',
+        'seo_description' => 'Planos com limites mensais de SMS e emails. Escolha o plano certo para o seu negócio.',
+        'page_title' => 'Preços',
+        'subtitle' => 'Simples. Transparente. Sem surpresas.',
+        'per_month' => '/mês',
+        'billed_monthly' => 'Mensal',
+        'billed_yearly' => 'Anual',
+        'save_label' => 'Poupe {percent}%',
+        'cta_button' => 'Começar Agora',
+        'most_popular' => 'Mais Popular',
+        'limits_title' => 'Limites Mensais',
+        'limit_sms' => 'SMS',
+        'limit_sms_desc' => 'Links e notificações via SMS',
+        'limit_email' => 'Emails',
+        'limit_email_desc' => 'Respostas automáticas geradas',
+        'limit_ingestion' => 'Leads por Email',
+        'limit_ingestion_desc' => 'Contactos processados do email',
+        'feature_recovery_call' => 'Recuperação de chamadas perdidas',
+        'faq' => [
+            [
+                'question' => 'Existe um período de teste?',
+                'answer' => 'Sim. Pode experimentar gratuitamente durante 14 dias. Sem compromisso. Cancele a qualquer momento.',
+            ],
+            [
+                'question' => 'O que acontece se exceder os limites?',
+                'answer' => 'Os limites são contabilizados mensalmente. Se atingir o limite, pode fazer upgrade para o plano superior a qualquer momento.',
+            ],
+            [
+                'question' => 'Preciso de cartão de crédito para começar?',
+                'answer' => 'Sim. O pagamento é feito por cartão de crédito através do Stripe. Pode cancelar a qualquer momento.',
+            ],
+            [
+                'question' => 'Posso mudar de plano?',
+                'answer' => 'Sim. Pode fazer upgrade ou downgrade a qualquer momento. O valor é ajustado proporcionalmente.',
+            ],
+        ],
+        'cta_headline' => 'Pronto para nunca mais perder um contacto?',
+        'cta_subtitle' => 'Comece hoje. 14 dias grátis. Cancele quando quiser.',
     ],
 
     'industry_pages' => [

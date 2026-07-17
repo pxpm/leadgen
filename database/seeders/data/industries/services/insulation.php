@@ -28,17 +28,13 @@ return [
             'options' => [
                 0 => 'detached',
                 1 => 'semi_detached',
-                2 => 'apartment_building',
-                3 => 'commercial',
-                4 => 'industrial',
-                5 => 'other',
+                2 => 'terraced',
+                3 => 'other',
             ],
             'required' => true,
             'when' => [
                 'property_type' => [
                     0 => 'house',
-                    1 => 'commercial',
-                    2 => 'industrial',
                 ],
             ],
         ],
@@ -82,7 +78,7 @@ return [
         'pt' => [
             'field_prompts' => [
                 'insulation_type' => 'Que tipo de isolamento precisa? Capoto (fachada), isolamento de telhado, isolamento acústico?',
-                'building_type' => 'E especificamente, que tipo de construção? Moradia isolada, geminada, prédio?',
+                'building_type' => 'Que tipo de moradia é? Isolada, geminada ou em banda?',
                 'area_size' => 'Qual é o tamanho aproximado da área a isolar?',
                 'current_insulation' => 'Atualmente tem algum tipo de isolamento instalado?',
                 'material_supplied' => 'Vai fornecer os materiais ou prefere que o especialista os forneça?',
@@ -99,9 +95,7 @@ return [
                 'building_type' => [
                     'detached' => 'Moradia isolada',
                     'semi_detached' => 'Moradia geminada',
-                    'apartment_building' => 'Prédio de apartamentos',
-                    'commercial' => 'Espaço comercial',
-                    'industrial' => 'Pavilhão industrial',
+                    'terraced' => 'Moradia em banda',
                     'other' => 'Outro',
                 ],
                 'area_size' => [
@@ -176,7 +170,7 @@ return [
 
 SEMPRE que o cliente der informação, adiciona no FINAL um bloco JSON. Valores:
 - insulation_type: capoto, roof_insulation, acoustic, thermal_correction, other
-- building_type: house, apartment_building, commercial, industrial, other
+- building_type: detached, semi_detached, terraced, other (só quando property_type=house)
 - area_size: small, medium, large, not_sure
 - current_insulation: none, old_damaged, partial, unknown',
             ],

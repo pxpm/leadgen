@@ -19,7 +19,7 @@
         </div>
         <div>
             <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $lead->fields()->where('field_key', 'contact_name')->first()?->field_value ?? 'Cliente' }}</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500">{{ $lead->service_type }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ implode(' + ', $lead->services ?: []) ?: '—' }}</p>
         </div>
     </div>
 
@@ -127,8 +127,8 @@
             @if ($scenario !== 'general' && empty($selectedItems)) disabled @endif
             class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-blue-600 hover:shadow-xl hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
         >
-            <span wire:loading.remove wire:target="generateEmail"><x-heroicon-o-sparkles class="h-5 w-5" /> Gerar email</span>
-            <span wire:loading wire:target="generateEmail"><x-heroicon-o-arrow-path class="h-5 w-5 animate-spin" /> A gerar...</span>
+            <span wire:loading.remove wire:target="generateEmail" class="inline-flex items-center gap-1.5"><x-heroicon-o-sparkles class="h-5 w-5" /> Gerar email</span>
+            <span wire:loading wire:target="generateEmail" class="inline-flex items-center gap-1.5"><x-heroicon-o-arrow-path class="h-5 w-5 animate-spin" /> A gerar...</span>
         </button>
     @endif
 

@@ -22,9 +22,8 @@ class MissedCallController extends Controller
      */
     public function intake(MissedCall $missedCall, Request $request): RedirectResponse
     {
-        if (! $request->hasValidSignature()) {
-            abort(403, 'Link inválido ou expirado.');
-        }
+        // Intake is only accessible via short link resolution (IntakeController::resolve).
+        // The short link provides its own 48h expiry — no additional signature needed.
 
         $intent = $request->query('intent');
 
@@ -37,6 +36,7 @@ class MissedCallController extends Controller
                 'status' => LeadStatus::New,
                 'source' => LeadSource::MissedCall,
                 'session_token' => Str::random(64),
+                'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
             ]);
 
             $missedCall->update([
@@ -56,9 +56,7 @@ class MissedCallController extends Controller
      */
     public function sendSms(MissedCall $missedCall, Request $request): RedirectResponse
     {
-        if (! $request->hasValidSignature()) {
-            abort(403, 'Link inválido ou expirado.');
-        }
+        // Accessible via short link resolution — short link provides its own expiry.
 
         SendCallerSmsJob::dispatch($missedCall);
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\RefreshOAuthTokensJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -10,3 +11,6 @@ Artisan::command('inspire', function () {
 
 // Email integration — poll IMAP inboxes every 2 minutes
 Schedule::command('email:poll')->everyTwoMinutes()->withoutOverlapping();
+
+// OAuth token refresh — keep Google/Microsoft tokens alive
+Schedule::job(new RefreshOAuthTokensJob)->everyTenMinutes();

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tenant_email_accounts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->string('provider', 20);
             $table->string('email', 255);
             $table->string('name', 255)->nullable();

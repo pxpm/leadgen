@@ -27,7 +27,10 @@ class ValidateTwilioWebhook
         $signature = $request->header('X-Twilio-Signature');
 
         if (empty($signature)) {
-            return response()->json(['message' => 'Missing signature.'], 403);
+            return response()->json([
+                'error' => 'missing_signature',
+                'message' => 'Missing signature.',
+            ], 403);
         }
 
         $url = $request->fullUrl();
@@ -42,7 +45,10 @@ class ValidateTwilioWebhook
         $expected = base64_encode(hash_hmac('sha1', $data, $token, true));
 
         if (! hash_equals($expected, $signature)) {
-            return response()->json(['message' => 'Invalid signature.'], 403);
+            return response()->json([
+                'error' => 'invalid_signature',
+                'message' => 'Invalid signature.',
+            ], 403);
         }
 
         return $next($request);

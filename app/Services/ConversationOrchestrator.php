@@ -7,7 +7,6 @@ namespace App\Services;
 use App\Enums\LeadStatus;
 use App\Enums\MessageRole;
 use App\Models\Lead;
-use App\Models\LeadService;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Log;
 
@@ -30,19 +29,19 @@ class ConversationOrchestrator
 
         Log::channel('ai')->debug('AI: processing', [
             'lead_id' => $lead->id,
-            'service_type' => $lead->service_type,
+            'services' => $lead->services,
             'service_keys' => $keys,
             'user_msg' => $userMessage,
             'collected' => $lead->fields->pluck('field_value', 'field_key')->toArray(),
         ]);
 
         // --- SERVICE SELECTION ---
-        if (! $lead->service_type) {
+        if (empty($lead->services)) {
             return $this->handleServiceSelection($lead, $userMessage, $locale, $keys);
         }
 
         // --- QUALIFICATION ---
-        $resolvedConfig = $this->config->resolve($lead->tenant, $lead->service_type);
+        $resolvedConfig = $this->config->resolve($lead->tenant, $lead->services[0]);
 
         // --- SUMMARY CONFIRMATION → transition to next service ---
         // User saw the summary + "Está tudo correto?" and responded.
@@ -248,9 +247,15 @@ class ConversationOrchestrator
         if (! $nextField) {
             // No field to skip — fall through to normal reply
             $reply = $this->buildReply($lead, $config, $locale);
-            $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
 
-            return $this->buildResponse($lead, $config, $reply);
+            // Build summary when all fields are collected
+            $summary = empty($this->qualification->getMissingFields($lead))
+                ? $this->buildSummaryData($lead, $config, $locale)
+                : null;
+            $dbReply = $summary ? $summary['footer'] : $reply;
+            $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $dbReply]);
+
+            return $this->buildResponse($lead, $config, $summary ? $summary['footer'] : $reply, $summary);
         }
 
         if ($nextField['required']) {
@@ -287,7 +292,7 @@ class ConversationOrchestrator
         // Skip conditional children of the skipped parent field.
         // Their "when" conditions can't match __declined__, but we explicitly
         // mark them as declined too to prevent any edge cases.
-        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
+        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->services[0] ?? null);
         foreach ($config['field_definitions'] ?? [] as $childKey => $def) {
             if (empty($def['when']) || ! array_key_exists($nextField['key'], $def['when'])) {
                 continue;
@@ -312,9 +317,16 @@ class ConversationOrchestrator
 
         $skippedKey = $nextField['key'];
         $reply = $this->buildReply($lead, $config, $locale, [], $skippedKey);
-        $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $reply]);
 
-        return $this->buildResponse($lead, $config, $reply, null, $skippedKey);
+        // When all fields are collected after skipping the last one,
+        // build the summary so the widget can render it — mirroring process().
+        $summary = empty($this->qualification->getMissingFields($lead))
+            ? $this->buildSummaryData($lead, $config, $locale)
+            : null;
+        $dbReply = $summary ? $summary['footer'] : $reply;
+        $lead->messages()->create(['role' => MessageRole::Assistant, 'content' => $dbReply]);
+
+        return $this->buildResponse($lead, $config, $summary ? $summary['footer'] : $reply, $summary, $skippedKey);
     }
 
     /**
@@ -343,13 +355,13 @@ class ConversationOrchestrator
                 'phase' => 'qualification',
                 'progress' => ['collected' => $lead->fields()->count(), 'required' => count($config['required_fields'] ?? [])],
                 'next_field' => null,
-                'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
+                'lead' => ['id' => $lead->id, 'services' => $lead->services],
             ];
         }
 
         // The conversation is "complete" from the widget's perspective only when
         // there's nothing left to ask — not when the lead status says qualified.
-        $isComplete = ! $nextField && empty($lead->pending_services);
+        $isComplete = ! $nextField && empty(array_slice($lead->services, 1));
 
         Log::channel('ai')->debug('AI: result', [
             'lead_id' => $lead->id,
@@ -365,7 +377,7 @@ class ConversationOrchestrator
             'phase' => 'qualification',
             'progress' => ['collected' => $lead->fields()->count(), 'required' => count($config['required_fields'] ?? [])],
             'next_field' => $nextField,
-            'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
+            'lead' => ['id' => $lead->id, 'services' => $lead->services],
         ];
     }
 
@@ -373,13 +385,13 @@ class ConversationOrchestrator
 
     private function activateService(Lead $lead, string $serviceKey, string $locale): array
     {
-        $lead->update(['service_type' => $serviceKey]);
+        $lead->update(['services' => [$serviceKey]]);
         $lead->refresh();
         $resolvedConfig = $this->config->resolve($lead->tenant, $serviceKey);
         $serviceName = $resolvedConfig['service_name'] ?? $serviceKey;
         $nextField = $this->qualification->getNextField($lead);
         $tenant = $lead->tenant;
-        $hasMultiple = ! empty($lead->pending_services);
+        $hasMultiple = ! empty(array_slice($lead->services, 1));
 
         // When the first question is the name, use a warm introduction template
         if ($nextField && $nextField['key'] === 'contact_name') {
@@ -403,7 +415,7 @@ class ConversationOrchestrator
             'phase' => 'qualification',
             'progress' => ['collected' => 0, 'required' => count($resolvedConfig['required_fields'] ?? [])],
             'next_field' => $nextField,
-            'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $serviceKey],
+            'lead' => ['id' => $lead->id, 'services' => [$serviceKey]],
         ];
     }
 
@@ -415,7 +427,7 @@ class ConversationOrchestrator
      */
     private function activateNextService(Lead $lead, string $userResponse, string $locale): array
     {
-        $pending = $lead->pending_services;
+        $pending = array_slice($lead->services, 1);
         $nextService = array_shift($pending);
 
         // No more services — user confirmed the summary, conversation is complete
@@ -432,7 +444,7 @@ class ConversationOrchestrator
                 'phase' => 'qualification',
                 'progress' => ['collected' => $lead->fields()->count(), 'required' => 0],
                 'next_field' => null,
-                'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
+                'lead' => ['id' => $lead->id, 'services' => $lead->services],
             ];
         }
 
@@ -448,8 +460,7 @@ class ConversationOrchestrator
 
         $lead->update([
             'status' => LeadStatus::InProgress,
-            'service_type' => $nextService,
-            'pending_services' => $pending,
+            'services' => array_merge([$nextService], $pending),
         ]);
         $lead->refresh();
 
@@ -476,7 +487,7 @@ class ConversationOrchestrator
             'phase' => 'qualification',
             'progress' => ['collected' => $lead->fields()->count(), 'required' => count($nextConfig['required_fields'] ?? [])],
             'next_field' => $this->qualification->getNextField($lead),
-            'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $lead->service_type],
+            'lead' => ['id' => $lead->id, 'services' => $lead->services],
         ];
     }
 
@@ -487,16 +498,12 @@ class ConversationOrchestrator
         $validSelection = array_values(array_intersect($keys, $validKeys));
 
         if (! empty($validSelection)) {
-            // Create LeadService records for all selected services
-            $this->createLeadServices($lead, $validSelection);
-
             if (count($validSelection) === 1) {
                 return $this->activateService($lead, $validSelection[0], $locale);
             }
 
             $lead->update([
-                'pending_services' => array_slice($validSelection, 1),
-                'service_type' => $validSelection[0],
+                'services' => $validSelection,
             ]);
             $lead->refresh();
 
@@ -505,9 +512,7 @@ class ConversationOrchestrator
 
         $matched = $this->classifyService($userMessage, $lead);
         if ($matched && in_array($matched, $validKeys)) {
-            $this->createLeadServices($lead, [$matched]);
-
-            $lead->update(['service_type' => $matched]);
+            $lead->update(['services' => [$matched]]);
             $lead->refresh();
             $resolvedConfig = $this->config->resolve($lead->tenant, $matched);
             $greeting = $resolvedConfig['locales'][$locale]['ai_prompt']['greeting_message']
@@ -521,7 +526,7 @@ class ConversationOrchestrator
                 'phase' => 'qualification',
                 'progress' => ['collected' => 0, 'required' => count($resolvedConfig['required_fields'] ?? [])],
                 'next_field' => $this->qualification->getNextField($lead),
-                'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token, 'service_type' => $matched],
+                'lead' => ['id' => $lead->id, 'services' => [$matched]],
             ];
         }
 
@@ -539,7 +544,7 @@ class ConversationOrchestrator
             'services' => $available,
             'progress' => ['collected' => 0, 'required' => 0],
             'next_field' => null,
-            'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token],
+            'lead' => ['id' => $lead->id],
         ];
     }
 
@@ -573,38 +578,16 @@ class ConversationOrchestrator
     // ─── LeadService Helpers ──────────────────────────────────────
 
     /**
-     * Create LeadService records for the given service keys.
-     * Each service gets its own row so fields can be attributed per-service.
-     */
-    private function createLeadServices(Lead $lead, array $serviceKeys): void
-    {
-        $existingKeys = $lead->leadServices()->pluck('service_key')->toArray();
-        $order = $lead->leadServices()->max('order') ?? 0;
-
-        foreach ($serviceKeys as $key) {
-            if (in_array($key, $existingKeys)) {
-                continue;
-            }
-            $order++;
-            $lead->leadServices()->create([
-                'service_key' => $key,
-                'status' => 'in_progress',
-                'order' => $order,
-            ]);
-        }
-    }
-
-    /**
      * Get the current LeadService ID for the active service_type.
      */
     private function getCurrentLeadServiceId(Lead $lead): ?int
     {
-        if (! $lead->service_type) {
+        if (! $lead->services[0] ?? null) {
             return null;
         }
 
         return $lead->leadServices()
-            ->where('service_key', $lead->service_type)
+            ->where('service_key', $lead->services[0] ?? null)
             ->latest('order')
             ->value('id');
     }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('usage_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->string('type', 20);
             $table->unsignedInteger('count')->default(0);
             $table->string('period', 7);

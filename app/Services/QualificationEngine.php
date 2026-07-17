@@ -17,7 +17,7 @@ class QualificationEngine
      */
     public function isComplete(Lead $lead): bool
     {
-        $config = $this->config->resolve($lead->tenant, $lead->service_type);
+        $config = $this->config->resolve($lead->tenant, $lead->services[0] ?? null);
         $requiredFields = $this->resolveRequiredFields($lead, $config);
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
 
@@ -64,13 +64,13 @@ class QualificationEngine
      */
     public function getMissingFields(Lead $lead): array
     {
-        $config = $this->config->resolve($lead->tenant, $lead->service_type);
+        $config = $this->config->resolve($lead->tenant, $lead->services[0] ?? null);
         $requiredFields = $this->resolveRequiredFields($lead, $config);
 
         // Only count fields that belong to the current service or are shared (null lead_service_id).
         // This prevents service A's fields from being treated as "collected" for service B.
         $currentServiceId = $lead->leadServices()
-            ->where('service_key', $lead->service_type)
+            ->where('service_key', $lead->services[0] ?? null)
             ->latest('order')
             ->value('id');
 
@@ -129,8 +129,8 @@ class QualificationEngine
      */
     public function getTriggeredChildren(Lead $lead, string $parentFieldKey): array
     {
-        $config = $this->config->resolve($lead->tenant, $lead->service_type);
-        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
+        $config = $this->config->resolve($lead->tenant, $lead->services[0] ?? null);
+        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->services[0] ?? null);
         $locale = $this->config->getLocale($lead->tenant);
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
 
@@ -208,9 +208,9 @@ class QualificationEngine
             return null;
         }
 
-        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->service_type);
+        $definitions = $this->config->getFieldDefinitions($lead->tenant, $lead->services[0] ?? null);
         $locale = $this->config->getLocale($lead->tenant);
-        $config = $this->config->resolve($lead->tenant, $lead->service_type);
+        $config = $this->config->resolve($lead->tenant, $lead->services[0] ?? null);
         $fieldKey = $missing[0];
 
         $result = ['key' => $fieldKey, 'type' => $definitions[$fieldKey]['type'] ?? 'text'];

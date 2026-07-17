@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('follow_up_actions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->foreignId('lead_id')->constrained()->cascadeOnDelete();
             $table->string('scenario');                         // FollowUpScenario value
             $table->json('selected_items')->nullable();          // reasons, fields, or stage selected

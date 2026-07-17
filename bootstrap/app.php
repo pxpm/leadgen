@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureActiveSubscription;
+use App\Http\Middleware\ValidateInboundEmailWebhook;
 use App\Http\Middleware\ValidateTwilioWebhook;
 use App\Http\Middleware\VerifyTurnstile;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'active-subscription' => EnsureActiveSubscription::class,
+            'inbound-email-webhook' => ValidateInboundEmailWebhook::class,
             'turnstile' => VerifyTurnstile::class,
             'twilio-webhook' => ValidateTwilioWebhook::class,
         ]);
@@ -29,14 +31,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Strip sensitive debug info from API error responses.
         // APP_DEBUG may be true locally, but we never leak file paths / traces.
-        $exceptions->render(function (\Throwable $e, Request $request) {
+        $exceptions->render(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
                 $code = method_exists($e, 'getStatusCode')
                     ? $e->getStatusCode()
                     : ($e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500);
 
                 return response()->json([
-                    'error' => class_basename($e),
+                    'error' => 'server_error',
                     'message' => app()->isProduction()
                         ? 'Server error.'
                         : $e->getMessage(),

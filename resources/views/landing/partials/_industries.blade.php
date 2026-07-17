@@ -1,7 +1,6 @@
 <section id="industries" class="py-28 px-6 bg-gray-50/70">
     <div class="max-w-7xl mx-auto">
         <div class="text-center max-w-2xl mx-auto">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-200/50 text-gray-500 text-xs font-bold tracking-wider uppercase rounded-full mb-6">{{ __('landing.nav.industries') }}</span>
             <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight">
                 {{ __('landing.industries_section.headline') }}
             </h2>
@@ -21,6 +20,14 @@
                     <p class="text-sm font-semibold text-gray-700">{{ $trade['name'] }}</p>
                 </a>
             @endforeach
+        </div>
+
+        {{-- Not listed --}}
+        <div class="mt-8 text-center">
+            <a href="#demo" class="inline-flex items-center gap-2 px-6 py-4 bg-white border-2 border-dashed border-gray-300 rounded-2xl text-sm text-gray-500 hover:border-amber-300 hover:text-amber-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                A sua indústria não está aqui? Contacte-nos.
+            </a>
         </div>
     </div>
 </section>

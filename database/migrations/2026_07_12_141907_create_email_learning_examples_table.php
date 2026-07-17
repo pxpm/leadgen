@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('email_learning_examples', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->string('scenario');                              // FollowUpScenario value
             $table->string('reasons_hash', 64);                      // MD5 of sorted reasons for fast lookup
             $table->text('generated_body');                          // AI-generated (before edits)

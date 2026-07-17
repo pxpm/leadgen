@@ -20,6 +20,13 @@ export class LeadIntakeWidget {
         this.lastNextField = null;  // preserved across rate-limit retries so chips can be restored
     }
 
+    /** Escape HTML special chars to prevent XSS when inserting into innerHTML. */
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
     /** Get a translated string for the current tenant locale. Falls back to pt. */
     t(key, vars = {}) {
         const locale = (this.config && this.config.tenant && this.config.tenant.locale) || 'pt';
@@ -456,21 +463,21 @@ export class LeadIntakeWidget {
 
         let html = '';
 
-        // Service sections
+        // Service sections — escape all user-provided field values
         (data.services || []).forEach(svc => {
-            const items = svc.fields.map(f => `<span>${f}</span>`).join(', ');
-            html += `<div class="lgw-summary-line"><span class="lgw-summary-icon">${svc.icon}</span> <strong>${svc.name}:</strong> ${items}</div>`;
+            const items = svc.fields.map(f => `<span>${this.escapeHtml(f)}</span>`).join(', ');
+            html += `<div class="lgw-summary-line"><span class="lgw-summary-icon">${this.escapeHtml(svc.icon)}</span> <strong>${this.escapeHtml(svc.name)}:</strong> ${items}</div>`;
         });
 
-        // Contact line
+        // Contact line — escape user-provided contact data
         if (data.contact && data.contact.length) {
-            const contactItems = data.contact.map(c => `<span>${c}</span>`).join(' <span class="lgw-summary-sep">·</span> ');
+            const contactItems = data.contact.map(c => `<span>${this.escapeHtml(c)}</span>`).join(' <span class="lgw-summary-sep">·</span> ');
             html += `<div class="lgw-summary-line lgw-summary-contact">📋 ${contactItems}</div>`;
         }
 
-        // Footer question
+        // Footer question — comes from orchestrator, escape for safety
         if (data.footer) {
-            html += `<div class="lgw-summary-footer">${data.footer}</div>`;
+            html += `<div class="lgw-summary-footer">${this.escapeHtml(data.footer)}</div>`;
         }
 
         b.innerHTML = html;

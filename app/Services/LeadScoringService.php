@@ -16,7 +16,7 @@ class LeadScoringService
      */
     public function score(Lead $lead): int
     {
-        $config = $this->config->resolve($lead->tenant, $lead->service_type);
+        $config = $this->config->resolve($lead->tenant, $lead->services[0] ?? null);
         $factors = $config['scoring']['factors'] ?? [];
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
         $hasPhotos = $lead->getMedia('photos')->isNotEmpty();

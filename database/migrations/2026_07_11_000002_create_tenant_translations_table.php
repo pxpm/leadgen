@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::create('tenant_translations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained();
             $table->string('locale', 10);
             $table->string('group');
             $table->string('key');

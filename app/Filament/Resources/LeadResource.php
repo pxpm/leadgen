@@ -9,10 +9,13 @@ use App\Enums\LeadStatus;
 use App\Filament\Resources\LeadResource\Pages;
 use App\Filament\Resources\LeadResource\RelationManagers\EmailMessagesRelationManager;
 use App\Models\Lead;
+use App\Services\IndustryConfigEngine;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Infolists\Components\Tabs;
+use Filament\Infolists\Components\Tabs\Tab;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -49,27 +52,172 @@ class LeadResource extends Resource
                 TextEntry::make('email')->label(__('admin.lead.email'))->state(fn (Lead $lead) => $lead->fields->where('field_key', 'email')->first()?->field_value ?? '—'),
                 TextEntry::make('property_address')->label(__('admin.lead.property_address'))->state(fn (Lead $lead) => $lead->fields->where('field_key', 'property_address')->first()?->field_value ?? '—'),
                 TextEntry::make('postal_code')->label(__('admin.lead.postal_code'))->state(fn (Lead $lead) => $lead->fields->where('field_key', 'postal_code')->first()?->field_value ?? '—'),
-                TextEntry::make('property_type')->label(__('admin.lead.property_type'))->state(fn (Lead $lead) => self::translatedField($lead, 'property_type')),
             ])->columns(2),
-            Section::make(__('admin.lead.section_details'))->schema([
-                TextEntry::make('problem_type')->label(__('admin.lead.problem_type'))->state(fn (Lead $lead) => self::translatedField($lead, 'problem_type')),
-                TextEntry::make('roof_type')->label(__('admin.lead.roof_type'))->state(fn (Lead $lead) => self::translatedField($lead, 'roof_type')),
-                TextEntry::make('house_type')->label(__('admin.lead.building_type'))->state(fn (Lead $lead) => self::translatedField($lead, 'house_type')),
-                TextEntry::make('urgency')->label(__('admin.lead.urgency'))->state(fn (Lead $lead) => self::translatedField($lead, 'urgency')),
-                TextEntry::make('insurance_claim')->label(__('admin.lead.insurance_claim'))->state(fn (Lead $lead) => self::translatedField($lead, 'insurance_claim')),
-                TextEntry::make('roof_size')->label(__('admin.lead.roof_size'))->state(fn (Lead $lead) => self::translatedField($lead, 'roof_size')),
-                TextEntry::make('roof_age')->label(__('admin.lead.roof_age'))->state(fn (Lead $lead) => self::translatedField($lead, 'roof_age')),
-                TextEntry::make('leak_location')->label(__('admin.lead.leak_location'))->state(fn (Lead $lead) => $lead->fields->where('field_key', 'leak_location')->first()?->field_value ?? '—'),
-            ])->columns(2),
+
+            Section::make(__('admin.lead.section_details'))
+                ->description(fn (Lead $lead): string => __('admin.lead.column_service').': '.self::getServiceNames($lead))
+                ->schema(fn (Lead $lead) => self::buildServiceTabs($lead))
+                ->columns(2),
+
             Section::make(__('admin.lead.section_status'))->schema([
-                TextEntry::make('status')->label(__('admin.lead.status'))->state(fn (Lead $lead) => $lead->status->value)->badge(),
+                TextEntry::make('status')->label(__('admin.lead.status'))->state(fn (Lead $lead) => __('admin.lead.status_'.$lead->status->value))->badge(),
                 TextEntry::make('source')->label(__('admin.lead.source'))->state(fn (Lead $lead) => $lead->source->value)->badge(),
                 TextEntry::make('qualification_score')->label(__('admin.lead.score'))->state(fn (Lead $lead) => $lead->qualification_score ? "{$lead->qualification_score}/10" : '—'),
             ])->columns(2),
+
             Section::make(__('admin.lead.section_notes'))->schema([
                 TextEntry::make('notes')->label(__('admin.lead.additional_notes'))->state(fn (Lead $lead) => $lead->notes ?? '—'),
             ]),
         ]);
+    }
+
+    /**
+     * Build tabs for each service the lead is interested in.
+     *
+     * @return array<int, Tabs|Section>
+     */
+    private static function buildServiceTabs(Lead $lead): array
+    {
+        $services = $lead->getAllServices();
+
+        // Single service — no tabs needed, just show the fields directly
+        if (count($services) <= 1) {
+            return self::buildDynamicFieldEntries($lead, $services[0] ?? null);
+        }
+
+        // Multiple services — render tabs
+        $tabs = [];
+
+        foreach ($services as $serviceKey) {
+            $label = self::getServiceLabel($serviceKey, $lead);
+            $entries = self::buildDynamicFieldEntries($lead, $serviceKey);
+
+            if (empty($entries)) {
+                continue;
+            }
+
+            $tabs[] = Tab::make($serviceKey)
+                ->label($label)
+                ->schema($entries);
+        }
+
+        if (empty($tabs)) {
+            return self::buildDynamicFieldEntries($lead, $services[0] ?? null);
+        }
+
+        return [Tabs::make('services')->tabs($tabs)];
+    }
+
+    /**
+     * Get all service keys for this lead: primary + pending.
+     *
+     * @return array<int, string>
+     */
+    private static function getServiceNames(Lead $lead): string
+    {
+        $services = $lead->getAllServices();
+
+        return implode(' + ', array_map(
+            fn (string $key) => self::getServiceLabel($key, $lead),
+            $services
+        )) ?: '—';
+    }
+
+    /**
+     * Get a human-readable label for a service key.
+     */
+    private static function getServiceLabel(string $serviceKey, Lead $lead): string
+    {
+        $engine = app(IndustryConfigEngine::class);
+        $locale = $lead->tenant->locale ?? 'pt';
+
+        try {
+            $config = $engine->loadServiceConfig($serviceKey);
+
+            return $config['locales'][$locale]['name'] ?? $serviceKey;
+        } catch (\Throwable) {
+            return $serviceKey;
+        }
+    }
+
+    /**
+     * Build TextEntry components dynamically from a specific service's field definitions.
+     * Shows only fields that are actually stored on the lead.
+     *
+     * @return array<int, TextEntry>
+     */
+    private static function buildDynamicFieldEntries(Lead $lead, ?string $serviceType = null): array
+    {
+        $engine = app(IndustryConfigEngine::class);
+        $locale = $lead->tenant->locale ?? 'pt';
+
+        if ($serviceType) {
+            $config = $engine->resolve($lead->tenant, $serviceType);
+            // Load raw service config for locale-specific option labels
+            $serviceConfig = $engine->loadServiceConfig($serviceType);
+        } elseif ($lead->services) {
+            $config = $engine->resolve($lead->tenant, $lead->services[0]);
+            $serviceConfig = $engine->loadServiceConfig($lead->services[0]);
+        } else {
+            $config = $engine->loadIndustryBase($lead->tenant);
+            $serviceConfig = null;
+        }
+
+        $fieldDefs = $config['field_definitions'] ?? [];
+        $locale = $lead->tenant->locale ?? 'pt';
+
+        // Shared fields already shown in section_contact — exclude them
+        $contactFields = ['contact_name', 'phone', 'email', 'property_address', 'postal_code', 'notes'];
+
+        $entries = [];
+
+        foreach ($fieldDefs as $key => $def) {
+            if (in_array($key, $contactFields)) {
+                continue;
+            }
+
+            $field = $lead->fields->where('field_key', $key)->first();
+            $value = $field?->field_value;
+
+            if (! $value) {
+                continue;
+            }
+
+            // Translate select field values using locale-specific labels from the raw service config
+            $displayValue = $value;
+            if (($def['type'] ?? 'text') === 'select') {
+                $displayValue = $serviceConfig['locales'][$locale]['field_options'][$key][$value]
+                    ?? $config['locales'][$locale]['field_options'][$key][$value]
+                    ?? $value;
+            }
+
+            $entries[] = TextEntry::make($key)
+                ->label(self::getFieldLabel($key, $config, $locale))
+                ->state($displayValue);
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Get a human-readable label for a field key from the config or fallback to the key itself.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    private static function getFieldLabel(string $key, array $config, string $locale): string
+    {
+        // Try to get the field prompt as a label (it's the question asked in the widget)
+        $prompt = $config['locales'][$locale]['ai_prompt']['field_prompts'][$key]
+            ?? $config['locales'][$locale]['field_prompts'][$key]
+            ?? null;
+
+        if ($prompt) {
+            // Truncate long prompts for display
+            return mb_strlen($prompt) > 50 ? mb_substr($prompt, 0, 47).'…' : $prompt;
+        }
+
+        // Fallback: prettify the key
+        return ucfirst(str_replace('_', ' ', $key));
     }
 
     public static function table(Table $table): Table
@@ -77,13 +225,13 @@ class LeadResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id')->label(__('admin.lead.column_hash'))->sortable(),
-                TextColumn::make('service_type')->label(__('admin.lead.column_service'))->badge()->sortable(),
+                TextColumn::make('services')->label(__('admin.lead.column_service'))->badge()->sortable()->formatStateUsing(fn ($state) => is_array($state) ? ($state[0] ?? null) : $state),
                 TextColumn::make('status')->label(__('admin.lead.column_status'))->badge()->color(fn (LeadStatus $state) => match ($state) {
                     LeadStatus::New => 'gray',
                     LeadStatus::InProgress => 'warning',
                     LeadStatus::Qualified => 'success',
                     LeadStatus::Delivered => 'info',
-                })->sortable(),
+                })->formatStateUsing(fn (LeadStatus $state) => __('admin.lead.status_'.$state->value))->sortable(),
                 TextColumn::make('source')->label(__('admin.lead.column_source'))->badge()->sortable(),
                 TextColumn::make('qualification_score')->label(__('admin.lead.column_score'))->sortable(),
                 TextColumn::make('created_at')->label(__('admin.lead.column_date'))->dateTime('d/m/Y H:i')->sortable(),
@@ -127,20 +275,5 @@ class LeadResource extends Resource
         return [
             EmailMessagesRelationManager::class,
         ];
-    }
-
-    private static function translatedField(Lead $lead, string $key): string
-    {
-        $field = $lead->fields->where('field_key', $key)->first();
-        if (! $field?->field_value) {
-            return 'Não informado';
-        }
-
-        $tenant = $lead->tenant;
-        $locale = $tenant->locale ?? 'pt';
-        $config = $tenant->industry?->config;
-
-        return $config['locales'][$locale]['field_options'][$key][$field->field_value]
-            ?? $field->field_value;
     }
 }

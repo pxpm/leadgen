@@ -12,13 +12,15 @@ return new class extends Migration
     {
         Schema::create('lead_services', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained();
             $table->foreignId('lead_id')->constrained()->cascadeOnDelete();
             $table->string('service_key');
-            $table->string('status')->default('in_progress'); // in_progress, qualified
+            $table->string('status')->default('in_progress');
             $table->unsignedInteger('order')->default(0);
             $table->timestamps();
         });
 
+        // FK added here because lead_services must exist before lead_fields can reference it
         Schema::table('lead_fields', function (Blueprint $table) {
             $table->foreign('lead_service_id')->references('id')->on('lead_services')->nullOnDelete();
         });

@@ -52,6 +52,7 @@ class IntakeController extends Controller
             'status' => LeadStatus::New,
             'source' => LeadSource::DirectLink,
             'session_token' => Str::random(64),
+            'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
         ]);
 
         $shortLink->update(['lead_id' => $lead->id]);
@@ -83,6 +84,7 @@ class IntakeController extends Controller
                 'status' => LeadStatus::New,
                 'source' => LeadSource::MissedCall,
                 'session_token' => Str::random(64),
+                'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
             ]);
 
             $missedCall->update([

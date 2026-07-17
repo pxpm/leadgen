@@ -238,7 +238,9 @@ class ManageServiceConfig extends EditRecord
                 }
             }
 
-            // Pre-fill field_options for select-type required fields
+            // Pre-fill field_options for select fields with their translated labels.
+            // Shows the full list so tenant can remove defaults or add custom ones.
+            // Saved labels become the source of truth; absent = use industry defaults.
             if (! isset($svcData['field_options'])) {
                 $svcData['field_options'] = [];
             }
@@ -250,18 +252,9 @@ class ManageServiceConfig extends EditRecord
                     continue;
                 }
                 $optLabels = $allOptLabels[$fKey] ?? [];
-                // Use tenant override if exists, otherwise industry default options (translated)
-                if (isset($svcData['field_options'][$fKey])) {
-                    $svcData['field_options'][$fKey] = array_map(
-                        fn ($v) => $optLabels[$v] ?? $v,
-                        $svcData['field_options'][$fKey]
-                    );
-                } else {
-                    $rawOpts = $fDef['options'] ?? [];
-                    $svcData['field_options'][$fKey] = array_map(
-                        fn ($v) => $optLabels[$v] ?? $v,
-                        $rawOpts
-                    );
+                if (! isset($svcData['field_options'][$fKey])) {
+                    // Pre-fill with translated labels from the industry default
+                    $svcData['field_options'][$fKey] = array_values($optLabels);
                 }
             }
 
@@ -368,19 +361,12 @@ class ManageServiceConfig extends EditRecord
                 }
             }
 
-            // field_options: known labels → keys, unknowns stay
+            // field_options: already stored as keys, just clean up empty arrays
             if (! empty($svcData['field_options'])) {
-                $fullConfig = app(IndustryConfigEngine::class)->loadServiceConfig($key);
-                $fieldOptLabels = $fullConfig['locales']['pt']['field_options'] ?? [];
-                foreach ($svcData['field_options'] as $fKey => &$opts) {
-                    $revMap = array_flip($fieldOptLabels[$fKey] ?? []);
-                    $opts = array_values(array_map(
-                        fn ($label) => $revMap[$label] ?? $label,
-                        $opts
-                    ));
-                }
-                // Remove empty option arrays
                 $svcData['field_options'] = array_filter($svcData['field_options'], fn ($opts) => ! empty($opts));
+                if (empty($svcData['field_options'])) {
+                    unset($svcData['field_options']);
+                }
             }
         }
 

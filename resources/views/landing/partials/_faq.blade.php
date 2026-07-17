@@ -1,7 +1,6 @@
 <section class="py-28 px-6 bg-gray-50/70">
     <div class="max-w-3xl mx-auto">
         <div class="text-center">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-200/50 text-gray-500 text-xs font-bold tracking-wider uppercase rounded-full mb-6">FAQ</span>
             <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight">
                 {{ __('landing.faq.headline') }}
             </h2>

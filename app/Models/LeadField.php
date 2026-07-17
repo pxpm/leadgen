@@ -5,16 +5,26 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\FieldType;
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LeadField extends Model
 {
-    use HasFactory;
+    use BelongsToTenant, HasFactory;
+
+    protected static function booted(): void
+    {
+        static::creating(function (LeadField $field): void {
+            if (! $field->tenant_id && $field->lead_id) {
+                $field->tenant_id = Lead::withoutGlobalScopes()->find($field->lead_id)?->tenant_id;
+            }
+        });
+    }
 
     protected $fillable = [
-        'lead_id', 'lead_service_id', 'field_key', 'field_type', 'field_value',
+        'tenant_id', 'lead_id', 'lead_service_id', 'field_key', 'field_type', 'field_value',
         'field_options', 'confidence', 'is_required',
     ];
 

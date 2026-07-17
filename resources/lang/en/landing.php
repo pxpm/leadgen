@@ -156,6 +156,7 @@ return [
     'route_prefix' => 'solutions-for',
     'industrias_slug' => 'industries',
     'how_it_works_slug' => 'how-it-works',
+    'pricing_slug' => 'pricing',
 
     'industries_section' => [
         'headline' => 'Built For Your Trade',
@@ -316,6 +317,47 @@ return [
         'success_title' => 'Thank you!',
         'success_message' => 'We\'ve received your request. We\'ll get back to you within 24 hours.',
         'error_message' => 'Something went wrong. Please try again or email us directly.',
+    ],
+
+    'pricing_page' => [
+        'seo_title' => 'Pricing — Lead Intake Assistant',
+        'seo_description' => 'Plans with monthly SMS and email limits. Choose the right plan for your business.',
+        'page_title' => 'Pricing',
+        'subtitle' => 'Simple. Transparent. No surprises.',
+        'per_month' => '/mo',
+        'billed_monthly' => 'Monthly',
+        'billed_yearly' => 'Yearly',
+        'save_label' => 'Save {percent}%',
+        'cta_button' => 'Get Started',
+        'most_popular' => 'Most Popular',
+        'limits_title' => 'Monthly Limits',
+        'limit_sms' => 'SMS',
+        'limit_sms_desc' => 'Links and notifications via SMS',
+        'limit_email' => 'Emails',
+        'limit_email_desc' => 'Auto-generated replies',
+        'limit_ingestion' => 'Leads via Email',
+        'limit_ingestion_desc' => 'Contacts processed from email',
+        'feature_recovery_call' => 'Missed call recovery',
+        'faq' => [
+            [
+                'question' => 'Is there a free trial?',
+                'answer' => 'Yes. You can try it free for 14 days. No commitment. Cancel anytime.',
+            ],
+            [
+                'question' => 'What happens if I exceed the limits?',
+                'answer' => 'Limits are counted monthly. If you hit the limit, you can upgrade to the next plan at any time.',
+            ],
+            [
+                'question' => 'Do I need a credit card to start?',
+                'answer' => 'Yes. Payment is processed via Stripe. You can cancel at any time.',
+            ],
+            [
+                'question' => 'Can I change plans?',
+                'answer' => 'Yes. You can upgrade or downgrade at any time. The price is prorated accordingly.',
+            ],
+        ],
+        'cta_headline' => 'Ready to never miss another lead?',
+        'cta_subtitle' => 'Start today. 14 days free. Cancel anytime.',
     ],
 
     'industry_pages' => [

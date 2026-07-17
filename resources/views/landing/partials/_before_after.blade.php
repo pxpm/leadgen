@@ -1,7 +1,6 @@
 <section class="py-28 px-6 bg-white">
     <div class="max-w-6xl mx-auto">
         <div class="text-center max-w-2xl mx-auto">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold tracking-wider uppercase rounded-full mb-6">Comparação</span>
             <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight">
                 {{ __('landing.before_after.headline') }}
             </h2>

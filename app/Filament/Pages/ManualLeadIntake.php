@@ -21,13 +21,13 @@ class ManualLeadIntake extends Page
 {
     protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-envelope-open';
 
-    protected static ?string $title = 'Novo Lead por Email';
+    protected static ?string $title = 'Criar Lead';
 
-    protected static ?string $navigationLabel = 'Lead por Email';
+    protected static ?string $navigationLabel = 'Criar Lead';
 
     public static function shouldRegisterNavigation(): bool
     {
-        return ! auth()->user()?->isSuperAdmin();
+        return false;
     }
 
     protected string $view = 'filament.pages.manual-lead-intake';
@@ -83,8 +83,9 @@ class ManualLeadIntake extends Page
             'industry_id' => $tenant->industry_id,
             'status' => LeadStatus::New,
             'source' => LeadSource::Manual,
-            'service_type' => $this->serviceType,
+            'services' => [$this->serviceType],
             'session_token' => Str::random(64),
+            'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
         ]);
 
         $engine = app(IndustryConfigEngine::class);

@@ -27,10 +27,44 @@ class Lead extends Model implements HasMedia
     /** current_field_key value when the summary has been shown and we await user confirmation. */
     public const SUMMARY_MARKER = '__summary__';
 
+    /** Token lifetime in hours from creation or last activity. */
+    public const TOKEN_TTL_HOURS = 48;
+
+    protected static function booted(): void
+    {
+        // Auto-sync services JSON → LeadService records so field attribution
+        // works consistently across all lead creation paths (widget, manual, email).
+        static::saved(function (Lead $lead): void {
+            if (! $lead->wasChanged('services')) {
+                return;
+            }
+
+            $serviceKeys = $lead->services ?? [];
+            if (empty($serviceKeys)) {
+                return;
+            }
+
+            $existingKeys = $lead->leadServices()->pluck('service_key')->toArray();
+            $order = $lead->leadServices()->max('order') ?? 0;
+
+            foreach ($serviceKeys as $key) {
+                if (in_array($key, $existingKeys, true)) {
+                    continue;
+                }
+                $order++;
+                $lead->leadServices()->create([
+                    'service_key' => $key,
+                    'status' => 'in_progress',
+                    'order' => $order,
+                ]);
+            }
+        });
+    }
+
     protected $fillable = [
         'tenant_id', 'industry_id', 'status', 'source',
-        'service_type', 'qualification_score', 'notes',
-        'session_token', 'pending_services', 'current_field_key',
+        'services', 'qualification_score', 'notes',
+        'session_token', 'token_expires_at', 'current_field_key',
         'conversation_started_at', 'qualified_at', 'delivered_at',
     ];
 
@@ -40,11 +74,22 @@ class Lead extends Model implements HasMedia
             'status' => LeadStatus::class,
             'source' => LeadSource::class,
             'qualification_score' => 'integer',
-            'pending_services' => 'array',
+            'services' => 'array',
             'conversation_started_at' => 'datetime',
+            'token_expires_at' => 'datetime',
             'qualified_at' => 'datetime',
             'delivered_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get all services as a flat array.
+     *
+     * @return array<int, string>
+     */
+    public function getAllServices(): array
+    {
+        return $this->services ?? [];
     }
 
     public function registerMediaCollections(): void
@@ -53,6 +98,22 @@ class Lead extends Model implements HasMedia
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
         $this->addMediaCollection('documents')
             ->acceptsMimeTypes(['application/pdf']);
+    }
+
+    /**
+     * Whether the session token is still valid (not expired).
+     */
+    public function isTokenExpired(): bool
+    {
+        return $this->token_expires_at !== null && $this->token_expires_at->isPast();
+    }
+
+    /**
+     * Extend the token expiry by TOKEN_TTL_HOURS from now.
+     */
+    public function extendToken(): void
+    {
+        $this->update(['token_expires_at' => now()->addHours(self::TOKEN_TTL_HOURS)]);
     }
 
     public function tenant(): BelongsTo

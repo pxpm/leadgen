@@ -16,8 +16,8 @@ class Plan extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'description', 'limits',
-        'is_public', 'sort_order', 'is_active',
+        'name', 'slug', 'description', 'monthly_price', 'yearly_price_per_month', 'stripe_price_id',
+        'limits', 'is_public', 'sort_order', 'is_active',
     ];
 
     protected function casts(): array

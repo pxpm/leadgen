@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('lead_fields', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->constrained();
             $table->foreignId('lead_id')->constrained()->cascadeOnDelete();
             $table->foreignId('lead_service_id')->nullable();
             $table->string('field_key', 100);
@@ -24,6 +25,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['lead_id', 'field_key', 'lead_service_id']);
+            $table->index('lead_service_id');
+            $table->index(['tenant_id', 'lead_id']);
         });
     }
 

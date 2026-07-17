@@ -111,7 +111,7 @@ class EmailComposer
         array $examples = [],
     ): string {
         $clientName = $lead->fields()->where('field_key', 'contact_name')->first()?->field_value ?? 'cliente';
-        $serviceType = $lead->service_type ?? 'serviço';
+        $serviceType = ! empty($lead->services) ? implode(' + ', $lead->services) : 'serviço';
 
         // Collect key lead details for context
         $details = $this->collectLeadDetails($lead, $locale);
@@ -189,7 +189,7 @@ class EmailComposer
         $skip = ['contact_name', 'phone', 'email', 'property_address', 'postal_code', 'notes'];
 
         // Collect translated field values
-        $config = app(IndustryConfigEngine::class)->resolve($lead->tenant, $lead->service_type);
+        $config = app(IndustryConfigEngine::class)->resolve($lead->tenant, $lead->services[0] ?? null);
         $options = $config['locales'][$locale]['field_options'] ?? [];
 
         foreach ($fields as $key => $value) {
@@ -214,7 +214,7 @@ class EmailComposer
         string $tenantName,
     ): string {
         $clientName = $lead->fields()->where('field_key', 'contact_name')->first()?->field_value ?? 'cliente';
-        $serviceType = $lead->service_type ?? 'o seu pedido';
+        $serviceType = ! empty($lead->services) ? implode(' + ', $lead->services) : 'o seu pedido';
         $config = config("follow_up.scenarios.{$scenario->value}");
 
         return match ($scenario) {
