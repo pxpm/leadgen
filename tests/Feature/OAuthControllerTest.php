@@ -90,7 +90,8 @@ test('google callback with valid state creates email account', function () {
 
     expect($account)->not->toBeNull()
         ->and($account->provider)->toBe('google')
-        ->and($account->status)->toBe('active');
+        ->and($account->status)->toBe('active')
+        ->and($account->verified_at)->not->toBeNull();
 });
 
 test('google callback with invalid state is rejected', function () {

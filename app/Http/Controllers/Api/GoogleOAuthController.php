@@ -97,6 +97,7 @@ class GoogleOAuthController extends Controller
                 'imap_config' => TenantEmailAccount::defaultImapConfig('google'),
                 'smtp_config' => TenantEmailAccount::defaultSmtpConfig('google'),
                 'status' => 'active',
+                'verified_at' => now(),
             ]);
 
             $account->save();
