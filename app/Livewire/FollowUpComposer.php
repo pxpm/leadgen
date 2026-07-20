@@ -265,6 +265,7 @@ class FollowUpComposer extends Component
     {
         return TenantEmailAccount::where('tenant_id', $this->lead->tenant_id)
             ->active()
+            ->whereIn('purpose', ['sending', 'both'])
             ->orderBy('email')
             ->get();
     }

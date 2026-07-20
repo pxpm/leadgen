@@ -35,12 +35,23 @@ class EmailAccountsRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->schema([
+            Select::make('purpose')
+                ->label('Tipo de conta')
+                ->options([
+                    'sending' => 'Envio (SMTP) — enviar emails',
+                    'inbound' => 'Entrada (IMAP/Forwarding) — receber emails',
+                    'both' => 'Envio + Entrada',
+                ])
+                ->default('sending')
+                ->required()
+                ->live(),
+
             Select::make('provider')
                 ->label('Fornecedor')
                 ->options([
                     'google' => 'Google (Gmail)',
                     'microsoft' => 'Microsoft (Outlook)',
-                    'custom' => 'Outro / Customizado',
+                    'custom' => 'SMTP Personalizado',
                 ])
                 ->required()
                 ->live()
@@ -67,21 +78,45 @@ class EmailAccountsRelationManager extends RelationManager
                 ->label('Nome de exibição')
                 ->maxLength(255),
 
+            // ── SMTP / Sending config ──
+
+            TextInput::make('smtp_config.host')
+                ->label('Servidor SMTP')
+                ->visible(fn (callable $get): bool => $get('provider') === 'custom' && in_array($get('purpose'), ['sending', 'both'], true))
+                ->required(fn (callable $get): bool => $get('provider') === 'custom' && in_array($get('purpose'), ['sending', 'both'], true))
+                ->maxLength(255),
+
+            TextInput::make('smtp_config.port')
+                ->label('Porta SMTP')
+                ->numeric()
+                ->visible(fn (callable $get): bool => $get('provider') === 'custom' && in_array($get('purpose'), ['sending', 'both'], true))
+                ->required(fn (callable $get): bool => $get('provider') === 'custom' && in_array($get('purpose'), ['sending', 'both'], true)),
+
+            TextInput::make('smtp_config.encryption')
+                ->label('Encriptação')
+                ->visible(fn (callable $get): bool => $get('provider') === 'custom' && in_array($get('purpose'), ['sending', 'both'], true))
+                ->default('tls'),
+
             TextInput::make('app_password')
-                ->label('App Password')
+                ->label('Password')
                 ->password()
-                ->required()
-                ->helperText('Palavra-passe de aplicação gerada nas definições da conta Google/Microsoft.')
+                ->visible(fn (callable $get): bool => $get('provider') === 'custom' && in_array($get('purpose'), ['sending', 'both'], true))
+                ->required(fn (callable $get): bool => $get('provider') === 'custom' && in_array($get('purpose'), ['sending', 'both'], true))
+                ->helperText('Password da conta de email para autenticação SMTP.')
                 ->dehydrateStateUsing(fn (?string $state) => $state ? Crypt::encryptString($state) : null),
+
+            // ── IMAP / Inbound config ──
 
             TextInput::make('watch_folder')
                 ->label('Pasta para novos leads')
-                ->helperText('IMAP folder name (ex: Leads, [Gmail]/Orçamentos). Emails nesta pasta podem gerar novos leads automaticamente. A caixa de entrada é sempre verificada para corresponder emails de leads existentes.')
+                ->visible(fn (callable $get): bool => in_array($get('purpose'), ['inbound', 'both'], true))
+                ->helperText('Pasta IMAP (ex: Leads, [Gmail]/Orçamentos). Emails nesta pasta podem gerar novos leads.')
                 ->maxLength(100),
 
             Toggle::make('auto_create_leads')
                 ->label('Criar leads automaticamente')
-                ->helperText('Quando ativo, emails de remetentes desconhecidos na pasta acima criam novos leads. Emails na caixa de entrada NUNCA geram novos leads — apenas correspondem a leads existentes.'),
+                ->visible(fn (callable $get): bool => in_array($get('purpose'), ['inbound', 'both'], true))
+                ->helperText('Emails de remetentes desconhecidos na pasta acima criam novos leads automaticamente.'),
         ]);
     }
 
@@ -176,16 +211,45 @@ class EmailAccountsRelationManager extends RelationManager
                         ->exists()),
 
                 CreateAction::make()
-                    ->label('Adicionar manualmente')
+                    ->label('Adicionar SMTP')
                     ->icon('heroicon-o-plus')
+                    ->color('gray')
                     ->modalWidth('lg')
                     ->createAnother(false)
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['provider'] = 'custom';
+                        $data['purpose'] ??= 'sending';
+                        $data['connection_type'] = 'app_password';
+
+                        return $data;
+                    })
                     ->after(function (TenantEmailAccount $record): void {
                         SendEmailVerificationJob::dispatch($record);
 
                         Notification::make()
                             ->title('Conta criada!')
-                            ->body('Enviamos um link de verificação para '.$record->email.'. Clica no link no email para ativares a conta.')
+                            ->body('Enviamos um link de verificação para '.$record->email.'.')
+                            ->success()
+                            ->send();
+                    }),
+
+                CreateAction::make('addInbound')
+                    ->label('Adicionar Entrada')
+                    ->icon('heroicon-o-inbox-arrow-down')
+                    ->color('gray')
+                    ->modalWidth('lg')
+                    ->createAnother(false)
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['purpose'] = 'inbound';
+
+                        return $data;
+                    })
+                    ->after(function (TenantEmailAccount $record): void {
+                        SendEmailVerificationJob::dispatch($record);
+
+                        Notification::make()
+                            ->title('Conta de entrada criada!')
+                            ->body('Enviamos um link de verificação para '.$record->email.'.')
                             ->success()
                             ->send();
                     }),

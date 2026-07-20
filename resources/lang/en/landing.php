@@ -190,6 +190,37 @@ return [
         'cta' => 'Want to be the next success story?',
     ],
 
+    'negative_reviews' => [
+        'headline' => 'This is what happens when you don\'t respond to a lead.',
+        'subtitle' => 'Real reviews from ignored customers. Each one is a lost estimate.',
+        'reviews' => [
+            [
+                'stars' => 1,
+                'name' => 'Marta S.',
+                'date' => '2 weeks ago',
+                'text' => 'I asked for a quote for exterior painting. I sent photos and explained what I wanted. They never replied. I had to look for another company.',
+            ],
+            [
+                'stars' => 1,
+                'name' => 'Ricardo P.',
+                'date' => '1 month ago',
+                'text' => 'I contacted 3 companies about a leak at home. One replied 4 days later saying they were fully booked. The other two never said anything.',
+            ],
+            [
+                'stars' => 1,
+                'name' => 'Ana M.',
+                'date' => '3 weeks ago',
+                'text' => 'I sent a message asking for an air conditioning quote. A week passed, I sent another message. Another week passed. I gave up and hired whoever answered right away.',
+            ],
+            [
+                'stars' => 1,
+                'name' => 'Carlos R.',
+                'date' => '2 months ago',
+                'text' => 'I needed an electrician urgently. I messaged 4 companies. Only one bothered to respond. The other 3 lost a customer.',
+            ],
+        ],
+    ],
+
     'faq' => [
         'headline' => 'Frequently Asked Questions',
         'items' => [

@@ -20,6 +20,7 @@ class TenantEmailAccountFactory extends Factory
         return [
             'tenant_id' => Tenant::factory(),
             'provider' => $provider,
+            'purpose' => 'both',
             'email' => fake()->unique()->safeEmail(),
             'name' => fake()->name(),
             'app_password' => 'encrypted_test_password',

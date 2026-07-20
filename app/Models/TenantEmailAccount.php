@@ -26,6 +26,7 @@ class TenantEmailAccount extends Model
     protected $fillable = [
         'tenant_id',
         'provider',
+        'purpose',
         'connection_type',
         'email',
         'name',
@@ -60,6 +61,16 @@ class TenantEmailAccount extends Model
             'refresh_token' => 'encrypted',
             'app_password' => 'encrypted',
         ];
+    }
+
+    public function isSending(): bool
+    {
+        return in_array($this->purpose, ['sending', 'both'], true);
+    }
+
+    public function isInbound(): bool
+    {
+        return in_array($this->purpose, ['inbound', 'both'], true);
     }
 
     public function tenant(): BelongsTo
