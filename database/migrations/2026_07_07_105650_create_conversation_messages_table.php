@@ -19,6 +19,8 @@ return new class extends Migration
             $table->text('content');
             $table->json('metadata')->nullable();
             $table->timestamps();
+
+            $table->index(['lead_id', 'created_at']);
         });
     }
 

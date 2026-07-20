@@ -424,6 +424,11 @@ test('buildReply gives validation nack when email rejected', function () {
         ]);
     }
 
+    // Upload a photo so the optional photos field doesn't come before email
+    $lead->addMediaFromString(fakeImagePng())
+        ->usingFileName('test.png')
+        ->toMediaCollection('photos');
+
     $engine = new IndustryConfigEngine;
     $config = $engine->resolve($this->tenant, 'roofing');
 
@@ -541,13 +546,18 @@ test('handleSkip returns summary when last remaining field is skipped', function
 
     // Pre-fill ALL fields except the LAST optional field (material_supplied).
     // Required fields: problem_type, roof_type, property_type, urgency
-    // Optional fields: property_type(already req), roof_age, insurance_claim, material_supplied
+    // Optional fields: property_type(already req), roof_age, insurance_claim, material_supplied, photos
     // Contact fields: contact_name, phone, email, property_address, postal_code
     $allButLast = [
         'problem_type', 'roof_type', 'property_type', 'urgency',
         'contact_name', 'phone', 'email', 'property_address', 'postal_code',
         'roof_age', 'insurance_claim',
     ];
+
+    // Upload a photo so the optional photos field doesn't come before material_supplied
+    $lead->addMediaFromString(fakeImagePng())
+        ->usingFileName('test.png')
+        ->toMediaCollection('photos');
     foreach ($allButLast as $key) {
         $lead->fields()->create([
             'field_key' => $key,

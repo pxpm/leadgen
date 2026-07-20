@@ -64,10 +64,26 @@ class IndustryConfigEngine
         }
         if (! empty($overrides['field_options'])) {
             foreach ($overrides['field_options'] as $fieldKey => $labels) {
-                // Tenant saved labels (from TagsInput) — use them directly as source of truth.
-                // Labels are indexed arrays, convert to keyed for widget compatibility.
                 if (is_array($labels) && array_is_list($labels)) {
-                    $base['locales'][$locale]['field_options'][$fieldKey] = array_combine($labels, $labels);
+                    // Tenant saved labels (from TagsInput) — reverse-map to keys
+                    // using the original field_options as a reference, so we
+                    // preserve the key→label mapping while respecting the
+                    // tenant's ordering and removals.
+                    $originalLabels = $base['locales'][$locale]['field_options'][$fieldKey] ?? [];
+                    $reverseMap = [];
+                    foreach ($originalLabels as $k => $l) {
+                        $reverseMap[$l] = $k;
+                    }
+
+                    $newOptions = [];
+                    foreach ($labels as $label) {
+                        $key = $reverseMap[$label] ?? $label;
+                        $newOptions[$key] = $label;
+                    }
+
+                    if (! empty($newOptions)) {
+                        $base['locales'][$locale]['field_options'][$fieldKey] = $newOptions;
+                    }
                 }
             }
         }

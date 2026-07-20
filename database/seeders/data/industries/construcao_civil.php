@@ -63,6 +63,12 @@ return [
                 4 => 'other',
             ],
         ],
+        'photos' => [
+            'type' => 'file',
+        ],
+        'documents' => [
+            'type' => 'file',
+        ],
     ],
     'locales' => [
         'pt' => [
@@ -105,6 +111,8 @@ return [
                 'notes' => 'Há mais alguma informação ou nota adicional que queira acrescentar?',
                 'urgency' => 'Qual é a urgência deste serviço?',
                 'property_type' => 'Que tipo de propriedade é?',
+                'photos' => 'Pode enviar algumas fotos do local? Isso ajuda-nos a preparar um orçamento mais preciso.',
+                'documents' => 'Tem algum documento, projeto ou especificação que possa partilhar? (PDF, Word, Excel)',
             ],
             'field_options' => [
                 'urgency' => [

@@ -27,6 +27,8 @@ return new class extends Migration
             $table->timestamp('qualified_at')->nullable();
             $table->timestamp('delivered_at')->nullable();
             $table->timestamps();
+
+            $table->index(['tenant_id', 'status']);
         });
     }
 

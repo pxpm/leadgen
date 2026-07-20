@@ -12,6 +12,7 @@ return [
         1 => 'roof_age',
         2 => 'insurance_claim',
         3 => 'material_supplied',
+        4 => 'photos',
     ],
     'field_definitions' => [
         'roof_type' => [

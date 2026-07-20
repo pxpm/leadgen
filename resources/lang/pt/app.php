@@ -79,6 +79,8 @@ return [
         'intent_quote' => 'Quero um orçamento',
         'intent_report' => 'Reportar um problema',
         'intent_other' => 'Outro assunto',
+        'invalid_collection' => 'Tipo de ficheiro não aceite para esta coleção.',
+        'invalid_file_type' => 'Formato não suportado. Formatos aceites: :types.',
     ],
 
     'intake_errors' => [

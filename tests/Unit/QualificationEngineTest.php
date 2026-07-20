@@ -117,6 +117,11 @@ test('getNextField returns null when all fields collected', function () {
         $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'text']);
     }
 
+    // Upload a photo so the optional photos field is also considered collected
+    $lead->addMediaFromString(fakeImagePng())
+        ->usingFileName('test.png')
+        ->toMediaCollection('photos');
+
     expect($this->engine->getNextField($lead))->toBeNull();
 });
 
@@ -141,7 +146,8 @@ test('getNextField does not include options for text fields', function () {
         'services' => ['roofing'],
     ]);
 
-    // Collect all select fields (service + qualification + optionals) so next is text (contact_name)
+    // Collect all select fields (service + qualification + optionals) so next is text.
+    // Also upload photos so the file field doesn't come before text fields.
     $lead->fields()->create(['field_key' => 'problem_type', 'field_value' => 'repair', 'field_type' => 'select']);
     $lead->fields()->create(['field_key' => 'roof_type', 'field_value' => 'tile', 'field_type' => 'select']);
     $lead->fields()->create(['field_key' => 'property_type', 'field_value' => 'house', 'field_type' => 'select']);
@@ -149,6 +155,10 @@ test('getNextField does not include options for text fields', function () {
     $lead->fields()->create(['field_key' => 'roof_age', 'field_value' => 'less_than_5', 'field_type' => 'select']);
     $lead->fields()->create(['field_key' => 'insurance_claim', 'field_value' => 'no', 'field_type' => 'select']);
     $lead->fields()->create(['field_key' => 'material_supplied', 'field_value' => 'specialist_provides', 'field_type' => 'select']);
+
+    $lead->addMediaFromString(fakeImagePng())
+        ->usingFileName('test.png')
+        ->toMediaCollection('photos');
 
     $next = $this->engine->getNextField($lead);
 
@@ -173,4 +183,101 @@ test('getNextField returns correct field after partial address collection', func
     // next is property_type (first qualification field), not another contact field.
     expect($next['key'])->toBe('property_type');
     expect($next['type'])->toBe('select');
+});
+
+// --- File fields ---
+
+test('file field is collected when media exists', function () {
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'services' => ['roofing']]);
+
+    // Add a fake image to the photos collection (must pass mime-type validation)
+    $lead->addMediaFromString(fakeImagePng())
+        ->usingFileName('test.png')
+        ->toMediaCollection('photos');
+
+    // Collect all other required fields
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
+        $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'text']);
+    }
+
+    // Photos is optional, not required — but it should not block completion
+    expect($this->engine->isComplete($lead))->toBeTrue();
+
+    // getMissingFields should NOT include photos since media exists
+    $missing = $this->engine->getMissingFields($lead);
+    expect($missing)->not->toContain('photos');
+});
+
+test('file field is missing when no media uploaded', function () {
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'services' => ['roofing']]);
+
+    // Collect all required fields but no photos
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
+        $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'text']);
+    }
+
+    // All other optional fields
+    foreach (['roof_age', 'insurance_claim', 'material_supplied'] as $key) {
+        $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'select']);
+    }
+
+    // Photos is optional and not uploaded — should appear in missing
+    $missing = $this->engine->getMissingFields($lead);
+    expect($missing)->toContain('photos');
+});
+
+test('getNextField returns file type for photos field', function () {
+    $lead = Lead::factory()->create(['tenant_id' => $this->tenant->id, 'services' => ['roofing']]);
+
+    // Collect everything except optional fields (so photos is the next optional)
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency',
+        'roof_age', 'insurance_claim', 'material_supplied',
+        'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
+        $lead->fields()->create(['field_key' => $key, 'field_value' => "test_{$key}", 'field_type' => 'text']);
+    }
+
+    $next = $this->engine->getNextField($lead);
+
+    expect($next['key'])->toBe('photos');
+    expect($next['type'])->toBe('file');
+    // File fields should not have options
+    expect($next)->not->toHaveKey('options');
+    expect($next)->not->toHaveKey('multi');
+});
+
+test('isComplete respects file field in conditional requirements', function () {
+    $tenant = $this->tenant;
+    // Set up a conditional requirement: if problem_type=emergency, require photos
+    $tenant->update([
+        'service_config' => [
+            'roofing' => [
+                'conditional_requirements' => [
+                    ['when' => ['problem_type' => 'emergency'], 'require' => ['photos']],
+                ],
+            ],
+        ],
+    ]);
+
+    $lead = Lead::factory()->create(['tenant_id' => $tenant->id, 'services' => ['roofing']]);
+
+    // Collect all fields including problem_type=emergency but NO photos
+    foreach (['problem_type', 'roof_type', 'property_type', 'urgency', 'contact_name', 'phone', 'email', 'property_address', 'postal_code'] as $key) {
+        $value = $key === 'problem_type' ? 'emergency' : "test_{$key}";
+        $lead->fields()->create(['field_key' => $key, 'field_value' => $value, 'field_type' => 'text']);
+    }
+
+    // Should be incomplete because photos is conditionally required but not uploaded
+    $engine = new QualificationEngine(new IndustryConfigEngine);
+    expect($engine->isComplete($lead))->toBeFalse();
+
+    // Upload a photo — should now be complete
+    $lead->addMediaFromString(fakeImagePng())
+        ->usingFileName('test.png')
+        ->toMediaCollection('photos');
+
+    // reload to clear cached relations
+    $lead->refresh();
+    $lead->load('fields');
+
+    expect($engine->isComplete($lead))->toBeTrue();
 });

@@ -159,11 +159,34 @@ class WidgetController extends Controller
     }
 
     /**
-     * Upload a photo for the current conversation.
+     * Upload a file (photo or document) for the current conversation.
      */
     public function upload(Lead $lead, Request $request): JsonResponse
     {
-        $request->validate(['file' => 'required|image|max:10240']);
+        $collection = $request->input('collection', 'photos');
+
+        // Validate collection name
+        if (! in_array($collection, ['photos', 'documents'], true)) {
+            return response()->json([
+                'error' => 'invalid_collection',
+                'message' => __('app.widget_api.invalid_collection'),
+            ], 422);
+        }
+
+        // Validate file extension per collection
+        $allowedExtensions = $collection === 'photos'
+            ? ['jpg', 'jpeg', 'png', 'webp']
+            : ['pdf', 'docx', 'xlsx'];
+
+        $request->validate(['file' => 'required|file|max:10240']);
+
+        $extension = strtolower($request->file('file')->getClientOriginalExtension());
+        if (! in_array($extension, $allowedExtensions, true)) {
+            return response()->json([
+                'error' => 'invalid_file_type',
+                'message' => __('app.widget_api.invalid_file_type', ['types' => implode(', ', $allowedExtensions)]),
+            ], 422);
+        }
 
         if ($lead->isTokenExpired()) {
             return response()->json([
@@ -172,12 +195,13 @@ class WidgetController extends Controller
             ], 410);
         }
 
-        $media = $lead->addMediaFromRequest('file')->toMediaCollection('photos');
+        $media = $lead->addMediaFromRequest('file')->toMediaCollection($collection);
 
         return response()->json([
             'id' => $media->id,
             'url' => $media->getUrl(),
             'name' => $media->file_name,
+            'collection' => $collection,
         ], 201);
     }
 }

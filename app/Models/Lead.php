@@ -97,7 +97,11 @@ class Lead extends Model implements HasMedia
         $this->addMediaCollection('photos')
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
         $this->addMediaCollection('documents')
-            ->acceptsMimeTypes(['application/pdf']);
+            ->acceptsMimeTypes([
+                'application/pdf',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
     }
 
     /**

@@ -65,9 +65,16 @@ return [
         // ── Generic ──
         'area_size' => 'Tamanho da Área',
         'photos' => 'Fotos',
+        'documents' => 'Documentos',
         'service_type' => 'Tipo de Serviço',
         'house_type' => 'Tipo de Moradia',
         'property_type' => 'Tipo de Propriedade',
+
+        // ── Cross-service ──
+        'material_supplied' => 'Fornecimento de Material',
+        'painting_subtype' => 'Tipo de Pintura',
+        'property_occupied' => 'Propriedade Ocupada',
+        'has_project_plan' => 'Tem Projeto',
     ],
 
     'descriptions' => [
@@ -114,8 +121,14 @@ return [
 
         'area_size' => 'Tamanho da área.',
         'photos' => 'Fotos do local.',
+        'documents' => 'Documentos, projetos ou especificações.',
         'service_type' => 'Serviço selecionado.',
         'house_type' => 'Tipo de moradia.',
         'property_type' => 'Tipo de propriedade.',
+
+        'material_supplied' => 'Quem fornece os materiais.',
+        'painting_subtype' => 'Subtipo de serviço de pintura.',
+        'property_occupied' => 'A propriedade está ocupada durante a obra.',
+        'has_project_plan' => 'Já tem um projeto ou plano definido.',
     ],
 ];

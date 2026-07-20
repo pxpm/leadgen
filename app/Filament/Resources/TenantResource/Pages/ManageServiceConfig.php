@@ -70,95 +70,103 @@ class ManageServiceConfig extends EditRecord
             $fieldDescriptions = $this->buildFieldDescriptions($allFields);
             $resolvedForDisplay = $engine->resolve($tenant, $key);
             $fieldOptions = $resolvedForDisplay['locales'][$tenant->locale ?? 'pt']['field_options'] ?? [];
-            $conditionalFields = $fullConfig['conditional_fields'] ?? [];
+
+            // Split fields: base (no "when" condition) vs conditional (has "when" condition)
+            $baseFields = array_filter($allFields, fn ($def) => empty($def['when']));
+            $condFields = array_filter($allFields, fn ($def) => ! empty($def['when']));
+
+            $tabSchema = [
+                Section::make('Campos Base')
+                    ->description('Ative/desative campos e defina se são obrigatórios ou opcionais.')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema($this->buildBaseFieldCards("svc.{$key}", $baseFields, $fieldDescriptions, $fieldOptions)),
+                    ]),
+            ];
+
+            // Only show conditional section if there are conditional fields
+            if (! empty($condFields)) {
+                $tabSchema[] = Section::make('Campos Condicionais')
+                    ->description('Campos que só aparecem quando certas condições se verificam.')
+                    ->collapsible()
+                    ->schema([
+                        Grid::make(3)
+                            ->schema($this->buildConditionalFieldCards("svc.{$key}.conditional_fields", $condFields, $fieldOptions)),
+                    ]);
+            }
+
+            $tabSchema[] = Section::make('Regras Condicionais')
+                ->description('Quando certas condições se verificam, exigir campos extra.')
+                ->collapsible()
+                ->schema([
+                    Repeater::make("svc.{$key}.conditional_requirements")
+                        ->label('')
+                        ->addActionLabel('Adicionar regra condicional')
+                        ->schema([
+                            Fieldset::make('Condições (todas têm de ser verdade)')
+                                ->schema([
+                                    Repeater::make('when_list')
+                                        ->label('')
+                                        ->addActionLabel('Adicionar condição')
+                                        ->schema([
+                                            Select::make('field')
+                                                ->label('Campo')
+                                                ->options($this->buildSelectFieldOptions($allFields))
+                                                ->live()
+                                                ->afterStateUpdated(fn ($set) => $set('values', []))
+                                                ->required(),
+                                            Select::make('values')
+                                                ->label('Valor(es)')
+                                                ->options(fn ($get) => $this->getFieldValues($allFields, $get('field'), $fieldOptions))
+                                                ->multiple()
+                                                ->required(),
+                                        ])
+                                        ->defaultItems(1)
+                                        ->columns(2)
+                                        ->columnSpanFull(),
+                                ]),
+                            CheckboxList::make('require')
+                                ->label('Exigir também estes campos')
+                                ->options($this->buildNotRequiredOptions($allFields, $resolvedForDisplay))
+                                ->descriptions($fieldDescriptions)
+                                ->columns(2),
+                        ])
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): string => $this->buildRuleLabel($state, $allFields, $fieldOptions)),
+                ]);
+
+            $tabSchema[] = Section::make('Mensagens')
+                ->description('Personalizar textos para este tenant.')
+                ->schema([
+                    TextInput::make("svc.{$key}.greeting_message")
+                        ->label('Mensagem de saudação')
+                        ->placeholder($fullConfig['locales'][$tenant->locale ?? 'pt']['ai_prompt']['greeting_message'] ?? '')
+                        ->maxLength(500),
+                    Repeater::make("svc.{$key}.field_prompts")
+                        ->label('Personalizar perguntas por campo')
+                        ->addActionLabel('Personalizar pergunta')
+                        ->schema([
+                            Select::make('field')
+                                ->label('Campo')
+                                ->options($this->buildFieldSelectOptions($allFields))
+                                ->live()
+                                ->afterStateUpdated(function (string $state, $set) use ($resolvedForDisplay, $tenant) {
+                                    $locale = $tenant->locale ?? 'pt';
+                                    $set('prompt', $resolvedForDisplay['locales'][$locale]['field_prompts'][$state] ?? '');
+                                })
+                                ->required(),
+                            TextInput::make('prompt')
+                                ->label('Texto da pergunta')
+                                ->required()
+                                ->maxLength(500),
+                        ])
+                        ->columns(2)
+                        ->collapsible(),
+                ]);
 
             $tabs[] = Tabs\Tab::make($key)
                 ->label(($service['icon'] ?? '').' '.$service['name'])
-                ->schema([
-                    Section::make('Campos Base')
-                        ->description('Ative/desative campos e defina se são obrigatórios ou opcionais.')
-                        ->schema([
-                            Grid::make(3)
-                                ->schema($this->buildBaseFieldCards("svc.{$key}", $allFields, $fieldDescriptions, $fieldOptions)),
-                        ]),
-
-                    Section::make('Campos Condicionais')
-                        ->description('Campos que só aparecem quando certas condições se verificam.')
-                        ->collapsible()
-                        ->schema([
-                            Grid::make(3)
-                                ->schema($this->buildConditionalFieldCards("svc.{$key}.conditional_fields", $conditionalFields, $fieldOptions)),
-                        ]),
-
-                    Section::make('Regras Condicionais')
-                        ->description('Quando certas condições se verificam, exigir campos extra.')
-                        ->collapsible()
-                        ->schema([
-                            Repeater::make("svc.{$key}.conditional_requirements")
-                                ->label('')
-                                ->addActionLabel('Adicionar regra condicional')
-                                ->schema([
-                                    Fieldset::make('Condições (todas têm de ser verdade)')
-                                        ->schema([
-                                            Repeater::make('when_list')
-                                                ->label('')
-                                                ->addActionLabel('Adicionar condição')
-                                                ->schema([
-                                                    Select::make('field')
-                                                        ->label('Campo')
-                                                        ->options($this->buildSelectFieldOptions($allFields))
-                                                        ->live()
-                                                        ->afterStateUpdated(fn ($set) => $set('values', []))
-                                                        ->required(),
-                                                    Select::make('values')
-                                                        ->label('Valor(es)')
-                                                        ->options(fn ($get) => $this->getFieldValues($allFields, $get('field'), $fieldOptions))
-                                                        ->multiple()
-                                                        ->required(),
-                                                ])
-                                                ->defaultItems(1)
-                                                ->columns(2)
-                                                ->columnSpanFull(),
-                                        ]),
-                                    CheckboxList::make('require')
-                                        ->label('Exigir também estes campos')
-                                        ->options($this->buildNotRequiredOptions($allFields, $resolvedForDisplay))
-                                        ->descriptions($fieldDescriptions)
-                                        ->columns(2),
-                                ])
-                                ->collapsible()
-                                ->itemLabel(fn (array $state): string => $this->buildRuleLabel($state, $allFields, $fieldOptions)),
-                        ]),
-
-                    Section::make('Mensagens')
-                        ->description('Personalizar textos para este tenant.')
-                        ->schema([
-                            TextInput::make("svc.{$key}.greeting_message")
-                                ->label('Mensagem de saudação')
-                                ->placeholder($fullConfig['locales'][$tenant->locale ?? 'pt']['ai_prompt']['greeting_message'] ?? '')
-                                ->maxLength(500),
-                            Repeater::make("svc.{$key}.field_prompts")
-                                ->label('Personalizar perguntas por campo')
-                                ->addActionLabel('Personalizar pergunta')
-                                ->schema([
-                                    Select::make('field')
-                                        ->label('Campo')
-                                        ->options($this->buildFieldSelectOptions($allFields))
-                                        ->live()
-                                        ->afterStateUpdated(function (string $state, $set) use ($resolvedForDisplay, $tenant) {
-                                            $locale = $tenant->locale ?? 'pt';
-                                            $set('prompt', $resolvedForDisplay['locales'][$locale]['field_prompts'][$state] ?? '');
-                                        })
-                                        ->required(),
-                                    TextInput::make('prompt')
-                                        ->label('Texto da pergunta')
-                                        ->required()
-                                        ->maxLength(500),
-                                ])
-                                ->columns(2)
-                                ->collapsible(),
-                        ]),
-                ]);
+                ->schema($tabSchema);
         }
 
         return $schema->components([
@@ -189,6 +197,11 @@ class ManageServiceConfig extends EditRecord
             $industryOptional = $resolved['optional_fields'] ?? [];
             $svcAllFields = $this->getAllFieldDefinitions($engine, $tenant, $key);
             foreach ($svcAllFields as $fKey => $fDef) {
+                // Skip conditional fields — they are managed in the "Campos Condicionais" section
+                if (! empty($fDef['when'])) {
+                    continue;
+                }
+
                 // Merge old format (required_fields map) if present
                 $oldMap = $svcData['required_fields'] ?? [];
                 $oldActive = $oldMap[$fKey] ?? null;
@@ -211,13 +224,15 @@ class ManageServiceConfig extends EditRecord
                 $svcData['greeting_message'] = $resolved['locales'][$locale]['ai_prompt']['greeting_message'] ?? '';
             }
 
-            // Pre-fill conditional_fields with industry defaults if no tenant override
-            $fullConfig = $engine->loadServiceConfig($key);
-            $industryConditional = $fullConfig['conditional_fields'] ?? [];
+            // Pre-fill conditional_fields from field_definitions that have a "when" condition
+            $svcAllFields = $this->getAllFieldDefinitions($engine, $tenant, $key);
             if (! isset($svcData['conditional_fields'])) {
                 $svcData['conditional_fields'] = [];
             }
-            foreach ($industryConditional as $cfKey => $cfDef) {
+            foreach ($svcAllFields as $cfKey => $cfDef) {
+                if (empty($cfDef['when'])) {
+                    continue;
+                }
                 if (! isset($svcData['conditional_fields'][$cfKey])) {
                     $svcData['conditional_fields'][$cfKey] = [
                         'enabled' => true,
@@ -246,8 +261,12 @@ class ManageServiceConfig extends EditRecord
             }
             $resolved = $engine->resolve($tenant, $key);
             $allOptLabels = $resolved['locales'][$tenant->locale ?? 'pt']['field_options'] ?? [];
-            $svcAllFields = $this->getAllFieldDefinitions($engine, $tenant, $key);
-            foreach ($svcAllFields as $fKey => $fDef) {
+            $svcAllFieldsForOpts = $this->getAllFieldDefinitions($engine, $tenant, $key);
+            foreach ($svcAllFieldsForOpts as $fKey => $fDef) {
+                // Skip conditional select fields — their options are managed via conditional_fields.{$key}.options
+                if (! empty($fDef['when'])) {
+                    continue;
+                }
                 if (($fDef['type'] ?? 'text') !== 'select') {
                     continue;
                 }
@@ -347,8 +366,9 @@ class ManageServiceConfig extends EditRecord
 
             // conditional_fields options: known labels → keys, unknowns stay
             if (! empty($svcData['conditional_fields'])) {
-                $fullConfig = app(IndustryConfigEngine::class)->loadServiceConfig($key);
-                $fieldOptions = $fullConfig['locales']['pt']['field_options'] ?? [];
+                $resolved = app(IndustryConfigEngine::class)->resolve($this->getRecord(), $key);
+                $locale = $this->getRecord()->locale ?? 'pt';
+                $fieldOptions = $resolved['locales'][$locale]['field_options'] ?? [];
                 foreach ($svcData['conditional_fields'] as $cfKey => &$cfData) {
                     if (! empty($cfData['options'])) {
                         $optLabels = $fieldOptions[$cfKey] ?? [];
@@ -572,6 +592,18 @@ class ManageServiceConfig extends EditRecord
                     ->columnSpanFull();
             }
 
+            // File fields: no options to configure, just a hint about accepted types
+            if (($def['type'] ?? null) === 'file') {
+                $hint = $fieldKey === 'photos'
+                    ? 'JPEG, PNG, WebP — máx. 10 MB'
+                    : 'PDF, Word, Excel — máx. 10 MB';
+                $schema[] = Text::make("{$fieldKey}_file_hint")
+                    ->content($hint)
+                    ->color('gray')
+                    ->size('sm')
+                    ->columnSpanFull();
+            }
+
             $cards[] = Fieldset::make($fieldKey)
                 ->label($label)
                 ->columns(2)
@@ -614,13 +646,21 @@ class ManageServiceConfig extends EditRecord
 
         $def = $allFields[$fieldKey];
 
-        if (($def['type'] ?? 'text') === 'select' && ! empty($def['options'])) {
+        if (($def['type'] ?? 'text') === 'select') {
             $labels = $fieldOptions[$fieldKey] ?? [];
 
-            return array_combine(
-                $def['options'],
-                array_map(fn ($v) => $labels[$v] ?? $v, $def['options'])
-            );
+            if (! empty($labels)) {
+                // Use resolved field_options (respects tenant overrides: ordering, removals, additions)
+                return $labels;
+            }
+
+            // Fallback: no tenant overrides, use raw field definition options
+            if (! empty($def['options'])) {
+                return array_combine(
+                    $def['options'],
+                    array_map(fn ($v) => $v, $def['options'])
+                );
+            }
         }
 
         return [];

@@ -95,6 +95,152 @@ test('upload photo stores media', function () {
     $response->assertCreated()->assertJsonStructure(['id', 'url', 'name']);
 });
 
+test('upload photo returns collection name in response', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->image('roof.jpg'),
+    ]);
+
+    $response->assertCreated()->assertJsonPath('collection', 'photos');
+});
+
+test('upload document stores to documents collection', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->createWithContent('plan.pdf', fakePdfContent()),
+        'collection' => 'documents',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('collection', 'documents');
+
+    // Verify it's actually in the documents collection
+    expect($lead->getMedia('documents'))->toHaveCount(1);
+    expect($lead->getMedia('photos'))->toHaveCount(0);
+});
+
+test('upload defaults to photos collection when collection omitted', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->image('roof.jpg'),
+    ]);
+
+    $response->assertCreated();
+    expect($lead->getMedia('photos'))->toHaveCount(1);
+});
+
+test('upload rejects invalid collection name', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->image('roof.jpg'),
+        'collection' => 'videos',
+    ]);
+
+    $response->assertStatus(422)->assertJsonPath('error', 'invalid_collection');
+});
+
+test('upload rejects image when collection is documents', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->image('photo.jpg'),
+        'collection' => 'documents',
+    ]);
+
+    $response->assertStatus(422);
+});
+
+test('upload rejects PDF when collection is photos', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->createWithContent('doc.pdf', fakePdfContent()),
+        'collection' => 'photos',
+    ]);
+
+    $response->assertStatus(422);
+});
+
+test('upload accepts PDF in documents collection', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->createWithContent('plan.pdf', fakePdfContent()),
+        'collection' => 'documents',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('collection', 'documents');
+    expect($lead->getMedia('documents'))->toHaveCount(1);
+});
+
+test('upload rejects docx file without documents collection', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    // .docx extension should pass Laravel mimes:docx validation,
+    // but .docx is not in the photos collection's allowed extensions
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->createWithContent('spec.docx', fakeDocxContent()),
+    ]);
+
+    $response->assertStatus(422);
+});
+
+test('upload rejects xlsx file without documents collection', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->createWithContent('data.xlsx', fakeXlsxContent()),
+    ]);
+
+    $response->assertStatus(422);
+});
+
+test('upload rejects with expired session', function () {
+    $lead = Lead::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'status' => LeadStatus::InProgress,
+        'token_expires_at' => now()->subHour(),
+    ]);
+
+    $response = $this->postJson("/api/widget/conversations/{$lead->session_token}/uploads", [
+        'file' => UploadedFile::fake()->image('roof.jpg'),
+    ]);
+
+    $response->assertStatus(410)->assertJsonPath('error', 'session_expired');
+});
+
 test('full conversation flow: service selection → qualification → skip → summary', function () {
     // Start conversation
     $start = $this->postJson("/api/widget/{$this->tenant->slug}/conversations");

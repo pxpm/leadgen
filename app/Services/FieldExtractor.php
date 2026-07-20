@@ -45,6 +45,13 @@ class FieldExtractor
                 continue;
             }
 
+            // File fields cannot be extracted from text — they are handled via upload endpoint.
+            if (($definitions[$key]['type'] ?? null) === 'file') {
+                Log::channel('ai')->debug('AI: field rejected (file type)', ['key' => $key]);
+
+                continue;
+            }
+
             if ($key === 'phone' && ! $this->isValidPortuguesePhone($data['value'])) {
                 Log::channel('ai')->debug('AI: field rejected (invalid phone)', ['key' => $key, 'value' => $data['value']]);
                 $rejected[] = $key;
@@ -159,6 +166,20 @@ class FieldExtractor
         $fieldDef = $definitions[$bestField] ?? null;
         if (! $fieldDef) {
             return [];
+        }
+
+        // File fields cannot be extracted from text — the widget handles them
+        // via a separate upload endpoint. Skip to the next missing field.
+        if (($fieldDef['type'] ?? null) === 'file') {
+            // Find the next non-file missing field
+            $fileFree = array_values(array_filter($missing, fn ($k) => ($definitions[$k]['type'] ?? 'text') !== 'file'));
+            if (! empty($fileFree)) {
+                $bestField = $fileFree[0];
+                $fieldDef = $definitions[$bestField] ?? null;
+            }
+            if (! $fieldDef || ($fieldDef['type'] ?? null) === 'file') {
+                return [];
+            }
         }
 
         // --- SELECT FIELD MATCHING ---

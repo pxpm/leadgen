@@ -11,4 +11,5 @@ enum FieldType: string
     case MultiSelect = 'multi_select';
     case Boolean = 'boolean';
     case Number = 'number';
+    case File = 'file';
 }

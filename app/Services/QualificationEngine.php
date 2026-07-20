@@ -19,21 +19,18 @@ class QualificationEngine
     {
         $config = $this->config->resolve($lead->tenant, $lead->services[0] ?? null);
         $requiredFields = $this->resolveRequiredFields($lead, $config);
+        $definitions = $config['field_definitions'] ?? [];
         $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
 
         foreach ($requiredFields as $field) {
-            $value = $collected[$field] ?? null;
-
-            // Missing key or declined/empty value → not complete
-            if ($value === null || $value === '' || $value === Lead::DECLINED) {
+            if (! $this->isFieldCollected($lead, $field, $definitions, $collected)) {
                 return false;
             }
         }
 
         // Contact fields are always required (name, phone, email, address, postal_code)
         foreach ($config['contact_fields'] ?? [] as $field) {
-            $value = $collected[$field] ?? null;
-            if ($value === null || $value === '' || $value === Lead::DECLINED) {
+            if (! $this->isFieldCollected($lead, $field, $definitions, $collected)) {
                 return false;
             }
         }
@@ -48,8 +45,7 @@ class QualificationEngine
                 continue;
             }
             if (! empty($def['required']) && $this->conditionsMatch($def['when'], $collected)) {
-                $condValue = $collected[$fieldKey] ?? null;
-                if ($condValue === null || $condValue === '' || $condValue === Lead::DECLINED) {
+                if (! $this->isFieldCollected($lead, $fieldKey, $definitions, $collected)) {
                     return false;
                 }
             }
@@ -66,6 +62,8 @@ class QualificationEngine
     {
         $config = $this->config->resolve($lead->tenant, $lead->services[0] ?? null);
         $requiredFields = $this->resolveRequiredFields($lead, $config);
+        $definitions = $config['field_definitions'] ?? [];
+        $collected = $lead->fields->pluck('field_value', 'field_key')->toArray();
 
         // Only count fields that belong to the current service or are shared (null lead_service_id).
         // This prevents service A's fields from being treated as "collected" for service B.
@@ -81,6 +79,13 @@ class QualificationEngine
             })
             ->pluck('field_key')
             ->toArray();
+
+        // Include file fields that have media uploaded as "collected"
+        foreach ($definitions as $fKey => $fDef) {
+            if (($fDef['type'] ?? null) === 'file' && $lead->getMedia($fKey)->isNotEmpty()) {
+                $collectedKeys[] = $fKey;
+            }
+        }
 
         $missing = array_values(array_diff($requiredFields, $collectedKeys));
 
@@ -147,8 +152,12 @@ class QualificationEngine
             if (! array_key_exists($parentFieldKey, $def['when'])) {
                 continue;
             }
-            // Already collected?
-            if (isset($collected[$fieldKey]) && $collected[$fieldKey] !== Lead::DECLINED) {
+            // Already collected? (check media for file fields, fields table for others)
+            if (($definitions[$fieldKey]['type'] ?? null) === 'file') {
+                if ($lead->getMedia($fieldKey)->isNotEmpty()) {
+                    continue;
+                }
+            } elseif (isset($collected[$fieldKey]) && $collected[$fieldKey] !== Lead::DECLINED) {
                 continue;
             }
             // Declined (skipped)?
@@ -278,6 +287,27 @@ class QualificationEngine
         }
 
         return array_unique($required);
+    }
+
+    /**
+     * Check if a single field has been collected.
+     * Regular fields: check lead.fields table (value must be non-null, non-empty, non-declined).
+     * File fields: check the Spatie MediaLibrary collection with the same key name.
+     *
+     * @param  array<string, array>  $definitions
+     * @param  array<string, ?string>  $collected
+     */
+    private function isFieldCollected(Lead $lead, string $fieldKey, array $definitions, array $collected): bool
+    {
+        $type = $definitions[$fieldKey]['type'] ?? null;
+
+        if ($type === 'file') {
+            return $lead->getMedia($fieldKey)->isNotEmpty();
+        }
+
+        $value = $collected[$fieldKey] ?? null;
+
+        return $value !== null && $value !== '' && $value !== Lead::DECLINED;
     }
 
     /**
