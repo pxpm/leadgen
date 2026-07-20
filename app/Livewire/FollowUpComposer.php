@@ -9,7 +9,10 @@ use App\Mail\FollowUpMail;
 use App\Models\EmailLearningExample;
 use App\Models\FollowUpAction;
 use App\Models\Lead;
+use App\Models\LeadEmailMessage;
+use App\Models\TenantEmailAccount;
 use App\Services\EmailComposer;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Livewire\Component;
@@ -40,10 +43,38 @@ class FollowUpComposer extends Component
 
     public bool $showPreview = false;
 
+    /** @var ?int Selected from-account ID (null = platform default) */
+    public ?int $fromAccountId = null;
+
+    /** @var ?int Selected reply-to account ID (null = notification recipient) */
+    public ?int $replyToAccountId = null;
+
     public function mount(Lead $lead, string $scenario): void
     {
         $this->lead = $lead;
         $this->scenario = $scenario;
+
+        $accounts = $this->getSendingAccounts();
+
+        // Find the account that originated this lead (inbound email)
+        $originatingAccountId = LeadEmailMessage::where('lead_id', $lead->id)
+            ->where('direction', 'inbound')
+            ->whereNotNull('tenant_email_account_id')
+            ->oldest()
+            ->value('tenant_email_account_id');
+
+        if ($originatingAccountId && $accounts->contains('id', $originatingAccountId)) {
+            // Lead came via this account and it's still active → pre-select it
+            $this->fromAccountId = $originatingAccountId;
+        } elseif ($accounts->isNotEmpty()) {
+            // Lead didn't come via email, but tenant has sending accounts → pre-select first
+            $this->fromAccountId = $accounts->first()->id;
+        }
+        // else: no sending accounts → stays null (platform default, selector hidden)
+
+        // Reply-to always mirrors the from account by default.
+        // Tenant can change it independently if they have multiple accounts.
+        $this->replyToAccountId = $this->fromAccountId;
     }
 
     public function toggleItem(string $key): void
@@ -125,11 +156,21 @@ class FollowUpComposer extends Component
         $safeName = str_replace(["\r", "\n"], '', $this->lead->tenant->name);
         $subject = str_replace(':tenant', $safeName, $locales['subject']);
 
+        $fromAccount = $this->fromAccountId
+            ? TenantEmailAccount::find($this->fromAccountId)
+            : null;
+
+        $replyToAccount = $this->replyToAccountId
+            ? TenantEmailAccount::find($this->replyToAccountId)
+            : null;
+
         // Send email
         Mail::to($recipientEmail)->send(new FollowUpMail(
             lead: $this->lead,
             emailBody: $this->generatedEmail,
             emailSubject: $subject,
+            fromAccount: $fromAccount,
+            replyToAccount: $replyToAccount,
         ));
 
         // Record the action
@@ -195,6 +236,37 @@ class FollowUpComposer extends Component
         }
 
         return array_map(fn ($item) => $reasons[$item] ?? $item, $this->selectedItems);
+    }
+
+    /**
+     * Active email accounts that can send (any verified account).
+     *
+     * @return Collection<int, TenantEmailAccount>
+     */
+    public function getAccountsProperty(): Collection
+    {
+        return $this->getSendingAccounts();
+    }
+
+    /**
+     * Whether to show the account selector at all.
+     */
+    public function getHasSendingAccountsProperty(): bool
+    {
+        return $this->getSendingAccounts()->isNotEmpty();
+    }
+
+    /**
+     * Cached list of active tenant email accounts.
+     *
+     * @return Collection<int, TenantEmailAccount>
+     */
+    private function getSendingAccounts(): Collection
+    {
+        return TenantEmailAccount::where('tenant_id', $this->lead->tenant_id)
+            ->active()
+            ->orderBy('email')
+            ->get();
     }
 
     public function render(): View

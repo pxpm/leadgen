@@ -25,7 +25,6 @@ class IndustrySeeder extends Seeder
                 ['slug' => $slug],
                 [
                     'name' => $name,
-                    'config' => require database_path("seeders/data/industries/{$slug}.php"),
                     'is_active' => true,
                 ]
             );

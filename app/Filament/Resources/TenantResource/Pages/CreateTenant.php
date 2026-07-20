@@ -7,6 +7,7 @@ namespace App\Filament\Resources\TenantResource\Pages;
 use App\Filament\Resources\TenantResource;
 use App\Models\Plan;
 use App\Services\TenantService;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -58,7 +59,33 @@ class CreateTenant extends CreateRecord
                         ->relationship('industry', 'name')
                         ->searchable()
                         ->preload()
-                        ->required(),
+                        ->required()
+                        ->live(),
+
+                    CheckboxList::make('active_services')
+                        ->label('Serviços')
+                        ->options(function (callable $get) {
+                            $industryId = $get('industry_id');
+                            if (! $industryId) {
+                                return [];
+                            }
+
+                            $industry = \App\Models\Industry::find($industryId);
+                            if (! $industry) {
+                                return [];
+                            }
+
+                            $config = require database_path("seeders/data/industries/{$industry->slug}.php");
+                            $keys = $config['services'] ?? [];
+                            $engine = app(\App\Services\IndustryConfigEngine::class);
+
+                            return collect($keys)->mapWithKeys(function ($key) use ($engine) {
+                                $config = $engine->loadServiceConfig($key);
+
+                                return [$key => ($config['icon'] ?? '').' '.($config['locales']['pt']['name'] ?? $key)];
+                            })->toArray();
+                        })
+                        ->columns(2),
                 ])
                 ->columns(2),
 

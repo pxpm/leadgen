@@ -15,24 +15,63 @@ class IndustryFactory extends Factory
     public function definition(): array
     {
         return [
-            'slug' => 'roofing',
-            'name' => 'Roofing Contractors',
-            'config' => $this->roofingConfig(),
+            'slug' => 'construcao_civil',
+            'name' => 'Construção Civil',
             'is_active' => true,
         ];
     }
 
-    public function roofing(): static
+    public function construcaoCivil(): static
     {
         return $this->state(fn () => [
-            'slug' => 'roofing',
-            'name' => 'Roofing Contractors',
-            'config' => $this->roofingConfig(),
+            'slug' => 'construcao_civil',
+            'name' => 'Construção Civil',
+            'is_active' => true,
         ]);
     }
 
-    private function roofingConfig(): array
+    public function hvac(): static
     {
-        return require database_path('seeders/data/industries/construcao_civil.php');
+        return $this->state(fn () => [
+            'slug' => 'hvac',
+            'name' => 'Climatização',
+            'is_active' => true,
+        ]);
+    }
+
+    public function electricity(): static
+    {
+        return $this->state(fn () => [
+            'slug' => 'electricity',
+            'name' => 'Eletricidade',
+            'is_active' => true,
+        ]);
+    }
+
+    public function plumbing(): static
+    {
+        return $this->state(fn () => [
+            'slug' => 'plumbing',
+            'name' => 'Canalização',
+            'is_active' => true,
+        ]);
+    }
+
+    public function landscaping(): static
+    {
+        return $this->state(fn () => [
+            'slug' => 'landscaping',
+            'name' => 'Paisagismo',
+            'is_active' => true,
+        ]);
+    }
+
+    public function pestControl(): static
+    {
+        return $this->state(fn () => [
+            'slug' => 'pest_control',
+            'name' => 'Controlo de Pragas',
+            'is_active' => true,
+        ]);
     }
 }

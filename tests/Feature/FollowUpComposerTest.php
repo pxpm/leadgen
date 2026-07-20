@@ -17,9 +17,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     Mail::fake();
 
-    $industry = Industry::factory()->create([
-        'config' => require database_path('seeders/data/industries/construcao_civil.php'),
-    ]);
+    $industry = Industry::factory()->create();
     $this->tenant = Tenant::factory()->create([
         'industry_id' => $industry->id,
         'locale' => 'pt',

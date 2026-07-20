@@ -23,6 +23,8 @@ class GenericEmail extends Mailable
         public ?string $messageId = null,
         public ?string $inReplyTo = null,
         public ?string $references = null,
+        /** @var array<int, string>|null */
+        public ?array $replyTo = null,
     ) {}
 
     public function envelope(): Envelope
@@ -33,6 +35,10 @@ class GenericEmail extends Mailable
 
         if ($this->fromAddress) {
             $envelope->from($this->fromAddress, $this->fromName ?? $this->fromAddress);
+        }
+
+        if ($this->replyTo) {
+            $envelope->replyTo($this->replyTo);
         }
 
         if ($this->messageId) {

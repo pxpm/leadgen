@@ -8,13 +8,17 @@ use App\Models\Tenant;
 
 class IndustryConfigEngine
 {
+    /** @var array<string, array> In-memory cache: file path → parsed config */
+    private static array $configCache = [];
+
     /**
      * Resolve the effective config for a tenant + optional service.
      * Merges: Industry base → Service config → Tenant overrides (_global + per-service).
      */
     public function resolve(Tenant $tenant, ?string $serviceType = null): array
     {
-        $base = $this->loadIndustryBase($tenant);
+        // Deep-copy the cached base to avoid mutating the cached copy during merge
+        $base = unserialize(serialize($this->loadIndustryBase($tenant)));
         $serviceConfig = $tenant->service_config ?? [];
         $locale = $tenant->locale ?: ($base['default_locale'] ?? 'pt');
 
@@ -188,7 +192,7 @@ class IndustryConfigEngine
             return null;
         }
 
-        return require $path;
+        return self::$configCache[$path] ??= require $path;
     }
 
     public function getLocale(Tenant $tenant): string
@@ -208,7 +212,8 @@ class IndustryConfigEngine
     }
 
     /**
-     * Load the industry base config from the tenant's industry record.
+     * Load the industry base config from the PHP definition file.
+     * The file is the single source of truth.
      */
     public function loadIndustryBase(Tenant $tenant): array
     {
@@ -218,7 +223,9 @@ class IndustryConfigEngine
             throw new \RuntimeException("Tenant [{$tenant->id}] has no industry configured.");
         }
 
-        return $tenant->industry->config;
+        $path = database_path("seeders/data/industries/{$tenant->industry->slug}.php");
+
+        return self::$configCache[$path] ??= require $path;
     }
 
     /**

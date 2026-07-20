@@ -12,19 +12,7 @@ beforeEach(function () {
     $base = require database_path('seeders/data/industries/construcao_civil.php');
     $roofing = require database_path('seeders/data/industries/services/roofing.php');
 
-    $config = $base;
-    $config['required_fields'] = array_merge($roofing['required_fields'] ?? [], $base['shared_fields']['qualification'] ?? [], $base['shared_fields']['contact'] ?? []);
-    $config['optional_fields'] = $roofing['optional_fields'] ?? [];
-    $config['field_definitions'] = array_merge($config['field_definitions'] ?? [], $roofing['field_definitions'] ?? []);
-    $config['conditional_fields'] = $roofing['conditional_fields'] ?? [];
-    $config['conditional_requirements'] = $roofing['conditional_requirements'] ?? [];
-    $config['locales'] = array_merge_recursive($config['locales'] ?? [], $roofing['locales'] ?? []);
-    $config['service_name'] = $roofing['name'] ?? 'Roofing';
-
-    $industry = Industry::factory()->create([
-        'slug' => 'roofing',
-        'config' => $config,
-    ]);
+    $industry = Industry::factory()->create();
 
     $this->tenant = Tenant::factory()->create([
         'industry_id' => $industry->id,

@@ -34,6 +34,6 @@ return [
     ],
 
     'generic' => [
-        'fallback_reply_to' => 'noreply@leadgen.com',
+        'fallback_reply_to' => 'noreply@liaweb.eu',
     ],
 ];

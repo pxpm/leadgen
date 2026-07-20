@@ -246,6 +246,7 @@ return [
         'breadcrumb' => 'Serviços',
         'saved' => 'Configuração guardada!',
         'tab_services' => 'Serviços',
+        'tab_email' => 'Email',
 
         'section_base_fields' => 'Campos Base',
         'section_base_fields_desc' => 'Ative/desative campos e defina se são obrigatórios ou opcionais.',

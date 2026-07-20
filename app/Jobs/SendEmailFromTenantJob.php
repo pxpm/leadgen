@@ -37,11 +37,7 @@ class SendEmailFromTenantJob implements ShouldQueue
             ->first();
 
         if (! $account) {
-            Log::warning('SendEmailFromTenantJob: No active email account for tenant — email will not be sent', [
-                'tenant_id' => $this->lead->tenant_id,
-                'lead_id' => $this->lead->id,
-                'subject' => $this->subject,
-            ]);
+            $this->sendViaPlatformFallback();
 
             return;
         }
@@ -205,22 +201,57 @@ class SendEmailFromTenantJob implements ShouldQueue
         }
     }
 
-    private function sendViaSystem(?TenantEmailAccount $account): void
+    /**
+     * Fallback when the tenant has NO email account configured.
+     * Sends from the platform address with reply-to pointing to the tenant
+     * and BCC to the platform's lead tracking inbox.
+     */
+    private function sendViaPlatformFallback(): void
     {
-        $leadEmail = $this->lead->fields()
-            ->where('field_key', 'email')
-            ->value('field_value');
-
+        $leadEmail = $this->leadEmail();
         if (! $leadEmail) {
             return;
         }
 
         try {
-            Mail::to($leadEmail)->send(new GenericEmail(
-                subject: $this->subject,
-                bodyText: $this->bodyText,
-                bodyHtml: $this->bodyHtml,
-            ));
+            Mail::to($leadEmail)
+                ->bcc($this->buildBccAddress())
+                ->send(new GenericEmail(
+                    subject: $this->subject,
+                    bodyText: $this->bodyText,
+                    bodyHtml: $this->bodyHtml,
+                    replyTo: $this->buildReplyTo(),
+                ));
+
+            Log::info('Email sent via platform fallback (no tenant account)', [
+                'lead_id' => $this->lead->id,
+                'tenant_id' => $this->lead->tenant_id,
+                'to' => $leadEmail,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to send email via platform fallback', [
+                'lead_id' => $this->lead->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function sendViaSystem(?TenantEmailAccount $account): void
+    {
+        $leadEmail = $this->leadEmail();
+        if (! $leadEmail) {
+            return;
+        }
+
+        try {
+            Mail::to($leadEmail)
+                ->bcc($this->buildBccAddress())
+                ->send(new GenericEmail(
+                    subject: $this->subject,
+                    bodyText: $this->bodyText,
+                    bodyHtml: $this->bodyHtml,
+                    replyTo: $this->buildReplyTo(),
+                ));
 
             Log::info('Email sent via system mailer (fallback)', [
                 'lead_id' => $this->lead->id,
@@ -232,5 +263,37 @@ class SendEmailFromTenantJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * The lead's email address from collected fields.
+     */
+    private function leadEmail(): ?string
+    {
+        return $this->lead->fields()
+            ->where('field_key', 'email')
+            ->value('field_value');
+    }
+
+    /**
+     * Build reply-to addresses: tenant's notification recipient(s).
+     *
+     * @return array<int, string>
+     */
+    private function buildReplyTo(): array
+    {
+        $recipients = $this->lead->tenant->notification_config['email']['recipients'] ?? [];
+
+        return ! empty($recipients) ? $recipients : [config('mail.from.address')];
+    }
+
+    /**
+     * Build the BCC address for lead tracking: lead+{tenant_slug}@{mail_domain}.
+     */
+    private function buildBccAddress(): string
+    {
+        $domain = substr(strrchr((string) config('mail.from.address'), '@'), 1);
+
+        return 'lead+'.$this->lead->tenant->slug.'@'.$domain;
     }
 }

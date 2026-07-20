@@ -223,7 +223,7 @@ class EmailAccountsRelationManager extends RelationManager
                     ->color('info')
                     ->requiresConfirmation()
                     ->modalHeading('Reenviar link de verificação')
-                    ->modalDescription('Um novo link será enviado para '.fn (TenantEmailAccount $record): string => $record->email)
+                    ->modalDescription(fn (TenantEmailAccount $record): string => 'Um novo link será enviado para '.$record->email)
                     ->action(function (TenantEmailAccount $record): void {
                         SendEmailVerificationJob::dispatch($record);
 

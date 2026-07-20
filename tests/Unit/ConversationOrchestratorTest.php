@@ -15,7 +15,7 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->industry = Industry::factory()->create(['config' => require database_path('seeders/data/industries/construcao_civil.php')]);
+    $this->industry = Industry::factory()->create();
     $this->tenant = Tenant::factory()->create([
         'industry_id' => $this->industry->id,
         'active_services' => ['roofing', 'waterproofing', 'painting'],

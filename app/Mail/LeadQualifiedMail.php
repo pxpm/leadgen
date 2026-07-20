@@ -23,8 +23,19 @@ class LeadQualifiedMail extends Mailable
 
         return new Envelope(
             subject: __('emails.lead_qualified.subject', ['name' => $name]),
-            replyTo: [$this->lead->tenant->notification_config['email']['recipients'][0] ?? __('emails.generic.fallback_reply_to')],
+            replyTo: [$this->lead->tenant->notification_config['email']['recipients'][0] ?? config('mail.from.address')],
+            bcc: [$this->buildBccAddress()],
         );
+    }
+
+    /**
+     * Build the BCC address for lead tracking: lead+{tenant_slug}@{mail_domain}.
+     */
+    private function buildBccAddress(): string
+    {
+        $domain = substr(strrchr((string) config('mail.from.address'), '@'), 1);
+
+        return 'lead+'.$this->lead->tenant->slug.'@'.$domain;
     }
 
     public function content(): Content

@@ -23,6 +23,30 @@
         </div>
     </div>
 
+    {{-- Account selectors (only when tenant has sending accounts) --}}
+    @if ($this->hasSendingAccounts)
+        <div class="mb-6 grid grid-cols-2 gap-4">
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Enviar de</label>
+                <select wire:model.live="fromAccountId" class="block w-full rounded-xl border-gray-200 bg-white text-sm shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                    <option value="">Plataforma (noreply@liaweb.eu)</option>
+                    @foreach ($this->accounts as $account)
+                        <option value="{{ $account->id }}">{{ $account->email }} ({{ $account->provider }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Responder para</label>
+                <select wire:model.live="replyToAccountId" class="block w-full rounded-xl border-gray-200 bg-white text-sm shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                    <option value="">Notificação do tenant</option>
+                    @foreach ($this->accounts as $account)
+                        <option value="{{ $account->id }}">{{ $account->email }} ({{ $account->provider }})</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+    @endif
+
     {{-- Grouped cards --}}
     @if ($this->hasGroups)
         <div class="mb-6 grid grid-cols-2 items-start gap-4">

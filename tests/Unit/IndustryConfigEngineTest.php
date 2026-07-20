@@ -10,7 +10,7 @@ uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     $this->engine = new IndustryConfigEngine;
-    $this->industry = Industry::factory()->create(['config' => require database_path('seeders/data/industries/construcao_civil.php')]);
+    $this->industry = Industry::factory()->create();
 });
 
 test('resolves base config without service', function () {

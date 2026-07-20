@@ -30,6 +30,9 @@ class ManageServiceConfig extends EditRecord
 
     protected static ?string $breadcrumb = 'Serviços';
 
+    /** @var array<int, string> Reactive list synced with the active-services checkbox. */
+    public array $activeServicesList = [];
+
     public static function canAccess(array $parameters = []): bool
     {
         $user = auth()->user();
@@ -58,7 +61,8 @@ class ManageServiceConfig extends EditRecord
         $engine = app(IndustryConfigEngine::class);
         $services = $engine->getAvailableServices($tenant);
 
-        $tabs = [];
+        // Build tabs for ALL services; only active ones get rendered via wire:key remount
+        $serviceTabs = [];
         foreach ($services as $service) {
             $key = $service['key'];
             $fullConfig = $engine->loadServiceConfig($key);
@@ -71,7 +75,6 @@ class ManageServiceConfig extends EditRecord
             $resolvedForDisplay = $engine->resolve($tenant, $key);
             $fieldOptions = $resolvedForDisplay['locales'][$tenant->locale ?? 'pt']['field_options'] ?? [];
 
-            // Split fields: base (no "when" condition) vs conditional (has "when" condition)
             $baseFields = array_filter($allFields, fn ($def) => empty($def['when']));
             $condFields = array_filter($allFields, fn ($def) => ! empty($def['when']));
 
@@ -84,7 +87,6 @@ class ManageServiceConfig extends EditRecord
                     ]),
             ];
 
-            // Only show conditional section if there are conditional fields
             if (! empty($condFields)) {
                 $tabSchema[] = Section::make('Campos Condicionais')
                     ->description('Campos que só aparecem quando certas condições se verificam.')
@@ -164,19 +166,57 @@ class ManageServiceConfig extends EditRecord
                         ->collapsible(),
                 ]);
 
-            $tabs[] = Tabs\Tab::make($key)
+            $serviceTabs[] = Tabs\Tab::make($key)
                 ->label(($service['icon'] ?? '').' '.$service['name'])
+                ->visible(fn () => in_array($key, $this->activeServicesList))
                 ->schema($tabSchema);
         }
 
         return $schema->components([
-            Tabs::make('Serviços')->tabs($tabs)->contained(false),
+            Tabs::make('ConfigTabs')->tabs([
+                Tabs\Tab::make('services')
+                    ->label(__('admin.service_config.tab_services'))
+                    ->icon('heroicon-o-cog')
+                    ->schema([
+                        Section::make('Serviços Ativos')
+                            ->description('Selecione os serviços disponíveis para este tenant.')
+                            ->schema([
+                                CheckboxList::make('active_services')
+                                    ->label('')
+                                    ->live()
+                                    ->afterStateUpdated(fn ($state) => $this->activeServicesList = $state ?? [])
+                                    ->options(fn () => collect($engine->allServiceKeys($tenant))
+                                        ->mapWithKeys(fn ($key) => [$key => $this->serviceLabel($key)])
+                                        ->toArray())
+                                    ->columns(3)
+                                    ->default($tenant->active_services ?? []),
+                            ]),
+
+                        Tabs::make('Serviços')
+                            ->tabs($serviceTabs)
+                            ->contained(false)
+                            ->key('svc-tabs-'.implode(',', $this->activeServicesList)),
+                    ]),
+
+                Tabs\Tab::make('email')
+                    ->label(__('admin.service_config.tab_email'))
+                    ->icon('heroicon-o-envelope')
+                    ->schema([
+                        \Filament\Schemas\Components\Livewire::make(
+                            \App\Filament\Resources\TenantResource\RelationManagers\EmailAccountsRelationManager::class,
+                            ['ownerRecord' => $tenant, 'pageClass' => static::class],
+                        ),
+                    ]),
+            ])->contained(false),
         ])->columns(1);
     }
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $tenant = $this->getRecord();
+
+        $this->activeServicesList = $tenant->active_services ?? [];
+
         $engine = app(IndustryConfigEngine::class);
         $saved = $tenant->service_config ?? [];
 
@@ -390,8 +430,11 @@ class ManageServiceConfig extends EditRecord
             }
         }
 
-        $this->getRecord()->update(['service_config' => $svc]);
-        unset($data['svc']);
+        $this->getRecord()->update([
+            'service_config' => $svc,
+            'active_services' => $data['active_services'] ?? [],
+        ]);
+        unset($data['svc'], $data['active_services']);
 
         return $data;
     }
@@ -636,6 +679,17 @@ class ManageServiceConfig extends EditRecord
     private function fieldLabel(string $fieldKey): string
     {
         return trans('fields.labels.'.$fieldKey) ?: $fieldKey;
+    }
+
+    private function serviceLabel(string $serviceKey): string
+    {
+        $config = app(IndustryConfigEngine::class)->loadServiceConfig($serviceKey);
+
+        if (! $config) {
+            return $serviceKey;
+        }
+
+        return ($config['icon'] ?? '').' '.($config['locales']['pt']['name'] ?? $config['key'] ?? $serviceKey);
     }
 
     private function getFieldValues(array $allFields, ?string $fieldKey, array $fieldOptions = []): array
