@@ -362,6 +362,7 @@ return [
         'save_label' => 'Poupe {percent}%',
         'cta_button' => 'Começar Agora',
         'most_popular' => 'Mais Popular',
+        'no_plans' => 'Ainda não há planos disponíveis. Volte em breve.',
         'limits_title' => 'Limites Mensais',
         'limit_sms' => 'SMS',
         'limit_sms_desc' => 'Links e notificações via SMS',

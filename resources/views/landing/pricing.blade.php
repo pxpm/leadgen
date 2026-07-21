@@ -151,7 +151,7 @@ $badgePercent = PricingPlanData::badgePercent($plans);
     </div>
     @else
     <div class="relative max-w-2xl mx-auto text-center py-12">
-        <p class="text-gray-400 text-lg">No pricing plans available yet. Check back soon.</p>
+        <p class="text-gray-400 text-lg">{{ $p['no_plans'] }}</p>
     </div>
     @endif
 </section>

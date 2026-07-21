@@ -361,6 +361,7 @@ return [
         'save_label' => 'Save {percent}%',
         'cta_button' => 'Get Started',
         'most_popular' => 'Most Popular',
+        'no_plans' => 'No pricing plans available yet. Check back soon.',
         'limits_title' => 'Monthly Limits',
         'limit_sms' => 'SMS',
         'limit_sms_desc' => 'Links and notifications via SMS',
