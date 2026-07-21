@@ -3,7 +3,7 @@
 // Email & mail template translations — English
 return [
     'magic_link' => [
-        'subject' => 'Welcome to Lead Intake — :tenant',
+        'subject' => 'Welcome to Lead Intake — :name',
         'title' => 'Welcome to Lead Intake',
         'greeting' => '👋 Welcome, :name!',
         'body' => 'Your Lead Intake Assistant account has been created successfully.',

@@ -6,7 +6,7 @@
 </head>
 <body style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1a1a1a;">
     <div style="max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-        <h2 style="color: #2563eb;">{{ __('emails.magic_link.greeting', ['name' => $tenantName]) }}</h2>
+        <h2 style="color: #2563eb;">{{ __('emails.magic_link.greeting', ['name' => $userName]) }}</h2>
 
         <p>{{ __('emails.magic_link.body') }}</p>
 

@@ -16,13 +16,13 @@ class MagicLinkLogin extends Mailable
 
     public function __construct(
         public string $magicLinkUrl,
-        public string $tenantName,
+        public string $userName,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('emails.magic_link.subject', ['tenant' => $this->tenantName]),
+            subject: __('emails.magic_link.subject', ['name' => $this->userName]),
         );
     }
 
@@ -32,7 +32,7 @@ class MagicLinkLogin extends Mailable
             view: 'mail.magic-link-login',
             with: [
                 'magicLinkUrl' => $this->magicLinkUrl,
-                'tenantName' => $this->tenantName,
+                'userName' => $this->userName,
             ],
         );
     }

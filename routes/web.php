@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\MissedCallController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\IntakeController;
+use App\Http\Controllers\TrialCompleteController;
 use App\Http\Controllers\TrialSignupController;
 use App\Models\MissedCall;
 use App\Models\ShortLink;
@@ -157,6 +159,14 @@ Route::get('/magic-link/{token}', function (string $token) {
 
     return redirect($service->getRedirectUrl($token) ?? '/manage-backoffice');
 })->name('magic-link');
+
+// Social auth (Google, Facebook)
+Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect'])->name('social.redirect');
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback');
+
+// Trial completion after social auth
+Route::get('/trial/complete', [TrialCompleteController::class, 'show'])->name('trial.complete');
+Route::post('/trial/complete', [TrialCompleteController::class, 'store']);
 
 // Email account verification (signed URL, one-time token)
 Route::get('/verify-email-account/{account}/{token}', function (TenantEmailAccount $account, string $token) {

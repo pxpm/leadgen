@@ -72,7 +72,7 @@ class MagicLinkService
         $magicLink = MagicLink::create([
             'user_id' => $user->id,
             'token' => Str::random(64),
-            'redirect_to' => url('/manage-backoffice'),
+            'redirect_to' => url('/manage-backoffice/set-password'),
             'expires_at' => now()->addHours(24),
         ]);
 

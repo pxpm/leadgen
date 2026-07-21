@@ -108,7 +108,7 @@ class TenantService
         Mail::to($user->email)
             ->send(new MagicLinkLogin(
                 magicLinkUrl: $url,
-                tenantName: $user->tenant?->name ?? 'a sua empresa',
+                userName: $user->name,
             ));
     }
 }
