@@ -371,10 +371,6 @@ return [
         'feature_recovery_call' => 'Missed call recovery',
         'faq' => [
             [
-                'question' => 'Is there a free trial?',
-                'answer' => 'Yes. You can try it free for 14 days. No commitment. Cancel anytime.',
-            ],
-            [
                 'question' => 'What happens if I exceed the limits?',
                 'answer' => 'Limits are counted monthly. If you hit the limit, you can upgrade to the next plan at any time.',
             ],
@@ -388,7 +384,7 @@ return [
             ],
         ],
         'cta_headline' => 'Ready to never miss another lead?',
-        'cta_subtitle' => 'Start today. 14 days free. Cancel anytime.',
+        'cta_subtitle' => 'Start today. Cancel anytime.',
     ],
 
     'industry_pages' => [

@@ -24,10 +24,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'turnstile' => VerifyTurnstile::class,
             'twilio-webhook' => ValidateTwilioWebhook::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'demo-request',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->is('demo-request'),
         );
 
         // Return JSON 401 for unauthenticated API requests instead of

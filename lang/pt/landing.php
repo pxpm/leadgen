@@ -372,10 +372,6 @@ return [
         'feature_recovery_call' => 'Recuperação de chamadas perdidas',
         'faq' => [
             [
-                'question' => 'Existe um período de teste?',
-                'answer' => 'Sim. Pode experimentar gratuitamente durante 14 dias. Sem compromisso. Cancele a qualquer momento.',
-            ],
-            [
                 'question' => 'O que acontece se exceder os limites?',
                 'answer' => 'Os limites são contabilizados mensalmente. Se atingir o limite, pode fazer upgrade para o plano superior a qualquer momento.',
             ],
@@ -389,7 +385,7 @@ return [
             ],
         ],
         'cta_headline' => 'Pronto para nunca mais perder um contacto?',
-        'cta_subtitle' => 'Comece hoje. 14 dias grátis. Cancele quando quiser.',
+        'cta_subtitle' => 'Comece hoje. Cancele quando quiser.',
     ],
 
     'industry_pages' => [

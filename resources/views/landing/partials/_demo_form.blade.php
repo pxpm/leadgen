@@ -2,23 +2,42 @@
     submitted: false,
     error: false,
     loading: false,
+    errors: {},
     form: { name: '', email: '', phone: '', company: '', industry: '', message: '' },
     async submitForm() {
         this.loading = true;
         this.error = false;
+        this.errors = {};
         try {
             const res = await fetch('/demo-request', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify(this.form),
             });
-            if (!res.ok) throw new Error();
-            this.submitted = true;
+            if (res.status === 419) {
+                this.error = true;
+                window.location.reload();
+                return;
+            }
+            if (res.ok) {
+                this.submitted = true;
+                return;
+            }
+            const data = await res.json();
+            if (data.errors) {
+                this.errors = data.errors;
+            } else {
+                this.error = true;
+            }
         } catch (e) {
             this.error = true;
         } finally {
             this.loading = false;
         }
+    },
+    fieldError(field) {
+        const errs = this.errors[field];
+        return errs ? errs[0] : null;
     }
 }" class="mt-12">
     {{-- Success --}}
@@ -38,13 +57,17 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">{{ __('landing.demo_form.name') }} *</label>
                     <input type="text" x-model="form.name" required
                            placeholder="{{ __('landing.demo_form.name_placeholder') }}"
-                           class="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100 transition-all">
+                           :class="fieldError('name') ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-amber-300 focus:ring-amber-100'"
+                           class="w-full px-4 py-3 text-sm bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 transition-all">
+                    <p x-show="fieldError('name')" x-text="fieldError('name')" x-cloak class="mt-1 text-xs text-red-500"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">{{ __('landing.demo_form.email') }} *</label>
                     <input type="email" x-model="form.email" required
                            placeholder="{{ __('landing.demo_form.email_placeholder') }}"
-                           class="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100 transition-all">
+                           :class="fieldError('email') ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-amber-300 focus:ring-amber-100'"
+                           class="w-full px-4 py-3 text-sm bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 transition-all">
+                    <p x-show="fieldError('email')" x-text="fieldError('email')" x-cloak class="mt-1 text-xs text-red-500"></p>
                 </div>
             </div>
             <div class="grid sm:grid-cols-2 gap-5">
