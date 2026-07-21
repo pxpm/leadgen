@@ -62,8 +62,14 @@ class TrialSignupController extends Controller
             return response()->json(['ok' => true, 'outro' => true], 201);
         }
 
-        $industry = Industry::where('slug', $validated['industry'])->firstOrFail();
-        $trialPlan = Plan::where('slug', 'trial')->firstOrFail();
+        $industry = Industry::where('slug', $validated['industry'])->first();
+        $trialPlan = Plan::where('slug', 'trial')->first();
+
+        if (! $industry || ! $trialPlan) {
+            return response()->json([
+                'message' => __('landing.demo_form.error_message'),
+            ], 422);
+        }
 
         $slug = Str::slug($validated['company']);
         $baseSlug = $slug;

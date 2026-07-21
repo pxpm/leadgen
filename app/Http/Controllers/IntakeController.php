@@ -71,7 +71,8 @@ class IntakeController extends Controller
     private function resolveMissedCallIntake(ShortLink $shortLink, Request $request): RedirectResponse
     {
         $missedCallId = $shortLink->metadata['missed_call_id'] ?? null;
-        $missedCall = MissedCall::findOrFail($missedCallId);
+        $missedCall = MissedCall::find($missedCallId);
+        abort_if(! $missedCall, 404);
         $intent = $request->query('intent')
             ?? $shortLink->metadata['intent'] ?? null;
 
@@ -106,7 +107,8 @@ class IntakeController extends Controller
     private function resolveMissedCallSendSms(ShortLink $shortLink): RedirectResponse
     {
         $missedCallId = $shortLink->metadata['missed_call_id'] ?? null;
-        $missedCall = MissedCall::findOrFail($missedCallId);
+        $missedCall = MissedCall::find($missedCallId);
+        abort_if(! $missedCall, 404);
 
         SendCallerSmsJob::dispatch($missedCall);
 

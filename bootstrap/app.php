@@ -6,6 +6,7 @@ use App\Http\Middleware\ValidateInboundEmailWebhook;
 use App\Http\Middleware\ValidateTwilioWebhook;
 use App\Http\Middleware\VerifyTurnstile;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -46,6 +47,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Unauthenticated.',
                 ], 401);
             }
+        });
+
+        // Never leak model names in 404 responses.
+        $exceptions->render(function (ModelNotFoundException $e, Request $request) {
+            return response()->json([
+                'error' => 'not_found',
+                'message' => 'Not found.',
+            ], 404);
         });
 
         // Strip sensitive debug info from API error responses.

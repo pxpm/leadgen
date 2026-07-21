@@ -109,7 +109,8 @@ class CalendarEventController extends Controller
         $tenant = tenant();
         abort_if(! $tenant, 403);
 
-        $event = CalendarEvent::where('tenant_id', $tenant->id)->findOrFail($event);
+        $event = CalendarEvent::where('tenant_id', $tenant->id)->find($event);
+        abort_if(! $event, 404);
 
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
@@ -170,7 +171,8 @@ class CalendarEventController extends Controller
         $tenant = tenant();
         abort_if(! $tenant, 403);
 
-        $event = CalendarEvent::where('tenant_id', $tenant->id)->findOrFail($event);
+        $event = CalendarEvent::where('tenant_id', $tenant->id)->find($event);
+        abort_if(! $event, 404);
 
         $event->delete();
 
