@@ -36,6 +36,30 @@ class PlanForm
                     ])
                     ->columns(2),
 
+                Section::make('Preços')
+                    ->schema([
+                        TextInput::make('monthly_price')
+                            ->label('Preço Mensal (€)')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0)
+                            ->prefix('€'),
+
+                        TextInput::make('yearly_price_per_month')
+                            ->label('Preço Anual por Mês (€)')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0)
+                            ->prefix('€')
+                            ->helperText('Valor mensal se faturado anualmente.'),
+
+                        TextInput::make('stripe_price_id')
+                            ->label('Stripe Price ID')
+                            ->maxLength(255)
+                            ->helperText('Opcional — ID do preço no Stripe.'),
+                    ])
+                    ->columns(3),
+
                 Section::make('Limites Mensais')
                     ->schema([
                         TextInput::make('limits.sms_monthly')
@@ -52,12 +76,16 @@ class PlanForm
                             ->minValue(0)
                             ->default(500),
 
-                        TextInput::make('limits.ai_ingestion_monthly')
+                        TextInput::make('limits.email_ingestion_monthly')
                             ->label('AI Ingestion')
                             ->numeric()
                             ->required()
                             ->minValue(0)
                             ->default(50),
+
+                        Toggle::make('limits.recovery_call')
+                            ->label('Recuperação de Chamadas')
+                            ->helperText('Permite recuperar chamadas perdidas automaticamente.'),
                     ])
                     ->columns(3),
 
