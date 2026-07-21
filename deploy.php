@@ -49,6 +49,10 @@ task('artisan:migrate_force', function () {
     run('{{bin/php}} {{release_or_current_path}}/artisan migrate --force');
 });
 
+task('artisan:seed_critical', function () {
+    run('{{bin/php}} {{release_or_current_path}}/artisan db:seed --class=IndustrySeeder --no-interaction');
+});
+
 task('artisan:queue_restart', function () {
     run('{{bin/php}} {{release_or_current_path}}/artisan queue:restart');
 });
@@ -62,6 +66,7 @@ task('npm:build', function () {
 });
 
 after('deploy:vendors', 'artisan:migrate_force');
+after('artisan:migrate_force', 'artisan:seed_critical');
 
 after('deploy:vendors', 'artisan:optimize');
 

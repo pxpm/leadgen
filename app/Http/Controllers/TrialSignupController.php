@@ -34,10 +34,10 @@ class TrialSignupController extends Controller
             'company' => ['required', 'string', 'max:255'],
             'industry' => ['required', 'string', 'max:50', function (string $attr, mixed $value, \Closure $fail) {
                 if ($value !== 'outro' && ! Industry::where('slug', $value)->exists()) {
-                    $fail(__('validation.exists', ['attribute' => $attr]));
+                    $fail(__('validation.exists', ['attribute' => __('validation.attributes.industry')]));
                 }
             }],
-            'industry_other' => ['required_if:industry,outro', 'string', 'max:100'],
+            'industry_other' => ['required_if:industry,outro', 'nullable', 'string', 'max:100'],
         ]);
 
         // Manual email uniqueness check — avoids account enumeration.
