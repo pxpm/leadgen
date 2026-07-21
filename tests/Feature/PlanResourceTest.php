@@ -38,10 +38,12 @@ test('super admin can create a plan', function () {
         ->fillForm([
             'name' => 'Custom Plan',
             'slug' => 'custom-plan',
+            'monthly_price' => 49,
+            'yearly_price_per_month' => 39,
             'limits' => [
                 'sms_monthly' => 200,
                 'email_monthly' => 1000,
-                'ai_ingestion_monthly' => 100,
+                'email_ingestion_monthly' => 100,
             ],
             'is_public' => false,
             'is_active' => true,
@@ -90,10 +92,12 @@ test('is_public flag works correctly', function () {
         ->fillForm([
             'name' => 'Private Plan',
             'slug' => 'private-plan',
+            'monthly_price' => 29,
+            'yearly_price_per_month' => 19,
             'limits' => [
                 'sms_monthly' => 100,
                 'email_monthly' => 500,
-                'ai_ingestion_monthly' => 50,
+                'email_ingestion_monthly' => 50,
             ],
             'is_public' => false,
             'is_active' => true,

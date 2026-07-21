@@ -17,6 +17,8 @@ final readonly class PricingPlanData
     public string $monthlyPrice;
     /** Formatted yearly price per month (e.g. "29") */
     public string $yearlyPrice;
+    /** Raw monthly price (integer, for strikethrough on yearly view) */
+    public string $monthlyPriceRaw;
     /** Yearly total in cents-equivalent (e.g. 34800 for €348/year) */
     public int $yearlyTotal;
     /** Monthly total in cents-equivalent */
@@ -37,12 +39,13 @@ final readonly class PricingPlanData
         $this->name = $plan->name;
         $this->slug = $plan->slug;
         $this->description = (string) $plan->description;
-        $this->isPopular = $plan->slug === 'professional';
+        $this->isPopular = (bool) $plan->is_popular;
 
         $monthly = (int) $plan->monthly_price;
         $yearly = (int) $plan->yearly_price_per_month;
 
         $this->monthlyPrice = number_format($monthly, 0);
+        $this->monthlyPriceRaw = (string) $monthly;
         $this->yearlyPrice = number_format($yearly, 0);
         $this->yearlyTotal = $yearly * 12;
         $this->monthlyTotal = $monthly * 12;

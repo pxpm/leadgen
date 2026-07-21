@@ -10,14 +10,14 @@ return [
         'how_it_works' => 'How It Works',
         'industries' => 'Industries',
         'pricing' => 'Pricing',
-        'demo' => 'See Demo',
+        'demo' => 'Free Trial',
         'login' => 'Login',
     ],
 
     'hero' => [
         'headline' => 'Never lose another lead while you\'re on a job.',
         'subheadline' => 'The assistant asks the questions, collects photos, writes the follow-up email. You get a qualified lead — ready to close.',
-        'cta_primary' => 'Book a Demo',
+        'cta_primary' => 'Free Trial',
         'cta_secondary' => 'See How It Works',
         'conversation' => [
             'customer_1' => 'My roof is leaking.',
@@ -167,6 +167,7 @@ return [
         'plumbing' => ['name' => 'Plumbing', 'icon' => '🔧', 'slug' => 'plumbing'],
         'landscaping' => ['name' => 'Landscaping', 'icon' => '🌿', 'slug' => 'landscaping'],
         'pest_control' => ['name' => 'Pest Control', 'icon' => '🐛', 'slug' => 'pest-control'],
+        'outro' => ['name' => 'Other', 'icon' => '📋', 'slug' => 'outro'],
     ],
 
     'why_not_forms' => [
@@ -329,8 +330,8 @@ return [
     ],
 
     'demo_form' => [
-        'headline' => 'Request a Demo',
-        'subtitle' => 'Fill in the form and we\'ll get back to you within 24 hours.',
+        'headline' => 'Start Your Free Trial',
+        'subtitle' => 'Try it free for 14 days. No commitment, no credit card.',
         'name' => 'Name',
         'name_placeholder' => 'Your full name',
         'email' => 'Email',
@@ -341,13 +342,15 @@ return [
         'company_placeholder' => 'Your company name',
         'industry' => 'Industry',
         'industry_placeholder' => 'Select your trade',
-        'message' => 'Message',
-        'message_placeholder' => 'Tell us about your business and what you\'re looking for...',
-        'submit' => 'Request Demo',
-        'submitting' => 'Sending...',
-        'success_title' => 'Thank you!',
-        'success_message' => 'We\'ve received your request. We\'ll get back to you within 24 hours.',
-        'error_message' => 'Something went wrong. Please try again or email us directly.',
+        'industry_other_label' => 'What is your trade?',
+        'industry_other_placeholder' => 'e.g. Auto Painting, Metalwork...',
+        'submit' => 'Start Free Trial',
+        'submitting' => 'Creating account...',
+        'success_title' => 'Account created!',
+        'success_message' => 'We sent you an email with your access link. Check your inbox.',
+        'outro_title' => 'Request received!',
+        'outro_message' => 'Your industry isn\'t in our list yet. We\'ll review your request and get back to you shortly.',
+        'error_message' => 'An error occurred while processing your request. Please check that your information is correct and that this email has not been used before.',
     ],
 
     'pricing_page' => [

@@ -7,7 +7,6 @@ use App\Models\Plan;
 $p = __('landing.pricing_page');
 $plans = PricingPlanData::collect(Plan::public()->orderBy('sort_order')->get());
 $hasPlans = PricingPlanData::hasPlans($plans);
-$badgePercent = PricingPlanData::badgePercent($plans);
 @endphp
 
 @section('title', $p['seo_title'])
@@ -45,7 +44,6 @@ $badgePercent = PricingPlanData::badgePercent($plans);
             :class="billing === 'yearly' ? 'bg-amber-400 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'"
             class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors">
             {{ $p['billed_yearly'] }}
-            <span class="ml-1.5 px-1.5 py-0.5 text-[11px] font-bold bg-green-100 text-green-700 rounded-full">-{{ $badgePercent }}%</span>
         </button>
     </div>
     @endif
@@ -77,7 +75,10 @@ $badgePercent = PricingPlanData::badgePercent($plans);
                             @if (! $plan->currencyBefore)<span class="text-xl text-gray-400 font-medium self-end mb-1">€</span>@endif
                             <span class="text-lg text-gray-400 font-medium">{{ $p['per_month'] }}</span>
                         </div>
-                        <p class="mt-1.5 text-xs text-green-600 font-semibold">
+                        <p class="mt-1 text-sm text-gray-400 line-through">
+                            @if ($plan->currencyBefore)€@endif{{ $plan->monthlyPriceRaw }}@if (! $plan->currencyBefore)€@endif{{ $p['per_month'] }}
+                        </p>
+                        <p class="mt-0.5 text-xs text-green-600 font-semibold">
                             {{ number_format($plan->yearlyTotal, 0) }}€/ano
                             <span class="ml-1.5 px-1.5 py-0.5 bg-green-50 text-green-700 rounded-full">{{ str_replace('{percent}', (string) $plan->savingsPercent, $p['save_label']) }}</span>
                         </p>
@@ -98,9 +99,9 @@ $badgePercent = PricingPlanData::badgePercent($plans);
 
                     <p class="mt-3 text-gray-500 text-sm leading-relaxed">{{ $plan->description }}</p>
 
-                    <a href="#demo" class="mt-8 inline-flex items-center justify-center w-full px-6 py-3.5 text-sm font-bold text-white {{ $plan->isPopular ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-200/50' : 'bg-gray-800 hover:bg-gray-900' }} rounded-xl transition-colors">
+                    <button @click="showTrialModal = true" class="mt-8 inline-flex items-center justify-center w-full px-6 py-3.5 text-sm font-bold text-white {{ $plan->isPopular ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-200/50' : 'bg-gray-800 hover:bg-gray-900' }} rounded-xl transition-colors cursor-pointer">
                         {{ $p['cta_button'] }}
-                    </a>
+                    </button>
                 </div>
 
                 {{-- Limits --}}
@@ -187,12 +188,10 @@ $badgePercent = PricingPlanData::badgePercent($plans);
         <p class="mt-4 text-gray-400 text-lg">
             {{ $p['cta_subtitle'] }}
         </p>
-        <a href="#demo" class="mt-8 inline-flex items-center px-8 py-3.5 text-sm font-bold text-gray-900 bg-amber-400 rounded-xl hover:bg-amber-300 transition-colors shadow-lg shadow-amber-500/20">
+        <button @click="showTrialModal = true" class="mt-8 inline-flex items-center px-8 py-3.5 text-sm font-bold text-gray-900 bg-amber-400 rounded-xl hover:bg-amber-300 transition-colors shadow-lg shadow-amber-500/20 cursor-pointer">
             {{ $p['cta_button'] }}
-        </a>
+        </button>
     </div>
 </section>
-
-@include('landing.partials._demo_form')
 
 @endsection

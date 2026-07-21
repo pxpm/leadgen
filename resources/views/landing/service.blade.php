@@ -69,10 +69,10 @@
             {{ $serviceData['hero_subheadline'] ?? '' }}
         </p>
         <div class="mt-8">
-            <a href="#demo-form" class="group inline-flex items-center px-6 py-3.5 text-base font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20">
+            <button @click="showTrialModal = true" class="group inline-flex items-center px-6 py-3.5 text-base font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 cursor-pointer">
                 {{ __('landing.demo_form.submit') }}
                 <span class="ml-2 transition-transform group-hover:translate-x-1">→</span>
-            </a>
+            </button>
         </div>
     </div>
 </section>

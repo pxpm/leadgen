@@ -11,14 +11,14 @@ return [
         'how_it_works' => 'Como Funciona',
         'industries' => 'Indústrias',
         'pricing' => 'Preços',
-        'demo' => 'Ver Demo',
+        'demo' => 'Trial Gratuito',
         'login' => 'Entrar',
     ],
 
     'hero' => [
         'headline' => 'Não perca clientes, nem perca tempo.',
         'subheadline' => 'O assistente faz as perguntas, recolhe fotos, escreve o email de resposta. Você recebe o contacto qualificado — pronto para fechar.',
-        'cta_primary' => 'Marcar Demo',
+        'cta_primary' => 'Trial Gratuito',
         'cta_secondary' => 'Ver Como Funciona',
         'conversation' => [
             'customer_1' => 'O meu telhado está com infiltrações.',
@@ -168,6 +168,7 @@ return [
         'plumbing' => ['name' => 'Canalização', 'icon' => '🔧', 'slug' => 'canalizacao'],
         'landscaping' => ['name' => 'Paisagismo', 'icon' => '🌿', 'slug' => 'paisagismo'],
         'pest_control' => ['name' => 'Controlo de Pragas', 'icon' => '🐛', 'slug' => 'controlo-pragas'],
+        'outro' => ['name' => 'Outro', 'icon' => '📋', 'slug' => 'outro'],
     ],
 
     'why_not_forms' => [
@@ -330,8 +331,8 @@ return [
     ],
 
     'demo_form' => [
-        'headline' => 'Solicitar Demonstração',
-        'subtitle' => 'Preencha o formulário e entraremos em contacto em menos de 24 horas.',
+        'headline' => 'Comece o Seu Trial Gratuito',
+        'subtitle' => 'Teste gratuitamente durante 14 dias. Sem compromisso, sem cartão de crédito.',
         'name' => 'Nome',
         'name_placeholder' => 'O seu nome completo',
         'email' => 'Email',
@@ -342,13 +343,15 @@ return [
         'company_placeholder' => 'Nome da sua empresa',
         'industry' => 'Especialidade',
         'industry_placeholder' => 'Selecione a sua área',
-        'message' => 'Mensagem',
-        'message_placeholder' => 'Conte-nos um pouco sobre o seu negócio e o que procura...',
-        'submit' => 'Pedir Demonstração',
-        'submitting' => 'A enviar...',
-        'success_title' => 'Obrigado!',
-        'success_message' => 'Recebemos o seu pedido. Entraremos em contacto em menos de 24 horas.',
-        'error_message' => 'Ocorreu um erro. Por favor tente novamente ou contacte-nos por email.',
+        'industry_other_label' => 'Qual a sua especialidade?',
+        'industry_other_placeholder' => 'Ex: Pintura Automóvel, Serralharia...',
+        'submit' => 'Começar Trial Gratuito',
+        'submitting' => 'A criar conta...',
+        'success_title' => 'Conta criada!',
+        'success_message' => 'Enviámos um email com o link de acesso. Verifique a sua caixa de entrada.',
+        'outro_title' => 'Pedido recebido!',
+        'outro_message' => 'A sua indústria ainda não está na nossa lista. Vamos analisar o seu pedido e entrar em contacto em breve.',
+        'error_message' => 'Ocorreu um erro ao processar o seu pedido. Verifique que os dados estão corretos e que este email ainda não foi utilizado.',
     ],
 
     'pricing_page' => [

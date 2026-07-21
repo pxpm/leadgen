@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\BlockBannedIps;
 use App\Http\Middleware\EnsureActiveSubscription;
 use App\Http\Middleware\ValidateInboundEmailWebhook;
 use App\Http\Middleware\ValidateTwilioWebhook;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'active-subscription' => EnsureActiveSubscription::class,
+            'banned-ip' => BlockBannedIps::class,
             'inbound-email-webhook' => ValidateInboundEmailWebhook::class,
             'turnstile' => VerifyTurnstile::class,
             'twilio-webhook' => ValidateTwilioWebhook::class,
@@ -31,7 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->is('demo-request'),
+            fn (Request $request) => $request->is('api/*') || $request->is('demo-request') || $request->is('trial-signup') || $request->expectsJson(),
         );
 
         // Return JSON 401 for unauthenticated API requests instead of

@@ -163,6 +163,7 @@ return [
         'phone' => 'telefone',
         'company' => 'empresa',
         'industry' => 'setor',
+        'industry_other' => 'especialidade',
         'message' => 'mensagem',
     ],
 ];

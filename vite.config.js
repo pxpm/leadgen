@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/landing.css',
                 'resources/js/app.js',
+                'resources/js/landing.js',
                 'resources/js/widget/main.js',
                 'resources/css/filament/admin/theme.css',
             ],

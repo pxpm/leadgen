@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\MissedCallController;
 use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\IntakeController;
+use App\Http\Controllers\TrialSignupController;
 use App\Models\MissedCall;
 use App\Models\ShortLink;
 use App\Models\Tenant;
@@ -318,5 +319,8 @@ Route::get('/sitemap.xml', function () {
     return response($xml, 200, ['Content-Type' => 'application/xml']);
 })->name('sitemap');
 
-// Demo request form submission
-Route::post('/demo-request', [DemoRequestController::class, 'store'])->middleware('throttle:5,15')->name('demo.request');
+// Demo request form submission (legacy — kept for existing forms)
+Route::post('/demo-request', [DemoRequestController::class, 'store'])->middleware(['banned-ip', 'throttle:5,15'])->name('demo.request');
+
+// Trial signup form submission
+Route::post('/trial-signup', [TrialSignupController::class, 'store'])->middleware(['banned-ip', 'throttle:5,15', 'turnstile'])->name('trial.signup');

@@ -101,13 +101,18 @@ class PlanForm
                             ->helperText('Planos inativos não podem ser atribuídos.')
                             ->default(true),
 
+                        Toggle::make('is_popular')
+                            ->label('Mais Popular')
+                            ->helperText('Destaca o plano na página de preços com badge e estilo.')
+                            ->default(false),
+
                         TextInput::make('sort_order')
                             ->label('Ordem')
                             ->numeric()
                             ->default(0)
                             ->minValue(0),
                     ])
-                    ->columns(3),
+                    ->columns(2),
             ]);
     }
 }

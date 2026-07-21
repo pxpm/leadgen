@@ -45,6 +45,10 @@ class PlansTable
                     ->label('Ativo')
                     ->boolean(),
 
+                IconColumn::make('is_popular')
+                    ->label('Popular')
+                    ->boolean(),
+
                 TextColumn::make('sort_order')
                     ->label('Ordem')
                     ->sortable(),

@@ -17,7 +17,7 @@ class Plan extends Model
 
     protected $fillable = [
         'name', 'slug', 'description', 'monthly_price', 'yearly_price_per_month', 'stripe_price_id',
-        'limits', 'is_public', 'sort_order', 'is_active',
+        'limits', 'is_public', 'sort_order', 'is_active', 'is_popular',
     ];
 
     protected function casts(): array
@@ -26,6 +26,7 @@ class Plan extends Model
             'limits' => 'array',
             'is_public' => 'boolean',
             'is_active' => 'boolean',
+            'is_popular' => 'boolean',
         ];
     }
 

@@ -33,10 +33,13 @@
 
     @fonts
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css', 'resources/css/landing.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/css/landing.css', 'resources/js/app.js', 'resources/js/landing.js'])
     @endif
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {{-- Turnstile — only when configured --}}
+    @if(config('services.turnstile.site_key'))
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
 
     {{-- JSON-LD Structured Data --}}
     <script type="application/ld+json">
@@ -76,7 +79,7 @@
     </script>
     @stack('jsonld')
 </head>
-<body class="bg-white text-gray-900 antialiased font-sans">
+<body class="bg-white text-gray-900 antialiased font-sans" x-data="{ showTrialModal: false }">
 
     {{-- Navigation --}}
     <header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100">
@@ -90,16 +93,15 @@
                 <a href="{{ how_it_works_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.how_it_works') }}</a>
                 <a href="{{ industries_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.industries') }}</a>
                 <a href="{{ pricing_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.pricing') }}</a>
-                <a href="#demo" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.demo') }}</a>
             </div>
 
             <div class="flex items-center gap-3">
                 <a href="/manage-backoffice/login" class="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
                     {{ __('landing.nav.login') }}
                 </a>
-                <a href="#demo" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors shadow-sm">
+                <button @click="showTrialModal = true" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors shadow-sm cursor-pointer">
                     {{ __('landing.hero.cta_primary') }}
-                </a>
+                </button>
             </div>
         </nav>
     </header>
@@ -145,9 +147,6 @@
                         <a href="{{ how_it_works_url() }}" class="block text-sm text-gray-500 hover:text-white transition-colors">
                             {{ __('landing.nav.how_it_works') }}
                         </a>
-                        <a href="#demo" class="block text-sm text-gray-500 hover:text-white transition-colors">
-                            {{ __('landing.hero.cta_primary') }}
-                        </a>
                     </div>
                 </div>
 
@@ -167,5 +166,26 @@
             </div>
         </div>
     </footer>
+
+    {{-- Trial Signup Modal --}}
+    <div x-show="showTrialModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4" x-transition.opacity>
+        {{-- Backdrop --}}
+        <div x-show="showTrialModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showTrialModal = false" x-transition.opacity></div>
+
+        {{-- Modal --}}
+        <div x-show="showTrialModal" class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" @click.outside="showTrialModal = false" x-transition.scale>
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-lg font-bold text-gray-900">{{ __('landing.demo_form.headline') }}</h3>
+                <button @click="showTrialModal = false" class="p-1.5 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="px-6 py-5">
+                @include('landing.partials._demo_form')
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

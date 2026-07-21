@@ -8,10 +8,10 @@
         </h2>
         <p class="mt-6 text-gray-400 text-lg">{{ __('landing.final_cta.subtext') }}</p>
         <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#demo" class="group inline-flex items-center px-8 py-4 text-lg font-bold text-gray-900 bg-amber-500 rounded-2xl hover:bg-amber-400 transition-all shadow-2xl shadow-amber-500/30">
+            <button @click="showTrialModal = true" class="group inline-flex items-center px-8 py-4 text-lg font-bold text-gray-900 bg-amber-500 rounded-2xl hover:bg-amber-400 transition-all shadow-2xl shadow-amber-500/30 cursor-pointer">
                 {{ __('landing.final_cta.cta') }}
                 <span class="ml-2 transition-transform group-hover:translate-x-1">→</span>
-            </a>
+            </button>
             <span class="text-gray-500 text-sm">Sem compromisso. Demo gratuita.</span>
         </div>
     </div>

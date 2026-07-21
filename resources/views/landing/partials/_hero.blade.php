@@ -14,10 +14,10 @@
                     {{ __('landing.hero.subheadline') }}
                 </p>
                 <div class="mt-8 flex flex-col sm:flex-row gap-3">
-                    <a href="#demo" class="group inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20">
+                    <button @click="showTrialModal = true" class="group inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 cursor-pointer">
                         {{ __('landing.hero.cta_primary') }}
                         <span class="ml-2 transition-transform group-hover:translate-x-1">→</span>
-                    </a>
+                    </button>
                     <a href="#how-it-works" class="inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all">
                         {{ __('landing.hero.cta_secondary') }}
                     </a>

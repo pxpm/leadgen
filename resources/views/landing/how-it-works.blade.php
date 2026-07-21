@@ -120,10 +120,10 @@
     <div class="max-w-xl mx-auto text-center">
         <h2 class="text-2xl sm:text-3xl font-bold text-gray-900">{{ $p['cta_title'] }}</h2>
         <p class="mt-4 text-gray-500">{{ $p['cta_subtitle'] }}</p>
-        <a href="{{ url('/') }}#demo" class="group inline-flex items-center mt-8 px-6 py-3.5 text-base font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20">
+        <button @click="showTrialModal = true" class="group inline-flex items-center mt-8 px-6 py-3.5 text-base font-semibold text-white bg-amber-500 rounded-xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 cursor-pointer">
             {{ __('landing.demo_form.submit') }}
             <span class="ml-2 transition-transform group-hover:translate-x-1">→</span>
-        </a>
+        </button>
     </div>
 </section>
 

@@ -12,6 +12,26 @@ class PlanSeeder extends Seeder
     public function run(): void
     {
         Plan::updateOrCreate(
+            ['slug' => 'trial'],
+            [
+                'name' => 'Trial',
+                'description' => 'Testa a plataforma gratuitamente durante 14 dias.',
+                'monthly_price' => 0,
+                'yearly_price_per_month' => 0,
+                'limits' => [
+                    'sms_monthly' => 5,
+                    'email_monthly' => 10,
+                    'email_ingestion_monthly' => 5,
+                    'recovery_call' => false,
+                ],
+                'is_public' => false,
+                'sort_order' => 0,
+                'is_active' => true,
+                'is_popular' => false,
+            ],
+        );
+
+        Plan::updateOrCreate(
             ['slug' => 'starter'],
             [
                 'name' => 'Starter',
@@ -46,6 +66,7 @@ class PlanSeeder extends Seeder
                 'is_public' => true,
                 'sort_order' => 2,
                 'is_active' => true,
+                'is_popular' => true,
             ],
         );
 

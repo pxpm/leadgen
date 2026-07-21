@@ -14,3 +14,6 @@ Schedule::command('email:poll')->everyTwoMinutes()->withoutOverlapping();
 
 // OAuth token refresh — keep Google/Microsoft tokens alive
 Schedule::job(new RefreshOAuthTokensJob)->everyTenMinutes();
+
+// Trial expiry — cancel subscriptions past their trial period
+Schedule::command('trials:expire')->daily();
