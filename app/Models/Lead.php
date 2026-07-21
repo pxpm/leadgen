@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -158,5 +159,10 @@ class Lead extends Model implements HasMedia
     public function emailMessages(): HasMany
     {
         return $this->hasMany(LeadEmailMessage::class)->orderBy('received_at', 'asc');
+    }
+
+    public function calendarEvents(): MorphMany
+    {
+        return $this->morphMany(CalendarEvent::class, 'eventable');
     }
 }

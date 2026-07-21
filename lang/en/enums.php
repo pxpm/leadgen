@@ -43,4 +43,18 @@ return [
         'failed' => 'Failed',
         'delivered' => 'Delivered',
     ],
+
+    'calendar_event_category' => [
+        'visit' => 'Visit',
+        'task' => 'Task',
+        'meeting' => 'Meeting',
+        'follow_up' => 'Follow-up',
+        'other' => 'Other',
+    ],
+
+    'calendar_event_status' => [
+        'scheduled' => 'Scheduled',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ],
 ];

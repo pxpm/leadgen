@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CalendarEventController;
 use App\Http\Controllers\Api\GoogleOAuthController;
 use App\Http\Controllers\Api\InboundEmailController;
 use App\Http\Controllers\Api\MicrosoftOAuthController;
@@ -59,4 +60,12 @@ Route::middleware([EncryptCookies::class, StartSession::class, 'auth'])->group(f
 // Shareable intake link generation (authenticated, tenant-scoped)
 Route::middleware(['auth', 'active-subscription'])->group(function () {
     Route::get('/intake/{tenant:slug}/generate-url', [IntakeController::class, 'generateUrl']);
+});
+
+// Calendar API — authenticated, tenant-scoped
+Route::middleware(['auth', 'active-subscription', SetCurrentTenant::class])->group(function () {
+    Route::get('/calendar/events', [CalendarEventController::class, 'index']);
+    Route::post('/calendar/events', [CalendarEventController::class, 'store']);
+    Route::patch('/calendar/events/{calendarEvent}', [CalendarEventController::class, 'update'])->scopeBindings();
+    Route::delete('/calendar/events/{calendarEvent}', [CalendarEventController::class, 'destroy'])->scopeBindings();
 });
