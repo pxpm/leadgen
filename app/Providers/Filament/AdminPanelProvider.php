@@ -40,6 +40,12 @@ class AdminPanelProvider extends PanelProvider
                 ? '/manage-backoffice'
                 : '/manage-backoffice/tenant-dashboard')
             ->navigationItems([
+                NavigationItem::make('Horizon')
+                    ->icon('heroicon-o-queue-list')
+                    ->url('/horizon')
+                    ->openUrlInNewTab()
+                    ->visible(fn (): bool => auth()->user()?->isSuperAdmin() ?? false)
+                    ->sort(100),
                 NavigationItem::make('Configuração')
                     ->icon('heroicon-o-cog-6-tooth')
                     ->url(fn (): string => TenantResource::getUrl(
