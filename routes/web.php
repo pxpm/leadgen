@@ -300,74 +300,85 @@ Route::get('/{prefix}/{industry}/{service}', function (string $prefix, string $i
 
 // Sitemap XML
 Route::get('/sitemap.xml', function () {
-    $industries = __('landing.industries_section');
-    $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
+    // Cache the sitemap for 1 hour to avoid regenerating on every Googlebot hit.
+    // Google crawls sitemaps frequently; regenerating on every request is wasteful.
+    $cacheKey = 'sitemap_xml_'.app()->getLocale();
 
-    $urls = [
-        // Core pages
-        ['loc' => url('/'), 'priority' => '1.0', 'changefreq' => 'weekly'],
-        ['loc' => how_it_works_url(), 'priority' => '0.9', 'changefreq' => 'monthly'],
-        ['loc' => industries_url(), 'priority' => '0.9', 'changefreq' => 'weekly'],
-        ['loc' => pricing_url(), 'priority' => '0.9', 'changefreq' => 'monthly'],
-        ['loc' => privacy_url(), 'priority' => '0.3', 'changefreq' => 'yearly'],
-        ['loc' => terms_url(), 'priority' => '0.3', 'changefreq' => 'yearly'],
-        ['loc' => contact_url(), 'priority' => '0.5', 'changefreq' => 'monthly'],
-        // Blog
-        ['loc' => url('/blog'), 'priority' => '0.7', 'changefreq' => 'monthly'],
-    ];
+    return Cache::remember($cacheKey, now()->addHour(), function () {
+        $industries = __('landing.industries_section');
+        $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
 
-    // City pages
-    foreach (['lisboa', 'porto', 'algarve', 'minho', 'alentejo'] as $city) {
-        $urls[] = [
-            'loc' => url('/orcamentos-'.$city),
-            'priority' => '0.8',
-            'changefreq' => 'weekly',
-        ];
-    }
+        // Force HTTPS for all URLs so they match the sitemap's own protocol.
+        // If APP_URL is misconfigured as http://, Google will reject the sitemap
+        // because URLs must use the same scheme as the sitemap location.
+        URL::forceScheme('https');
 
-    // Industry + service pages
-    foreach ($trades as $key => $trade) {
-        $urls[] = [
-            'loc' => industry_url($key),
-            'priority' => '0.8',
-            'changefreq' => 'weekly',
+        $lastmod = now()->toDateString(); // W3C date format: YYYY-MM-DD
+
+        $urls = [
+            // Core pages
+            ['loc' => url('/'), 'lastmod' => $lastmod],
+            ['loc' => how_it_works_url(), 'lastmod' => $lastmod],
+            ['loc' => industries_url(), 'lastmod' => $lastmod],
+            ['loc' => pricing_url(), 'lastmod' => $lastmod],
+            ['loc' => privacy_url(), 'lastmod' => $lastmod],
+            ['loc' => terms_url(), 'lastmod' => $lastmod],
+            ['loc' => contact_url(), 'lastmod' => $lastmod],
+            // Blog
+            ['loc' => url('/blog'), 'lastmod' => $lastmod],
         ];
 
-        $services = __('landing.industry_pages.'.$key.'.services') ?? [];
-        foreach ($services as $svc) {
-            $svcSlug = $svc['slug'] ?? '';
-            if ($svcSlug) {
-                $urls[] = [
-                    'loc' => service_url($key, $svcSlug),
-                    'priority' => '0.7',
-                    'changefreq' => 'monthly',
-                ];
+        // City pages
+        foreach (['lisboa', 'porto', 'algarve', 'minho', 'alentejo'] as $city) {
+            $urls[] = [
+                'loc' => url('/orcamentos-'.$city),
+                'lastmod' => $lastmod,
+            ];
+        }
+
+        // Industry + service pages
+        foreach ($trades as $key => $trade) {
+            $urls[] = [
+                'loc' => industry_url($key),
+                'lastmod' => $lastmod,
+            ];
+
+            $services = __('landing.industry_pages.'.$key.'.services') ?? [];
+            foreach ($services as $svc) {
+                $svcSlug = $svc['slug'] ?? '';
+                if ($svcSlug) {
+                    $urls[] = [
+                        'loc' => service_url($key, $svcSlug),
+                        'lastmod' => $lastmod,
+                    ];
+                }
             }
         }
-    }
 
-    // Blog posts
-    $articles = __('landing.blog_index.articles') ?? [];
-    foreach ($articles as $slug => $article) {
-        $urls[] = [
-            'loc' => url('/blog/'.$slug),
-            'priority' => '0.6',
-            'changefreq' => 'monthly',
-        ];
-    }
+        // Blog posts
+        $articles = __('landing.blog_index.articles') ?? [];
+        foreach ($articles as $slug => $article) {
+            $urls[] = [
+                'loc' => url('/blog/'.$slug),
+                'lastmod' => $lastmod,
+            ];
+        }
 
-    $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
-    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
-    foreach ($urls as $url) {
-        $xml .= '  <url>'."\n";
-        $xml .= '    <loc>'.e($url['loc']).'</loc>'."\n";
-        $xml .= '    <changefreq>'.$url['changefreq'].'</changefreq>'."\n";
-        $xml .= '    <priority>'.$url['priority'].'</priority>'."\n";
-        $xml .= '  </url>'."\n";
-    }
-    $xml .= '</urlset>';
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+        foreach ($urls as $url) {
+            $xml .= '  <url>'."\n";
+            $xml .= '    <loc>'.e($url['loc']).'</loc>'."\n";
+            $xml .= '    <lastmod>'.$url['lastmod'].'</lastmod>'."\n";
+            $xml .= '  </url>'."\n";
+        }
+        $xml .= '</urlset>';
 
-    return response($xml, 200, ['Content-Type' => 'application/xml']);
+        return response($xml, 200, [
+            'Content-Type' => 'application/xml; charset=utf-8',
+            'X-Robots-Tag' => 'noindex', // Prevent sitemap itself from appearing in search results
+        ]);
+    });
 })->name('sitemap');
 
 // Demo request form submission (legacy — kept for existing forms)
