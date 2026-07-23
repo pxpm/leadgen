@@ -13,6 +13,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - filament/filament (FILAMENT) - v5
 - laravel/ai (AI) - v0
 - laravel/framework (LARAVEL) - v13
+- laravel/horizon (HORIZON) - v5
 - laravel/prompts (PROMPTS) - v0
 - laravel/socialite (SOCIALITE) - v5
 - livewire/livewire (LIVEWIRE) - v4

@@ -17,3 +17,6 @@ Schedule::job(new RefreshOAuthTokensJob)->everyTenMinutes();
 
 // Trial expiry — cancel subscriptions past their trial period
 Schedule::command('trials:expire')->daily();
+
+// Horizon metrics — snapshot queue stats every 5 minutes
+Schedule::command('horizon:snapshot')->everyFiveMinutes();
