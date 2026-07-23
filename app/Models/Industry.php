@@ -6,7 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Industry extends Model
 {
@@ -22,13 +22,13 @@ class Industry extends Model
         ];
     }
 
-    public function tenants(): HasMany
+    public function tenants(): BelongsToMany
     {
-        return $this->hasMany(Tenant::class);
+        return $this->belongsToMany(Tenant::class);
     }
 
-    public function leads(): HasMany
+    public function leads(): BelongsToMany
     {
-        return $this->hasMany(Lead::class);
+        return $this->belongsToMany(Lead::class);
     }
 }

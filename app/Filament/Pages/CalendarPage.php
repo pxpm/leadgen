@@ -29,6 +29,16 @@ class CalendarPage extends Page
 
     protected string $view = 'filament.pages.calendar';
 
+    public static function canAccess(array $parameters = []): bool
+    {
+        return ! auth()->user()?->isSuperAdmin();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return ! auth()->user()?->isSuperAdmin();
+    }
+
     /**
      * Fetch events for FullCalendar.
      */

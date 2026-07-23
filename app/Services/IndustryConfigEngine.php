@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Industry;
 use App\Models\Tenant;
+use Illuminate\Support\Collection;
 
 class IndustryConfigEngine
 {
@@ -203,9 +205,140 @@ class IndustryConfigEngine
     }
 
     /**
-     * Get field definitions for the resolved config. Includes conditional fields
-     * (which are now just regular field definitions with a "when" trigger).
+     * Resolve config for a lead that spans multiple industries and services.
+     * Merges all industry bases, deduplicates shared fields, then merges
+     * each selected service on top.
+     *
+     * @param  Collection<int, Industry>  $industries
+     * @param  array<int, string>  $serviceKeys
      */
+    public function resolveMulti(Tenant $tenant, Collection $industries, array $serviceKeys): array
+    {
+        if ($industries->isEmpty()) {
+            throw new \RuntimeException("Tenant [{$tenant->id}] has no industries configured.");
+        }
+
+        $locale = $tenant->locale ?: 'pt';
+        $merged = null;
+
+        // Merge all industry bases
+        foreach ($industries as $industry) {
+            $base = $this->loadIndustryConfig($industry);
+
+            if ($merged === null) {
+                $merged = unserialize(serialize($base));
+                continue;
+            }
+
+            // Merge shared_fields: deduplicate qualification and contact fields
+            foreach (['qualification', 'contact'] as $group) {
+                $existing = $merged['shared_fields'][$group] ?? [];
+                $incoming = $base['shared_fields'][$group] ?? [];
+                $merged['shared_fields'][$group] = array_values(array_unique(array_merge($existing, $incoming)));
+            }
+
+            // Merge field_definitions: later industries don't overwrite existing keys
+            foreach ($base['field_definitions'] ?? [] as $key => $def) {
+                if (! isset($merged['field_definitions'][$key])) {
+                    $merged['field_definitions'][$key] = $def;
+                }
+            }
+
+            // Merge locales at field level
+            foreach (($base['locales'] ?? []) as $loc => $data) {
+                foreach (['field_prompts', 'field_options', 'synonyms'] as $sub) {
+                    if (! empty($data[$sub])) {
+                        $merged['locales'][$loc][$sub] = array_merge(
+                            $merged['locales'][$loc][$sub] ?? [],
+                            $data[$sub]
+                        );
+                    }
+                }
+            }
+        }
+
+        // Merge each service on top
+        foreach ($serviceKeys as $serviceKey) {
+            $service = $this->loadServiceConfig($serviceKey);
+            if ($service) {
+                $merged = $this->mergeService($merged, $service, $locale);
+            }
+        }
+
+        // Apply tenant overrides
+        return $this->applyTenantOverrides($merged, $tenant, $serviceKeys);
+    }
+
+    /**
+     * Load industry config without requiring a tenant (for multi-industry use).
+     */
+    private function loadIndustryConfig(Industry $industry): array
+    {
+        $path = database_path("seeders/data/industries/{$industry->slug}.php");
+
+        return self::$configCache[$path] ??= require $path;
+    }
+
+    /**
+     * Apply tenant-level overrides to the merged config.
+     */
+    private function applyTenantOverrides(array $base, Tenant $tenant, array $serviceKeys): array
+    {
+        $serviceConfig = $tenant->service_config ?? [];
+        $locale = $tenant->locale ?: ($base['default_locale'] ?? 'pt');
+
+        // _global + per-service overrides (use first service as representative)
+        $primaryService = $serviceKeys[0] ?? null;
+        $overrides = $this->mergeTenantOverrides(
+            $serviceConfig['_global'] ?? [],
+            $primaryService ? ($serviceConfig[$primaryService] ?? []) : []
+        );
+
+        if (! empty($overrides['required_fields'])) {
+            $base['required_fields'] = $overrides['required_fields'];
+        }
+        if (! empty($overrides['optional_fields'])) {
+            $base['optional_fields'] = $overrides['optional_fields'];
+        }
+        if (! empty($overrides['greeting_message'])) {
+            $base['locales'][$locale]['ai_prompt']['greeting_message'] = $overrides['greeting_message'];
+        }
+        if (! empty($overrides['conditional_requirements'])) {
+            $base['conditional_requirements'] = array_merge(
+                $base['conditional_requirements'] ?? [],
+                $overrides['conditional_requirements']
+            );
+        }
+        if (! empty($overrides['field_prompts'])) {
+            foreach ($overrides['field_prompts'] as $key => $prompt) {
+                $base['locales'][$locale]['field_prompts'][$key] = $prompt;
+            }
+        }
+        if (! empty($overrides['field_definitions'])) {
+            foreach ($overrides['field_definitions'] as $key => $override) {
+                if (isset($base['field_definitions'][$key])) {
+                    $base['field_definitions'][$key] = array_merge(
+                        $base['field_definitions'][$key],
+                        $override
+                    );
+                }
+            }
+        }
+
+        // qualification_overrides (global tenant-level)
+        $qualOverrides = $tenant->qualification_overrides ?? [];
+        if (! empty($qualOverrides['greeting_message'])) {
+            $base['locales'][$locale]['ai_prompt']['greeting_message'] = $qualOverrides['greeting_message'];
+        }
+        if (! empty($qualOverrides['additional_required_fields'])) {
+            $base['required_fields'] = array_values(array_unique(array_merge(
+                $base['required_fields'] ?? [],
+                $qualOverrides['additional_required_fields']
+            )));
+        }
+
+        return $base;
+    }
     public function getFieldDefinitions(Tenant $tenant, ?string $serviceType = null): array
     {
         return $this->resolve($tenant, $serviceType)['field_definitions'] ?? [];
@@ -217,13 +350,13 @@ class IndustryConfigEngine
      */
     public function loadIndustryBase(Tenant $tenant): array
     {
-        $tenant->loadMissing('industry');
+        $industry = $tenant->industries()->first();
 
-        if (! $tenant->industry) {
+        if (! $industry) {
             throw new \RuntimeException("Tenant [{$tenant->id}] has no industry configured.");
         }
 
-        $path = database_path("seeders/data/industries/{$tenant->industry->slug}.php");
+        $path = database_path("seeders/data/industries/{$industry->slug}.php");
 
         return self::$configCache[$path] ??= require $path;
     }

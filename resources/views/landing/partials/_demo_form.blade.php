@@ -71,13 +71,14 @@
     </div>
 
     {{-- Generic error (shown at top level, outside the form wrapper) --}}
-    <div x-show="error && !submitted" class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600 mb-4">
+    <div x-show="error && !submitted" x-cloak class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600 mb-4">
         <span x-text="errorMessage || '{{ __('landing.demo_form.error_message') }}'"></span>
     </div>
 
     {{-- Form --}}
-    <div x-show="!submitted" class="space-y-5">
+    <div x-show="!submitted" x-cloak class="space-y-5">
             {{-- Social login buttons --}}
+            @if(config('app.is_live_mode'))
             <div class="grid grid-cols-2 gap-3">
                 <a href="{{ route('social.redirect', 'google') }}"
                    class="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
@@ -85,8 +86,8 @@
                     Google
                 </a>
                 <a href="{{ route('social.redirect', 'facebook') }}"
-                   class="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-white bg-[#1877F2] border border-[#1877F2] rounded-xl hover:bg-[#166fe5] transition-colors">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                   class="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    <svg class="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                     Facebook
                 </a>
             </div>
@@ -96,6 +97,7 @@
                 <span class="text-xs text-gray-400">ou</span>
                 <div class="flex-1 border-t border-gray-200"></div>
             </div>
+            @endif
 
             <div class="grid sm:grid-cols-2 gap-5">
                 <div>
@@ -144,6 +146,7 @@
                     @foreach ($trades as $key => $trade)
                         <option value="{{ $key }}">{{ $trade['name'] }}</option>
                     @endforeach
+                    <option value="outro">{{ __('landing.demo_form.industry_other') }}</option>
                 </select>
                 <p x-show="fieldError('industry')" x-text="fieldError('industry')" class="mt-1 text-xs text-red-500"></p>
             </div>

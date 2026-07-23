@@ -56,7 +56,7 @@ class StripeWebhookController extends Controller
             'name' => $session->metadata->company_name ?? 'New Company',
             'slug' => $session->metadata->company_slug ?? Str::random(12),
             'locale' => 'pt',
-            'industry_id' => 1,
+            'industries' => [1],
             'admin_name' => $session->customer_details->name ?? 'Admin',
             'admin_email' => $session->customer_details->email,
             'plan_id' => $defaultPlan?->id ?? 1,

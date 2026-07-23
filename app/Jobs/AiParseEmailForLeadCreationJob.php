@@ -142,7 +142,6 @@ class AiParseEmailForLeadCreationJob implements ShouldQueue
             // ── Step 3: Create lead with all extracted fields ──
             $lead = Lead::create([
                 'tenant_id' => $tenant->id,
-                'industry_id' => $tenant->industry_id,
                 'status' => LeadStatus::New,
                 'source' => LeadSource::Email,
                 'services' => $detectedServices ?: null,
@@ -150,6 +149,8 @@ class AiParseEmailForLeadCreationJob implements ShouldQueue
                 'session_token' => Str::random(64),
                 'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
             ]);
+
+            $lead->industries()->sync($tenant->industries->pluck('id'));
 
             // Store ALL extracted fields from ALL services
             $totalFields = 0;

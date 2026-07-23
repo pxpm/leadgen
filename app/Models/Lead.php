@@ -9,6 +9,7 @@ use App\Enums\LeadStatus;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -63,7 +64,7 @@ class Lead extends Model implements HasMedia
     }
 
     protected $fillable = [
-        'tenant_id', 'industry_id', 'status', 'source',
+        'tenant_id', 'status', 'source',
         'services', 'qualification_score', 'notes',
         'session_token', 'token_expires_at', 'current_field_key',
         'conversation_started_at', 'qualified_at', 'delivered_at',
@@ -126,9 +127,9 @@ class Lead extends Model implements HasMedia
         return $this->belongsTo(Tenant::class);
     }
 
-    public function industry(): BelongsTo
+    public function industries(): BelongsToMany
     {
-        return $this->belongsTo(Industry::class);
+        return $this->belongsToMany(Industry::class);
     }
 
     public function fields(): HasMany

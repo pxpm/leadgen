@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 beforeEach(function () {
     $this->industry = Industry::factory()->create();
-    $this->tenant = Tenant::factory()->create(['industry_id' => $this->industry->id]);
+    $this->tenant = Tenant::factory()->create();
     Subscription::factory()->create(['tenant_id' => $this->tenant->id]);
 });
 
@@ -94,8 +94,8 @@ test('missed call intake short link creates lead and redirects to widget', funct
 test('missed call intake short link reuses existing lead', function () {
     $lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'industry_id' => $this->tenant->industry_id,
     ]);
+    $lead->industries()->sync($this->tenant->industries->pluck('id'));
 
     $missedCall = MissedCall::create([
         'tenant_id' => $this->tenant->id,

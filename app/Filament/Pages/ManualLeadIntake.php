@@ -80,13 +80,14 @@ class ManualLeadIntake extends Page
 
         $lead = Lead::create([
             'tenant_id' => $tenant->id,
-            'industry_id' => $tenant->industry_id,
             'status' => LeadStatus::New,
             'source' => LeadSource::Manual,
             'services' => [$this->serviceType],
             'session_token' => Str::random(64),
             'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
         ]);
+
+        $lead->industries()->sync($tenant->industries->pluck('id'));
 
         $engine = app(IndustryConfigEngine::class);
         $config = $engine->resolve($tenant, $this->serviceType);

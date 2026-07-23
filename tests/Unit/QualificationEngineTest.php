@@ -13,7 +13,7 @@ uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     $this->industry = Industry::factory()->create();
-    $this->tenant = Tenant::factory()->create(['industry_id' => $this->industry->id]);
+    $this->tenant = Tenant::factory()->create();
     $this->engine = new QualificationEngine(new IndustryConfigEngine);
 });
 

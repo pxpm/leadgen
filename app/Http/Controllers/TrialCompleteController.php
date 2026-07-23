@@ -99,7 +99,7 @@ class TrialCompleteController extends Controller
             'name' => $validated['company'],
             'slug' => $slug,
             'locale' => 'pt',
-            'industry_id' => $industry->id,
+            'industries' => [$industry->id],
             'admin_name' => $social['name'],
             'admin_email' => $social['email'],
             'plan_id' => $trialPlan->id,

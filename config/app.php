@@ -43,6 +43,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Live Mode
+    |--------------------------------------------------------------------------
+    |
+    | When false, trial signups and registrations are converted to demo
+    | requests instead of creating real tenant accounts. Set to true
+    | when you are ready to accept real customers.
+    |
+    */
+
+    'is_live_mode' => (bool) env('IS_LIVE_MODE', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |

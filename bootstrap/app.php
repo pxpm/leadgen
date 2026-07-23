@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\BlockBannedIps;
 use App\Http\Middleware\EnsureActiveSubscription;
+use App\Http\Middleware\LiveModeMiddleware;
 use App\Http\Middleware\ValidateInboundEmailWebhook;
 use App\Http\Middleware\ValidateTwilioWebhook;
 use App\Http\Middleware\VerifyTurnstile;
@@ -26,6 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'inbound-email-webhook' => ValidateInboundEmailWebhook::class,
             'turnstile' => VerifyTurnstile::class,
             'twilio-webhook' => ValidateTwilioWebhook::class,
+        ]);
+
+        $middleware->web(append: [
+            LiveModeMiddleware::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

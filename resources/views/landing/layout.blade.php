@@ -36,6 +36,9 @@
         @vite(['resources/css/app.css', 'resources/css/landing.css', 'resources/js/app.js', 'resources/js/landing.js'])
     @endif
 
+    {{-- Alpine x-cloak fallback — hides Alpine-controlled elements before JS initializes --}}
+    <style>[x-cloak] { display: none !important; }</style>
+
     {{-- Turnstile — only when configured --}}
     @if(config('services.turnstile.site_key'))
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -82,24 +85,25 @@
 <body class="bg-white text-gray-900 antialiased font-sans" x-data="{ showTrialModal: false }">
 
     {{-- Navigation --}}
-    <header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100">
-        <nav class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-            <a href="/" class="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
-                <img src="/logo.svg" alt="{{ __('landing.site.title') }} logo" class="w-8 h-8 rounded-lg">
-                {{ __('landing.site.title') }}
+    <header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100 overflow-hidden">
+        <nav class="max-w-7xl mx-auto flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 min-w-0">
+            <a href="/" class="text-base sm:text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2 min-w-0 shrink">
+                <img src="/logo.svg" alt="{{ __('landing.site.title') }} logo" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0">
+                <span class="truncate">{{ __('landing.site.title') }}</span>
             </a>
 
             <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
                 <a href="{{ how_it_works_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.how_it_works') }}</a>
                 <a href="{{ industries_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.industries') }}</a>
                 <a href="{{ pricing_url() }}" class="hover:text-gray-900 transition-colors">{{ __('landing.nav.pricing') }}</a>
+                <a href="/blog" class="hover:text-gray-900 transition-colors">Guia</a>
             </div>
 
-            <div class="flex items-center gap-3">
-                <a href="/manage-backoffice/login" class="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
+            <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                <a href="/manage-backoffice/login" class="text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors shrink-0">
                     {{ __('landing.nav.login') }}
                 </a>
-                <button @click="showTrialModal = true" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors shadow-sm cursor-pointer">
+                <button @click="showTrialModal = true" class="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors shadow-sm cursor-pointer shrink-0 whitespace-nowrap">
                     {{ __('landing.hero.cta_primary') }}
                 </button>
             </div>
@@ -140,13 +144,21 @@
                     </div>
                 </div>
 
-                {{-- Plataforma --}}
+                {{-- Plataforma + Regiões --}}
                 <div>
                     <p class="text-white font-semibold text-sm mb-4">Plataforma</p>
+                    <div class="space-y-2.5 mb-6">
+                        <a href="{{ how_it_works_url() }}" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.nav.how_it_works') }}</a>
+                        <a href="{{ pricing_url() }}" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.nav.pricing') }}</a>
+                        <a href="/blog" class="block text-sm text-gray-500 hover:text-white transition-colors">Guia para Empresas</a>
+                    </div>
+                    <p class="text-white font-semibold text-sm mb-4">Regiões</p>
                     <div class="space-y-2.5">
-                        <a href="{{ how_it_works_url() }}" class="block text-sm text-gray-500 hover:text-white transition-colors">
-                            {{ __('landing.nav.how_it_works') }}
-                        </a>
+                        <a href="/orcamentos-lisboa" class="block text-sm text-gray-500 hover:text-white transition-colors">Lisboa</a>
+                        <a href="/orcamentos-porto" class="block text-sm text-gray-500 hover:text-white transition-colors">Porto</a>
+                        <a href="/orcamentos-algarve" class="block text-sm text-gray-500 hover:text-white transition-colors">Algarve</a>
+                        <a href="/orcamentos-minho" class="block text-sm text-gray-500 hover:text-white transition-colors">Minho</a>
+                        <a href="/orcamentos-alentejo" class="block text-sm text-gray-500 hover:text-white transition-colors">Alentejo</a>
                     </div>
                 </div>
 
@@ -154,9 +166,9 @@
                 <div>
                     <p class="text-white font-semibold text-sm mb-4">Empresa</p>
                     <div class="space-y-2.5">
-                        <a href="#" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.footer.privacy') }}</a>
-                        <a href="#" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.footer.terms') }}</a>
-                        <a href="#" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.footer.contact') }}</a>
+                        <a href="{{ privacy_url() }}" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.footer.privacy') }}</a>
+                        <a href="{{ terms_url() }}" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.footer.terms') }}</a>
+                        <a href="{{ contact_url() }}" class="block text-sm text-gray-500 hover:text-white transition-colors">{{ __('landing.footer.contact') }}</a>
                     </div>
                 </div>
             </div>
@@ -170,10 +182,10 @@
     {{-- Trial Signup Modal --}}
     <div x-show="showTrialModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4" x-transition.opacity>
         {{-- Backdrop --}}
-        <div x-show="showTrialModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showTrialModal = false" x-transition.opacity></div>
+        <div x-show="showTrialModal" x-cloak class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showTrialModal = false" x-transition.opacity></div>
 
         {{-- Modal --}}
-        <div x-show="showTrialModal" class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" @click.outside="showTrialModal = false" x-transition.scale>
+        <div x-show="showTrialModal" x-cloak class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" @click.outside="showTrialModal = false" x-transition.scale>
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <h3 class="text-lg font-bold text-gray-900">{{ __('landing.demo_form.headline') }}</h3>
                 <button @click="showTrialModal = false" class="p-1.5 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">

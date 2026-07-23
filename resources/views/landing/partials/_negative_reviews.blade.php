@@ -18,8 +18,7 @@
                         @endfor
                     </div>
                     <p class="text-sm text-gray-600 leading-relaxed mb-4">"{{ $review['text'] }}"</p>
-                    <div class="flex items-center justify-between text-xs text-gray-400">
-                        <span class="font-medium text-gray-500">{{ $review['name'] }}</span>
+                    <div class="text-xs text-gray-400 text-right">
                         <span>{{ $review['date'] }}</span>
                     </div>
                 </div>

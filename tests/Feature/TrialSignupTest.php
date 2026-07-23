@@ -24,8 +24,7 @@ test('trial signup creates tenant, user, and subscription', function () {
         'email' => 'joao@empresa.pt',
         'phone' => '912345678',
         'company' => 'Empresa Teste Lda',
-        'industry' => 'construcao_civil',
-    ]);
+        'industry' => 'construcao_civil']);
 
     $response->assertCreated()
         ->assertJson(['ok' => true]);
@@ -34,7 +33,7 @@ test('trial signup creates tenant, user, and subscription', function () {
     $tenant = Tenant::where('name', 'Empresa Teste Lda')->first();
     expect($tenant)->not->toBeNull()
         ->and($tenant->slug)->toBe('empresa-teste-lda')
-        ->and($tenant->industry_id)->toBe(1);
+        ->and($tenant->industries()->first()->id)->toBe(1);
 
     // User was created
     $user = User::where('email', 'joao@empresa.pt')->first();
@@ -59,7 +58,7 @@ test('trial signup validates required fields', function () {
 
 test('trial signup rejects duplicate email', function () {
     $industry = Industry::first();
-    $tenant = Tenant::factory()->create(['industry_id' => $industry->id]);
+    $tenant = Tenant::factory()->create([]);
     User::factory()->create(['email' => 'joao@empresa.pt', 'tenant_id' => $tenant->id]);
 
     $response = $this->postJson('/trial-signup', [
@@ -67,8 +66,7 @@ test('trial signup rejects duplicate email', function () {
         'email' => 'joao@empresa.pt',
         'phone' => '912345678',
         'company' => 'Outra Empresa',
-        'industry' => 'construcao_civil',
-    ]);
+        'industry' => 'construcao_civil']);
 
     $response->assertStatus(422)
         ->assertJson(fn ($json) => $json->has('message')->etc());
@@ -80,8 +78,7 @@ test('trial signup rejects invalid industry', function () {
         'email' => 'joao@empresa.pt',
         'phone' => '912345678',
         'company' => 'Empresa Teste',
-        'industry' => 'nonexistent_industry',
-    ]);
+        'industry' => 'nonexistent_industry']);
 
     $response->assertStatus(422)
         ->assertJson(fn ($json) => $json->has('errors.industry')->etc());
@@ -94,8 +91,7 @@ test('trial signup with outro creates demo request instead of tenant', function 
         'phone' => '912345678',
         'company' => 'Empresa Pintura Lda',
         'industry' => 'outro',
-        'industry_other' => 'Pintura Automóvel',
-    ]);
+        'industry_other' => 'Pintura Automóvel']);
 
     $response->assertCreated()
         ->assertJson(['ok' => true, 'outro' => true]);
@@ -116,8 +112,7 @@ test('trial signup with outro requires industry_other', function () {
         'email' => 'joao@empresa.pt',
         'phone' => '912345678',
         'company' => 'Empresa Teste',
-        'industry' => 'outro',
-    ]);
+        'industry' => 'outro']);
 
     $response->assertStatus(422)
         ->assertJson(fn ($json) => $json->has('errors.industry_other')->etc());
@@ -146,15 +141,14 @@ test('honeypot field returns fake success and bans IP', function () {
 
 test('trial signup creates unique slug when duplicate company name', function () {
     // Create existing tenant with same slug
-    Tenant::factory()->create(['name' => 'Empresa Teste', 'slug' => 'empresa-teste', 'industry_id' => 1]);
+    Tenant::factory()->create(['name' => 'Empresa Teste', 'slug' => 'empresa-teste']);
 
     $response = $this->postJson('/trial-signup', [
         'name' => 'João Silva',
         'email' => 'joao@empresa.pt',
         'phone' => '912345678',
         'company' => 'Empresa Teste',
-        'industry' => 'construcao_civil',
-    ]);
+        'industry' => 'construcao_civil']);
 
     $response->assertCreated();
 
@@ -164,7 +158,7 @@ test('trial signup creates unique slug when duplicate company name', function ()
 
 test('expire trials command cancels expired subscriptions', function () {
     $industry = Industry::first();
-    $tenant = Tenant::factory()->create(['industry_id' => $industry->id]);
+    $tenant = Tenant::factory()->create([]);
     $trialPlan = Plan::where('slug', 'trial')->first();
     User::factory()->create(['tenant_id' => $tenant->id]);
 
@@ -173,18 +167,16 @@ test('expire trials command cancels expired subscriptions', function () {
         'tenant_id' => $tenant->id,
         'plan_id' => $trialPlan->id,
         'status' => 'trialing',
-        'trial_ends_at' => now()->addDays(5),
-    ]);
+        'trial_ends_at' => now()->addDays(5)]);
 
     // Expired trial
-    $tenant2 = Tenant::factory()->create(['industry_id' => $industry->id, 'slug' => 'tenant-2']);
+    $tenant2 = Tenant::factory()->create(['slug' => 'tenant-2']);
     User::factory()->create(['tenant_id' => $tenant2->id, 'email' => 'other@test.pt']);
     $expiredSub = Subscription::factory()->create([
         'tenant_id' => $tenant2->id,
         'plan_id' => $trialPlan->id,
         'status' => 'trialing',
-        'trial_ends_at' => now()->subDays(1),
-    ]);
+        'trial_ends_at' => now()->subDays(1)]);
 
     $this->artisan('trials:expire')
         ->assertSuccessful();

@@ -17,14 +17,13 @@ beforeEach(function () {
         'config' => require database_path('seeders/data/industries/construcao_civil.php'),
     ]);
     $this->tenant = Tenant::factory()->create([
-        'industry_id' => $this->industry->id,
         'locale' => 'pt',
     ]);
     $this->lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'industry_id' => $this->industry->id,
         'services' => ['roofing'],
     ]);
+    $this->lead->industries()->sync([$this->industry->id]);
 
     // Pre-collect some lead details for context
     $this->lead->fields()->createMany([

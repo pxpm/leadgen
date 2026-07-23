@@ -14,6 +14,18 @@ return [
         'footer' => 'Lead Intake Assistant — Qualificação inteligente de leads para a sua empresa.',
     ],
 
+    'magic_link_login' => [
+        'subject' => 'O seu link de acesso ao Lead Intake',
+        'title' => 'Lead Intake',
+        'greeting' => '👋 Olá, :name!',
+        'body' => 'Clique no botão abaixo para iniciar sessão na sua conta.',
+        'cta' => 'Iniciar Sessão',
+        'cta_help' => 'Use este link para aceder à sua conta:',
+        'expiry' => 'Este link é válido por 24 horas e só pode ser usado uma vez.',
+        'unexpected' => 'Se não solicitou este link, por favor ignore este email.',
+        'footer' => 'Lead Intake Assistant — Qualificação inteligente de leads para a sua empresa.',
+    ],
+
     'lead_qualified' => [
         'subject' => 'Novo Lead: :name',
         'heading' => 'Novo Lead Qualificado',

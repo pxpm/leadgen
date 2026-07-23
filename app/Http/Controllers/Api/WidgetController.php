@@ -48,12 +48,14 @@ class WidgetController extends Controller
     {
         $lead = Lead::create([
             'tenant_id' => $tenant->id,
-            'industry_id' => $tenant->industry_id,
             'status' => LeadStatus::New,
             'source' => LeadSource::Widget,
             'session_token' => Str::random(64),
             'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
         ]);
+
+        // Attach all tenant industries — lead can later narrow to specific ones
+        $lead->industries()->sync($tenant->industries->pluck('id'));
 
         return response()->json([
             'lead' => ['id' => $lead->id, 'session_token' => $lead->session_token],

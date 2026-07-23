@@ -32,12 +32,13 @@ class MissedCallController extends Controller
         } else {
             $lead = Lead::create([
                 'tenant_id' => $missedCall->tenant_id,
-                'industry_id' => $missedCall->tenant->industry_id,
                 'status' => LeadStatus::New,
                 'source' => LeadSource::MissedCall,
                 'session_token' => Str::random(64),
                 'token_expires_at' => now()->addHours(Lead::TOKEN_TTL_HOURS),
             ]);
+
+            $lead->industries()->sync($missedCall->tenant->industries->pluck('id'));
 
             $missedCall->update([
                 'lead_id' => $lead->id,

@@ -69,10 +69,14 @@ class MagicLinkService
      */
     public function createForFirstLogin(User $user): string
     {
+        $redirectTo = $user->password
+            ? url('/manage-backoffice')
+            : url('/manage-backoffice/set-password');
+
         $magicLink = MagicLink::create([
             'user_id' => $user->id,
             'token' => Str::random(64),
-            'redirect_to' => url('/manage-backoffice/set-password'),
+            'redirect_to' => $redirectTo,
             'expires_at' => now()->addHours(24),
         ]);
 

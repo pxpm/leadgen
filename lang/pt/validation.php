@@ -166,4 +166,6 @@ return [
         'industry_other' => 'especialidade',
         'message' => 'mensagem',
     ],
+
+    'max_industries' => 'O plano :plan permite no máximo :max setor.|O plano :plan permite no máximo :max setores.',
 ];

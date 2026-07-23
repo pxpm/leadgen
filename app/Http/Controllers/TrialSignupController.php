@@ -82,7 +82,7 @@ class TrialSignupController extends Controller
             'name' => $validated['company'],
             'slug' => $slug,
             'locale' => 'pt',
-            'industry_id' => $industry->id,
+            'industries' => [$industry->id],
             'admin_name' => $validated['name'],
             'admin_email' => $validated['email'],
             'plan_id' => $trialPlan->id,

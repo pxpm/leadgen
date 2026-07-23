@@ -14,6 +14,18 @@ return [
         'footer' => 'Lead Intake Assistant — Smart lead qualification for your business.',
     ],
 
+    'magic_link_login' => [
+        'subject' => 'Your Lead Intake sign-in link',
+        'title' => 'Lead Intake',
+        'greeting' => '👋 Hello, :name!',
+        'body' => 'Click the button below to sign in to your account.',
+        'cta' => 'Sign In',
+        'cta_help' => 'Use this link to access your account:',
+        'expiry' => 'This link is valid for 24 hours and can only be used once.',
+        'unexpected' => 'If you did not request this link, please ignore this email.',
+        'footer' => 'Lead Intake Assistant — Smart lead qualification for your business.',
+    ],
+
     'lead_qualified' => [
         'subject' => 'New Lead: :name',
         'heading' => 'New Qualified Lead',

@@ -185,6 +185,21 @@ Route::get('/verify-email-account/{account}/{token}', function (TenantEmailAccou
     abort(410, 'Link inválido ou expirado. Solicita um novo email de verificação.');
 })->name('email-account.verify');
 
+// Blog
+Route::get('/blog', fn () => view('landing.blog-index'))->name('landing.blog');
+Route::get('/blog/{slug}', fn (string $slug) => view('landing.blog-post', ['slug' => $slug]))->name('landing.blog.post');
+
+// City landing pages
+Route::get('/orcamentos-{city}', function (string $city) {
+    $validCities = ['lisboa', 'porto', 'algarve', 'minho', 'alentejo'];
+
+    if (! in_array($city, $validCities)) {
+        abort(404);
+    }
+
+    return view('landing.city', ['cityKey' => $city]);
+})->name('landing.city');
+
 // ─── SEO Landing Page Routes (must be last — catch-all patterns) ───
 // Slug mappings are resolved once and cached to avoid N+1 locale lookups.
 
@@ -194,6 +209,9 @@ Route::get('/{pageSlug}', function (string $pageSlug) {
             __('landing.how_it_works_slug', [], $l) => 'landing.how-it-works',
             __('landing.pricing_slug', [], $l) => 'landing.pricing',
             __('landing.industrias_slug', [], $l) => 'landing.industries',
+            __('landing.privacy_slug', [], $l) => 'landing.privacy',
+            __('landing.terms_slug', [], $l) => 'landing.terms',
+            __('landing.contact_slug', [], $l) => 'landing.contact',
         ])->toArray()
     );
 
@@ -286,22 +304,35 @@ Route::get('/sitemap.xml', function () {
     $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
 
     $urls = [
+        // Core pages
         ['loc' => url('/'), 'priority' => '1.0', 'changefreq' => 'weekly'],
         ['loc' => how_it_works_url(), 'priority' => '0.9', 'changefreq' => 'monthly'],
         ['loc' => industries_url(), 'priority' => '0.9', 'changefreq' => 'weekly'],
+        ['loc' => pricing_url(), 'priority' => '0.9', 'changefreq' => 'monthly'],
+        ['loc' => privacy_url(), 'priority' => '0.3', 'changefreq' => 'yearly'],
+        ['loc' => terms_url(), 'priority' => '0.3', 'changefreq' => 'yearly'],
+        ['loc' => contact_url(), 'priority' => '0.5', 'changefreq' => 'monthly'],
+        // Blog
+        ['loc' => url('/blog'), 'priority' => '0.7', 'changefreq' => 'monthly'],
     ];
 
-    foreach ($trades as $key => $trade) {
-        $slug = $trade['slug'] ?? '';
-        if ($slug) {
-            $urls[] = [
-                'loc' => industry_url($key),
-                'priority' => '0.8',
-                'changefreq' => 'weekly',
-            ];
-        }
+    // City pages
+    foreach (['lisboa', 'porto', 'algarve', 'minho', 'alentejo'] as $city) {
+        $urls[] = [
+            'loc' => url('/orcamentos-'.$city),
+            'priority' => '0.8',
+            'changefreq' => 'weekly',
+        ];
+    }
 
-        // Service sub-pages
+    // Industry + service pages
+    foreach ($trades as $key => $trade) {
+        $urls[] = [
+            'loc' => industry_url($key),
+            'priority' => '0.8',
+            'changefreq' => 'weekly',
+        ];
+
         $services = __('landing.industry_pages.'.$key.'.services') ?? [];
         foreach ($services as $svc) {
             $svcSlug = $svc['slug'] ?? '';
@@ -313,6 +344,16 @@ Route::get('/sitemap.xml', function () {
                 ];
             }
         }
+    }
+
+    // Blog posts
+    $articles = __('landing.blog_index.articles') ?? [];
+    foreach ($articles as $slug => $article) {
+        $urls[] = [
+            'loc' => url('/blog/'.$slug),
+            'priority' => '0.6',
+            'changefreq' => 'monthly',
+        ];
     }
 
     $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";

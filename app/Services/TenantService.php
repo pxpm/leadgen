@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Mail\MagicLinkLogin;
+use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Rules\IndustriesWithinPlanLimit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TenantService
 {
@@ -21,12 +25,13 @@ class TenantService
      */
     public function createTenant(array $data): Tenant
     {
+        $this->validateIndustries($data);
+
         return DB::transaction(function () use ($data) {
             $tenant = Tenant::create([
                 'name' => $data['name'],
                 'slug' => $data['slug'],
                 'locale' => $data['locale'] ?? 'pt',
-                'industry_id' => $data['industry_id'],
                 'stripe_customer_id' => $data['stripe_customer_id'] ?? null,
                 'branding_config' => $data['branding_config'] ?? [],
                 'notification_config' => $data['notification_config'] ?? [],
@@ -34,6 +39,11 @@ class TenantService
                 'service_config' => $data['service_config'] ?? [],
                 'qualification_overrides' => $data['qualification_overrides'] ?? [],
             ]);
+
+            // Attach industries via pivot
+            if (! empty($data['industries'])) {
+                $tenant->industries()->sync((array) $data['industries']);
+            }
 
             $password = $data['admin_password'] ?? Str::random(32);
 
@@ -95,6 +105,40 @@ class TenantService
 
             return $subscription;
         });
+    }
+
+    /**
+     * Validate industries against the selected plan's max_industries limit.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ValidationException
+     */
+    private function validateIndustries(array $data): void
+    {
+        $industries = $data['industries'] ?? [];
+        $planId = $data['plan_id'] ?? null;
+
+        if (! $planId) {
+            return;
+        }
+
+        $plan = Plan::find($planId);
+
+        if (! $plan) {
+            return;
+        }
+
+        $rule = new IndustriesWithinPlanLimit($plan);
+
+        $validator = Validator::make(
+            ['industries' => $industries],
+            ['industries' => ['required', 'array', $rule]],
+        );
+
+        if ($validator->fails()) {
+            throw ValidationException::withMessages($validator->errors()->toArray());
+        }
     }
 
     /**

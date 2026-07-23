@@ -6,8 +6,8 @@ use App\Models\Tenant;
 
 beforeEach(function () {
     $industry = Industry::factory()->create();
-    $this->tenantA = Tenant::factory()->create(['industry_id' => $industry->id]);
-    $this->tenantB = Tenant::factory()->create(['industry_id' => $industry->id]);
+    $this->tenantA = Tenant::factory()->create();
+    $this->tenantB = Tenant::factory()->create();
 });
 
 test('lead query is tenant scoped via BelongsToTenant trait', function () {

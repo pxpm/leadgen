@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     $this->industry = Industry::factory()->create();
-    $this->tenant = Tenant::factory()->create(['industry_id' => $this->industry->id]);
+    $this->tenant = Tenant::factory()->create();
     Subscription::factory()->create(['tenant_id' => $this->tenant->id]);
 });
 

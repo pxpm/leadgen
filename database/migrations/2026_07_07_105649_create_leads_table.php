@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('leads', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained();
-            $table->foreignId('industry_id')->nullable()->constrained()->nullOnDelete();
             $table->string('status', 50)->default('new');
             $table->string('source', 50)->default('widget');
             $table->json('services')->nullable();

@@ -142,21 +142,69 @@ return [
         ],
     ],
 
-    'lead_summary' => [
-        'headline' => 'What You Receive',
-        'subtitle' => 'Every qualified lead arrives with everything you need — including the follow-up email ready to send.',
-        'customer' => 'Customer',
-        'service' => 'Service',
-        'location' => 'Location',
-        'photos' => 'Photos',
-        'urgency' => 'Urgency',
-        'summary' => 'Summary',
+    'fast_emails' => [
+        'headline' => 'Response emails ready to send',
+        'subtitle' => 'Based on lead data, the platform generates a professional email. Review, tweak if needed, and send. In seconds.',
+        'email_subject' => 'Quote for roof replacement',
+        'email_to' => 'To: john@email.com',
+        'email_body_1' => 'Hello John,',
+        'email_body_2' => 'Thank you for reaching out. Based on the information you provided, we\'ve prepared a preliminary analysis:',
+        'email_details_label' => 'Request summary',
+        'email_detail_1' => '📏 Ceramic tile roof, approximately 120 m²',
+        'email_detail_2' => '📍 Porto — available for a site visit this week',
+        'email_detail_3' => '🔧 Complete replacement with insulation included',
+        'email_body_3' => 'We can schedule a site visit this week to confirm measurements and provide a detailed quote. What day works best for you?',
+        'tag_ready' => 'Ready to send',
+        'tag_review' => 'Review in seconds',
+        'tag_minutes' => 'Saves 20 min per lead',
+    ],
+
+    'custom_forms' => [
+        'headline' => 'Forms your way, not the other way around',
+        'subtitle' => 'Every business is different. The forms adapt to you — not the other way around.',
+        'old' => [
+            'title' => 'Generic form',
+            'item_1' => 'Fixed fields, same for everyone',
+            'item_2' => 'Irrelevant questions for your trade',
+            'item_3' => 'Clients abandon halfway through',
+        ],
+        'new' => [
+            'title' => 'Lead Intake form',
+            'item_1' => 'Custom fields per industry',
+            'item_2' => 'Questions tailored to each service',
+            'item_3' => 'Photo and measurement collection',
+            'item_4' => 'Mobile-optimized',
+        ],
+    ],
+
+    'calendar' => [
+        'headline' => 'Calendar so nothing slips through',
+        'subtitle' => 'Schedule follow-ups, visits, and tasks. With SMS and email reminders.',
+        'followups' => [
+            'title' => 'Follow-ups',
+            'desc' => 'Set reminders to follow up on sent quotes. Never lose a lead to forgetfulness again.',
+        ],
+        'visits' => [
+            'title' => 'Site visits',
+            'desc' => 'Schedule on-site visits and get automatic reminders. Always know where and when you need to be.',
+        ],
+        'tasks' => [
+            'title' => 'Daily tasks',
+            'desc' => 'Buy materials, call a client, send a quote. Everything in the calendar, everything with a reminder.',
+        ],
+        'reminders' => [
+            'title' => 'SMS and email reminders',
+            'desc' => 'Choose how you want to be reminded. SMS to your phone or email — you decide. Never forget anything again.',
+        ],
     ],
 
     'route_prefix' => 'solutions-for',
     'industrias_slug' => 'industries',
     'how_it_works_slug' => 'how-it-works',
     'pricing_slug' => 'pricing',
+    'privacy_slug' => 'privacy',
+    'terms_slug' => 'terms',
+    'contact_slug' => 'contact',
 
     'industries_section' => [
         'headline' => 'Built For Your Trade',
@@ -167,23 +215,6 @@ return [
         'plumbing' => ['name' => 'Plumbing', 'icon' => '🔧', 'slug' => 'plumbing'],
         'landscaping' => ['name' => 'Landscaping', 'icon' => '🌿', 'slug' => 'landscaping'],
         'pest_control' => ['name' => 'Pest Control', 'icon' => '🐛', 'slug' => 'pest-control'],
-        'outro' => ['name' => 'Other', 'icon' => '📋', 'slug' => 'outro'],
-    ],
-
-    'why_not_forms' => [
-        'headline' => 'Why Not Just a Form?',
-        'form' => [
-            'title' => 'Traditional Form',
-            'item_1' => 'Low completion rate',
-            'item_2' => 'Generic questions',
-            'item_3' => 'No follow-up',
-        ],
-        'assistant' => [
-            'title' => 'Assistant',
-            'item_1' => 'Natural conversation',
-            'item_2' => 'Dynamic questioning',
-            'item_3' => 'Better information',
-        ],
     ],
 
     'trust' => [
@@ -284,6 +315,166 @@ return [
         'contact' => 'Contact',
     ],
 
+    'privacy_page' => [
+        'seo_title' => 'Privacy Policy — Lead Intake Assistant',
+        'seo_description' => 'Lead Intake Assistant privacy policy. How we collect, use, and protect your data.',
+        'page_title' => 'Privacy Policy',
+        'last_updated' => 'Last updated: July 22, 2026',
+        'intro' => 'Lead Intake Assistant ("we", "platform") is committed to protecting your personal data and being transparent about how we handle it.',
+        'sections' => [
+            [
+                'title' => '1. What data we collect',
+                'body' => 'We collect only the data necessary to provide the service:',
+                'items' => [
+                    'Account data: name, email, phone, company, industry.',
+                    'Lead data: information provided by your potential clients through our qualification forms — name, phone, email, address, photos, service descriptions.',
+                    'Usage data: platform interactions, qualification settings, email templates.',
+                    'Payment data: processed exclusively by Stripe. We do not store card details.',
+                ],
+            ],
+            [
+                'title' => '2. How we use data',
+                'body' => 'We use data exclusively to:',
+                'items' => [
+                    'Provide the lead qualification and email generation service.',
+                    'Notify users of new qualified leads.',
+                    'Generate follow-up emails based on lead data (using AI only to compose the email text).',
+                    'Analyze and classify leads based on user-configured criteria.',
+                    'Comply with legal and tax obligations.',
+                ],
+            ],
+            [
+                'title' => '3. AI and automated processing',
+                'body' => 'The platform uses artificial intelligence (OpenAI, DeepSeek) exclusively for:',
+                'items' => [
+                    'Generating draft response emails from structured lead data.',
+                    'Analyzing and summarizing information submitted by leads through forms.',
+                    'AI does not conduct autonomous conversations with clients. Forms are controlled by us, with fields and questions predefined by the platform and configurable by the user.',
+                    'Data sent to AI providers is the minimum required for the task and is not used to train models.',
+                ],
+            ],
+            [
+                'title' => '4. Who we share with',
+                'body' => 'We do not sell your data. We share only with:',
+                'items' => [
+                    'Stripe — payment processing.',
+                    'Twilio — SMS sending (only if configured by the user).',
+                    'AI providers (OpenAI, DeepSeek) — exclusively for generating emails and analyzing lead data.',
+                    'Legal authorities, when required by law.',
+                ],
+            ],
+            [
+                'title' => '5. Storage and security',
+                'body' => 'Data is stored on servers in the European Union. We use encryption in transit (TLS) and at rest. Access to data is restricted to authorized personnel. Third-party API keys are stored encrypted.',
+            ],
+            [
+                'title' => '6. Your rights (GDPR)',
+                'body' => 'As a data subject, you have the following rights:',
+                'items' => [
+                    'Access — request a copy of your personal data.',
+                    'Rectification — correct inaccurate or incomplete data.',
+                    'Erasure — request deletion of your data ("right to be forgotten").',
+                    'Portability — receive your data in a structured format.',
+                    'Objection — object to the processing of your data.',
+                    'Restriction — request restriction of processing.',
+                    'To exercise your rights, contact us via the contact page.',
+                ],
+            ],
+            [
+                'title' => '7. Cookies',
+                'body' => 'We use only essential cookies for platform operation (session and authentication). We do not use tracking, advertising, or analytics cookies. No consent is required for essential cookies under GDPR.',
+            ],
+            [
+                'title' => '8. Data retention',
+                'body' => 'We retain data for the duration of platform usage and up to 90 days after account cancellation. Lead data is retained according to retention settings configured by the user. We may retain data for longer periods when required by law.',
+            ],
+            [
+                'title' => '9. Changes to this policy',
+                'body' => 'This policy may be updated periodically. Significant changes will be communicated by email with 30 days notice. Continued use of the platform after changes take effect constitutes acceptance.',
+            ],
+            [
+                'title' => '10. Contact',
+                'body' => 'For questions about this policy or data handling, contact us via the contact page or by email at privacy@leadintake.pt.',
+            ],
+        ],
+    ],
+
+    'terms_page' => [
+        'seo_title' => 'Terms of Service — Lead Intake Assistant',
+        'seo_description' => 'Lead Intake Assistant terms of service. Conditions for using the lead qualification platform.',
+        'page_title' => 'Terms of Service',
+        'last_updated' => 'Last updated: July 22, 2026',
+        'intro' => 'By using Lead Intake Assistant ("platform", "service"), you agree to these terms. If you do not agree, do not use the platform.',
+        'sections' => [
+            [
+                'title' => '1. The Service',
+                'body' => 'Lead Intake Assistant is a SaaS platform providing intelligent lead qualification forms and automatic response email generation. The platform uses artificial intelligence exclusively to compose emails and process lead-submitted information — not to conduct autonomous conversations.',
+            ],
+            [
+                'title' => '2. Account and access',
+                'items' => [
+                    'You are responsible for maintaining the confidentiality of your login credentials.',
+                    'You are responsible for all activities under your account.',
+                    'Notify us immediately of any unauthorized use.',
+                    'Each account is intended for a single business entity (tenant).',
+                ],
+            ],
+            [
+                'title' => '3. Subscription and payment',
+                'items' => [
+                    'Plans and pricing are as described on the pricing page at the time of subscription.',
+                    'Payment is processed by Stripe. By subscribing, you agree to Stripe\'s terms of service.',
+                    'Renewals are automatic. You may cancel anytime through the admin panel.',
+                    'The 14-day free trial requires no payment method. After the trial, active subscription is required for access.',
+                ],
+            ],
+            [
+                'title' => '4. Acceptable use',
+                'items' => [
+                    'Do not use the platform for illegal, fraudulent, or unauthorized activities.',
+                    'Do not attempt to reverse engineer, decompile, or extract platform code.',
+                    'Do not use the platform to send spam or unsolicited communications.',
+                    'Do not overload or attempt to disrupt the service.',
+                    'You are responsible for the content of emails sent through the platform.',
+                ],
+            ],
+            [
+                'title' => '5. Intellectual property',
+                'body' => 'The platform, Lead Intake Assistant brand, code, qualification algorithms, and all associated assets are exclusive property of Lead Intake Assistant. Data you input (lead data, settings, templates) is your property. You grant us a limited license to process that data solely to provide the service.',
+            ],
+            [
+                'title' => '6. Service availability',
+                'body' => 'We strive to keep the platform available 24/7 but do not guarantee uninterrupted availability. We may perform scheduled maintenance with advance notice. We are not liable for unavailability caused by factors beyond our reasonable control.',
+            ],
+            [
+                'title' => '7. Limitation of liability',
+                'body' => 'The platform is provided "as-is" without warranties of any kind. We are not liable for: indirect, incidental, or consequential damages; loss of data, revenue, or customers; decisions made based on platform-generated emails. Our total liability is limited to the amount paid in the preceding 12 months.',
+            ],
+            [
+                'title' => '8. Termination',
+                'body' => 'We may suspend or cancel your account for terms violations. You may cancel your account at any time. After cancellation, your data will be deleted within 90 days, except where law requires longer retention.',
+            ],
+            [
+                'title' => '9. Changes to terms',
+                'body' => 'These terms may be updated periodically. Significant changes will be communicated by email with 30 days notice. Continued use after changes take effect constitutes acceptance.',
+            ],
+            [
+                'title' => '10. Governing law',
+                'body' => 'These terms are governed by Portuguese law. Any dispute shall be resolved in the courts of Lisbon, to the exclusion of any other jurisdiction.',
+            ],
+        ],
+    ],
+
+    'contact_page' => [
+        'seo_title' => 'Contact — Lead Intake Assistant',
+        'seo_description' => 'Contact the Lead Intake Assistant team for questions, support, or information.',
+        'page_title' => 'Contact',
+        'subtitle' => 'Have questions? Talk to us.',
+        'email' => 'hello@leadintake.pt',
+        'email_label' => 'Email',
+        'response_time' => 'We respond within 24 hours.',
+    ],
+
     'industries_index' => [
         'seo_title' => 'Lead Qualification Solutions by Industry — Lead Intake Assistant',
         'seo_description' => 'Smart lead qualification for roofing, renovation, insulation, HVAC, plumbing, painting, and exterior services. The assistant adapts to every trade.',
@@ -344,6 +535,7 @@ return [
         'industry_placeholder' => 'Select your trade',
         'industry_other_label' => 'What is your trade?',
         'industry_other_placeholder' => 'e.g. Auto Painting, Metalwork...',
+        'industry_other' => 'Other',
         'submit' => 'Start Free Trial',
         'submitting' => 'Creating account...',
         'success_title' => 'Account created!',

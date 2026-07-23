@@ -6,6 +6,7 @@ namespace App\Filament\Resources\TenantResource\Pages;
 
 use App\Filament\Resources\TenantResource;
 use App\Models\Plan;
+use App\Rules\IndustriesWithinPlanLimit;
 use App\Services\TenantService;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
@@ -54,23 +55,30 @@ class CreateTenant extends CreateRecord
                         ->default('pt')
                         ->required(),
 
-                    Select::make('industry_id')
-                        ->label('Indústria')
-                        ->relationship('industry', 'name')
+                    Select::make('industries')
+                        ->label('Indústrias')
+                        ->relationship('industries', 'name')
+                        ->multiple()
                         ->searchable()
                         ->preload()
                         ->required()
-                        ->live(),
+                        ->live()
+                        ->rules([
+                            fn (callable $get) => $get('plan_id')
+                                ? new IndustriesWithinPlanLimit(Plan::findOrFail($get('plan_id')))
+                                : null,
+                        ]),
 
                     CheckboxList::make('active_services')
                         ->label('Serviços')
                         ->options(function (callable $get) {
-                            $industryId = $get('industry_id');
-                            if (! $industryId) {
+                            $industryIds = $get('industries');
+                            if (empty($industryIds)) {
                                 return [];
                             }
 
-                            $industry = \App\Models\Industry::find($industryId);
+                            // Use the first selected industry for services config
+                            $industry = \App\Models\Industry::find($industryIds[0]);
                             if (! $industry) {
                                 return [];
                             }

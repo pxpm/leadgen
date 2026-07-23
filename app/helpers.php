@@ -83,3 +83,24 @@ if (! function_exists('pricing_url')) {
         return url('/'.__('landing.pricing_slug'));
     }
 }
+
+if (! function_exists('privacy_url')) {
+    function privacy_url(): string
+    {
+        return url('/'.__('landing.privacy_slug'));
+    }
+}
+
+if (! function_exists('terms_url')) {
+    function terms_url(): string
+    {
+        return url('/'.__('landing.terms_slug'));
+    }
+}
+
+if (! function_exists('contact_url')) {
+    function contact_url(): string
+    {
+        return url('/'.__('landing.contact_slug'));
+    }
+}

@@ -11,7 +11,6 @@ beforeEach(function () {
     Queue::fake();
     $industry = Industry::factory()->create();
     $this->tenant = Tenant::factory()->create([
-        'industry_id' => $industry->id,
         'twilio_phone_number' => '+351210000001',
         'notification_config' => [
             'email' => ['enabled' => true, 'recipients' => ['test@test.com']],

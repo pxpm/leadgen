@@ -44,4 +44,15 @@ class Plan extends Model
     {
         return (int) ($this->limits[$type] ?? 0);
     }
+
+    /**
+     * Maximum number of industries a tenant can have on this plan.
+     * Returns null for unlimited.
+     */
+    public function getMaxIndustries(): ?int
+    {
+        $limit = $this->limits['max_industries'] ?? null;
+
+        return $limit !== null ? (int) $limit : null;
+    }
 }

@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Telhados Lisboa',
             'slug' => 'telhados-lisboa',
             'locale' => 'pt',
-            'industry_id' => 1,
+            'industries' => [1],
             'admin_name' => 'Telhados Lisboa',
             'admin_email' => 'tenant@telhadoslisboa.pt',
             'admin_password' => 'password',

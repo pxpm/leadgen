@@ -10,6 +10,7 @@ use App\Filament\Resources\TenantResource\RelationManagers\SubscriptionsRelation
 use App\Models\Tenant;
 use BackedEnum;
 use Filament\Actions\Action;
+use App\Rules\IndustriesWithinPlanLimit;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -65,12 +66,18 @@ class TenantResource extends Resource
                         ->maxLength(5)
                         ->default('pt'),
 
-                    Select::make('industry_id')
-                        ->label('Indústria')
-                        ->relationship('industry', 'name')
+                    Select::make('industries')
+                        ->label('Indústrias')
+                        ->relationship('industries', 'name')
+                        ->multiple()
                         ->searchable()
                         ->preload()
-                        ->required(),
+                        ->required()
+                        ->rules([
+                            fn (?Tenant $record) => $record?->plan
+                                ? new IndustriesWithinPlanLimit($record->plan)
+                                : null,
+                        ]),
 
                     Placeholder::make('current_plan')
                         ->label('Plano Atual')

@@ -6,7 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\MediaLibrary\HasMedia;
@@ -17,7 +17,7 @@ class Tenant extends Model implements HasMedia
     use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
-        'name', 'slug', 'locale', 'industry_id',
+        'name', 'slug', 'locale',
         'stripe_customer_id',
         'twilio_phone_number', 'twilio_phone_sid',
         'branding_config', 'notification_config',
@@ -42,9 +42,9 @@ class Tenant extends Model implements HasMedia
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
     }
 
-    public function industry(): BelongsTo
+    public function industries(): BelongsToMany
     {
-        return $this->belongsTo(Industry::class);
+        return $this->belongsToMany(Industry::class);
     }
 
     public function users(): HasMany

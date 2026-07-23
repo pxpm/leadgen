@@ -19,13 +19,12 @@ beforeEach(function () {
 
     $industry = Industry::factory()->create();
     $this->tenant = Tenant::factory()->create([
-        'industry_id' => $industry->id,
         'locale' => 'pt',
     ]);
     $this->lead = Lead::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'industry_id' => $industry->id,
     ]);
+    $this->lead->industries()->sync([$industry->id]);
 
     // Pre-collect email so send can work
     $this->lead->fields()->create([

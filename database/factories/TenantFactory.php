@@ -22,7 +22,6 @@ class TenantFactory extends Factory
             'name' => $name,
             'slug' => Str::slug($name),
             'locale' => 'pt',
-            'industry_id' => Industry::first()?->id ?? Industry::factory(),
             'branding_config' => ['primary_color' => '#1a56db'],
             'notification_config' => [
                 'email' => ['enabled' => true, 'recipients' => [fake()->email()]],
@@ -31,5 +30,27 @@ class TenantFactory extends Factory
             ],
             'active_services' => ['roofing', 'waterproofing', 'painting', 'insulation', 'facades', 'terraces', 'gutters', 'remodeling'],
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Tenant $tenant) {
+            if ($tenant->industries()->count() === 0) {
+                $industry = Industry::first() ?? Industry::factory()->create();
+                $tenant->industries()->attach($industry->id);
+            }
+        });
+    }
+
+    /**
+     * Explicitly attach a specific industry to the tenant.
+     * Use this in tests that need a particular industry, rather than
+     * relying on the fallback auto-attach.
+     */
+    public function withIndustry(Industry $industry): static
+    {
+        return $this->afterCreating(function (Tenant $tenant) use ($industry) {
+            $tenant->industries()->sync([$industry->id]);
+        });
     }
 }
