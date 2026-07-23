@@ -26,6 +26,8 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $isImpersonating = fn (): bool => (bool) request()->cookie('impersonating_tenant_id') && auth()->user()?->isSuperAdmin();
+
         return $panel
             ->default()
             ->id('admin')
@@ -36,15 +38,17 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->homeUrl(fn (): string => auth()->user()?->isSuperAdmin()
-                ? '/manage-backoffice'
-                : '/manage-backoffice/tenant-dashboard')
+            ->homeUrl(fn (): string => $isImpersonating()
+                ? '/manage-backoffice/tenant-dashboard'
+                : (auth()->user()?->isSuperAdmin()
+                    ? '/manage-backoffice'
+                    : '/manage-backoffice/tenant-dashboard'))
             ->navigationItems([
                 NavigationItem::make('Horizon')
                     ->icon('heroicon-o-queue-list')
                     ->url('/horizon')
                     ->openUrlInNewTab()
-                    ->visible(fn (): bool => auth()->user()?->isSuperAdmin() ?? false)
+                    ->visible(fn (): bool => auth()->user()?->isSuperAdmin() && ! $isImpersonating())
                     ->sort(100),
                 NavigationItem::make('Configuração')
                     ->icon('heroicon-o-cog-6-tooth')
@@ -52,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
                         'service-config',
                         ['record' => auth()->user()?->tenant_id]
                     ))
-                    ->visible(fn (): bool => ! auth()->user()?->isSuperAdmin())
+                    ->visible(fn (): bool => ! auth()->user()?->isSuperAdmin() || $isImpersonating())
                     ->sort(99),
             ])
             ->middleware([
@@ -68,6 +72,10 @@ class AdminPanelProvider extends PanelProvider
                 SetCurrentTenant::class,
                 'active-subscription',
             ])
-            ->authMiddleware([Authenticate::class]);
+            ->authMiddleware([Authenticate::class])
+            ->renderHook(
+                'panels::body.start',
+                fn (): string => view('filament.impersonation-banner')->render(),
+            );
     }
 }

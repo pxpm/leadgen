@@ -1,4 +1,4 @@
-<section id="how-it-works" class="relative pt-28 pb-28 px-6 bg-gray-50/70 overflow-hidden">
+<section id="how-it-works" class="relative pt-28 pb-28 px-6 bg-gray-50/70">
     <div class="absolute inset-0 bg-dots opacity-40"></div>
 
     <div class="relative max-w-7xl mx-auto">

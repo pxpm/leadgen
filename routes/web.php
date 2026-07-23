@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\MissedCallController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\DemoRequestController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\IntakeController;
 use App\Http\Controllers\TrialCompleteController;
 use App\Http\Controllers\TrialSignupController;
@@ -30,6 +31,14 @@ Route::get('/js/widget.js', function () {
     }
 
     return redirect('/build/'.$widgetFile['file']);
+});
+
+// ─── Super Admin Impersonation ───────────────────────────────────
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/manage-backoffice/impersonate/{tenant}', [ImpersonationController::class, 'start'])
+        ->name('impersonation.start');
+    Route::post('/manage-backoffice/impersonate/stop', [ImpersonationController::class, 'stop'])
+        ->name('impersonation.stop');
 });
 
 // ─── Local-only test routes ─────────────────────────────────────
@@ -306,7 +315,6 @@ Route::get('/sitemap.xml', function () {
     if (file_exists($path)) {
         return response()->file($path, [
             'Content-Type' => 'application/xml; charset=utf-8',
-            'X-Robots-Tag' => 'noindex',
         ]);
     }
 

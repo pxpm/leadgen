@@ -7,6 +7,7 @@ namespace App\Filament\Resources\LeadResource\Pages;
 use App\Enums\FollowUpScenario;
 use App\Filament\Resources\LeadResource;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewLead extends ViewRecord
@@ -14,6 +15,20 @@ class ViewLead extends ViewRecord
     protected static string $resource = LeadResource::class;
 
     protected function getHeaderActions(): array
+    {
+        return [
+            ActionGroup::make($this->emailActions())
+                ->label(__('admin.lead_actions.email_followup'))
+                ->icon('heroicon-o-envelope')
+                ->iconPosition('before')
+                ->color('primary')
+                ->button()
+                ->dropdownPlacement('bottom-end'),
+        ];
+    }
+
+    /** @return array<Action> */
+    private function emailActions(): array
     {
         return [
             Action::make('decline_lead')

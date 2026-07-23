@@ -3,6 +3,7 @@
 use App\Http\Middleware\BlockBannedIps;
 use App\Http\Middleware\EnsureActiveSubscription;
 use App\Http\Middleware\LiveModeMiddleware;
+use App\Http\Middleware\SetCurrentTenant;
 use App\Http\Middleware\ValidateInboundEmailWebhook;
 use App\Http\Middleware\ValidateTwilioWebhook;
 use App\Http\Middleware\VerifyTurnstile;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            SetCurrentTenant::class,
             LiveModeMiddleware::class,
         ]);
 

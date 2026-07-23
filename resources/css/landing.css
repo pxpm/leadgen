@@ -136,14 +136,21 @@ input[type='range']::-moz-range-thumb {
 
 /* ── Section connector ── */
 .connector-bridge {
+    display: flex;
     position: absolute;
     bottom: 0;
     left: 50%;
-    transform: translate(-50%, 20%);
+    transform: translateX(-50%);
     z-index: 20;
-    display: flex;
     align-items: flex-end;
     justify-content: center;
+    pointer-events: none;
+}
+
+@media (max-width: 639px) {
+    .connector-bridge {
+        display: none;
+    }
 }
 
 .connector-fold {

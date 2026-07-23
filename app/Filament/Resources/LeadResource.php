@@ -40,7 +40,18 @@ class LeadResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->isSuperAdmin() ?? false;
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Hide Leads menu while impersonating a tenant
+        if ($user->isSuperAdmin() && request()->cookie('impersonating_tenant_id')) {
+            return false;
+        }
+
+        return $user->isSuperAdmin();
     }
 
     public static function infolist(Schema $schema): Schema

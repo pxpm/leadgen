@@ -31,6 +31,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
+    {{-- Preload critical above-the-fold assets --}}
+    <link rel="preload" href="/logo.svg" as="image" type="image/svg+xml">
+
     @fonts
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/css/landing.css', 'resources/js/app.js', 'resources/js/landing.js'])

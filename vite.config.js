@@ -19,9 +19,11 @@ export default defineConfig({
             fonts: [
                 bunny('Outfit', {
                     weights: [400, 500, 700],
+                    display: 'swap',
                 }),
                 bunny('DM Serif Display', {
                     weights: [400],
+                    display: 'swap',
                 }),
             ],
         }),

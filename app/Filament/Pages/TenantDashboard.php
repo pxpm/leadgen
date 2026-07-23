@@ -12,7 +12,6 @@ use App\Filament\Widgets\TenantStatsOverview;
 use App\Models\Lead;
 use App\Models\ShortLink;
 use App\Models\Tenant;
-use App\Models\TenantEmailAccount;
 use App\Services\IndustryConfigEngine;
 use App\Services\StructuredExtractor;
 use BackedEnum;
@@ -53,16 +52,37 @@ class TenantDashboard extends Page
 
     public function getWidgets(): array
     {
-        return [
+        $tenantId = auth()->user()?->tenant_id;
+        $plan = $tenantId
+            ? \App\Models\Tenant::with('activeSubscription.plan')->find($tenantId)?->plan
+            : null;
+
+        $widgets = [
             TenantStatsOverview::class,
             RecentLeadsTable::class,
-            RecentMissedCallsTable::class,
         ];
+
+        if ($plan && ($plan->limits['recovery_call'] ?? false)) {
+            $widgets[] = RecentMissedCallsTable::class;
+        }
+
+        return $widgets;
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return ! auth()->user()?->isSuperAdmin();
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Show Dashboard when impersonating a tenant
+        if ($user->isSuperAdmin() && request()->cookie('impersonating_tenant_id')) {
+            return true;
+        }
+
+        return ! $user->isSuperAdmin();
     }
 
     protected function getHeaderActions(): array
@@ -70,28 +90,6 @@ class TenantDashboard extends Page
         $tenantId = auth()->user()?->tenant_id;
 
         return [
-            // Connect Gmail (OAuth)
-            Action::make('connectGoogle')
-                ->label('Conectar Gmail')
-                ->icon('heroicon-o-envelope')
-                ->color('primary')
-                ->url(url('/api/oauth/google/redirect'))
-                ->visible(fn () => $tenantId && ! TenantEmailAccount::where('tenant_id', $tenantId)
-                    ->where('provider', 'google')
-                    ->where('connection_type', 'google_oauth')
-                    ->exists()),
-
-            // Connect Outlook (OAuth)
-            Action::make('connectMicrosoft')
-                ->label('Conectar Outlook')
-                ->icon('heroicon-o-envelope-open')
-                ->color('info')
-                ->url(url('/api/oauth/microsoft/redirect'))
-                ->visible(fn () => $tenantId && ! TenantEmailAccount::where('tenant_id', $tenantId)
-                    ->where('provider', 'microsoft')
-                    ->where('connection_type', 'microsoft_oauth')
-                    ->exists()),
-
             // TODO: Re-enable when Create Lead flow is ready
             // Action::make('createLead')
             //     ->label(__('admin.manual_lead_intake.navigation_label'))

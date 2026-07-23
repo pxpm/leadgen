@@ -8,9 +8,9 @@ use App\Filament\Resources\TenantResource\Pages;
 use App\Filament\Resources\TenantResource\RelationManagers\EmailAccountsRelationManager;
 use App\Filament\Resources\TenantResource\RelationManagers\SubscriptionsRelationManager;
 use App\Models\Tenant;
+use App\Rules\IndustriesWithinPlanLimit;
 use BackedEnum;
 use Filament\Actions\Action;
-use App\Rules\IndustriesWithinPlanLimit;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -41,7 +41,18 @@ class TenantResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->isSuperAdmin() ?? false;
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Hide Tenants menu while impersonating a tenant
+        if ($user->isSuperAdmin() && request()->cookie('impersonating_tenant_id')) {
+            return false;
+        }
+
+        return $user->isSuperAdmin();
     }
 
     public static function form(Schema $schema): Schema
@@ -136,6 +147,13 @@ class TenantResource extends Resource
                 TextColumn::make('created_at')->label('Criado')->dateTime('d/m/Y'),
             ])
             ->actions([
+                Action::make('impersonate')
+                    ->label('Assumir')
+                    ->icon(Heroicon::OutlinedUserCircle)
+                    ->color('warning')
+                    ->tooltip('Assumir identidade deste tenant')
+                    ->visible(fn (): bool => auth()->user()?->isSuperAdmin() ?? false)
+                    ->url(fn (Tenant $record): string => route('impersonation.start', ['tenant' => $record])),
                 Action::make('config')
                     ->icon(Heroicon::OutlinedCog)
                     ->tooltip('Configurar Serviços')

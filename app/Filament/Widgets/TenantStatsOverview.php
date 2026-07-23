@@ -16,14 +16,13 @@ class TenantStatsOverview extends StatsOverviewWidget
     protected function getStats(): array
     {
         $tenantId = auth()->user()?->tenant_id;
+        $plan = tenant()?->plan;
 
         $totalLeads = Lead::where('tenant_id', $tenantId)->count();
         $qualifiedLeads = Lead::where('tenant_id', $tenantId)->whereNotNull('qualified_at')->count();
-        $totalCalls = MissedCall::where('tenant_id', $tenantId)->count();
-        $recoveredCalls = MissedCall::where('tenant_id', $tenantId)->where('sms_sent', true)->count();
         $conversionRate = $totalLeads > 0 ? round(($qualifiedLeads / $totalLeads) * 100) : 0;
 
-        return [
+        $stats = [
             Stat::make(__('admin.stats.total_leads'), $totalLeads)
                 ->description(__('admin.stats.total_leads_desc'))
                 ->icon('heroicon-o-user-group')
@@ -33,19 +32,27 @@ class TenantStatsOverview extends StatsOverviewWidget
                 ->description(__('admin.stats.qualified_leads_desc', ['rate' => $conversionRate]))
                 ->icon('heroicon-o-check-badge')
                 ->color('success'),
+        ];
 
-            Stat::make(__('admin.stats.missed_calls'), $totalCalls)
+        // Only show missed call stats if the plan includes call recovery
+        if ($plan && ($plan->limits['recovery_call'] ?? false)) {
+            $totalCalls = MissedCall::where('tenant_id', $tenantId)->count();
+            $recoveredCalls = MissedCall::where('tenant_id', $tenantId)->where('sms_sent', true)->count();
+
+            $stats[] = Stat::make(__('admin.stats.missed_calls'), $totalCalls)
                 ->description(__('admin.stats.missed_calls_desc'))
                 ->icon('heroicon-o-phone-arrow-down-left')
-                ->color('warning'),
+                ->color('warning');
 
-            Stat::make(__('admin.stats.recovered_calls'), $recoveredCalls)
+            $stats[] = Stat::make(__('admin.stats.recovered_calls'), $recoveredCalls)
                 ->description($totalCalls > 0
                     ? __('admin.stats.recovered_calls_desc', ['rate' => round(($recoveredCalls / $totalCalls) * 100)])
                     : __('admin.stats.recovered_calls_desc_zero'))
                 ->icon('heroicon-o-arrow-path')
-                ->color('info'),
-        ];
+                ->color('info');
+        }
+
+        return $stats;
     }
 
     /**
@@ -53,6 +60,17 @@ class TenantStatsOverview extends StatsOverviewWidget
      */
     public static function canView(): bool
     {
-        return ! auth()->user()?->isSuperAdmin();
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Allow super-admin when impersonating a tenant
+        if ($user->isSuperAdmin() && request()->cookie('impersonating_tenant_id')) {
+            return true;
+        }
+
+        return ! $user->isSuperAdmin();
     }
 }

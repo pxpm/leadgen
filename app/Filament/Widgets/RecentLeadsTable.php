@@ -98,6 +98,17 @@ class RecentLeadsTable extends TableWidget
 
     public static function canView(): bool
     {
-        return ! auth()->user()?->isSuperAdmin();
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Allow super-admin when impersonating a tenant
+        if ($user->isSuperAdmin() && request()->cookie('impersonating_tenant_id')) {
+            return true;
+        }
+
+        return ! $user->isSuperAdmin();
     }
 }

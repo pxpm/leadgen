@@ -68,6 +68,16 @@ class RecentMissedCallsTable extends TableWidget
 
     public static function canView(): bool
     {
-        return ! auth()->user()?->isSuperAdmin();
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin() && ! request()->cookie('impersonating_tenant_id')) {
+            return false;
+        }
+
+        return true;
     }
 }

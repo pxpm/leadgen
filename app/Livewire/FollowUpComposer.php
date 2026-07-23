@@ -15,12 +15,15 @@ use App\Services\EmailComposer;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class FollowUpComposer extends Component
 {
+    #[Locked]
     public Lead $lead;
 
+    #[Locked]
     public string $scenario = '';
 
     /** @var array<string> */
@@ -157,11 +160,15 @@ class FollowUpComposer extends Component
         $subject = str_replace(':tenant', $safeName, $locales['subject']);
 
         $fromAccount = $this->fromAccountId
-            ? TenantEmailAccount::find($this->fromAccountId)
+            ? TenantEmailAccount::where('id', $this->fromAccountId)
+                ->where('tenant_id', $this->lead->tenant_id)
+                ->first()
             : null;
 
         $replyToAccount = $this->replyToAccountId
-            ? TenantEmailAccount::find($this->replyToAccountId)
+            ? TenantEmailAccount::where('id', $this->replyToAccountId)
+                ->where('tenant_id', $this->lead->tenant_id)
+                ->first()
             : null;
 
         // Send email

@@ -32,7 +32,17 @@ class DemoRequestResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->isSuperAdmin() ?? false;
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin() && request()->cookie('impersonating_tenant_id')) {
+            return false;
+        }
+
+        return $user->isSuperAdmin();
     }
 
     public static function table(Table $table): Table

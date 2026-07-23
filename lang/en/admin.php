@@ -143,6 +143,8 @@ return [
 
     // ── Lead View Page Actions ──
     'lead_actions' => [
+        'email_followup' => 'Email',
+
         'decline' => 'Decline Lead',
         'decline_heading' => 'Decline Lead',
         'decline_description' => 'Select reason(s) to decline this lead and generate a professional email.',
