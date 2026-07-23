@@ -1,4 +1,4 @@
-<section class="py-28 px-6 bg-gray-50/70 overflow-hidden">
+<section class="relative py-28 px-6 bg-gray-50/70 overflow-hidden">
     <div class="absolute inset-0 bg-dots opacity-40"></div>
 
     <div class="relative max-w-6xl mx-auto">

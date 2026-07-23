@@ -1,6 +1,6 @@
 <section class="relative py-28 px-6 bg-gray-900 overflow-hidden">
     <div class="absolute inset-0 bg-dots-dark opacity-20"></div>
-    <div class="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl"></div>
+    <div class="absolute top-0 right-0 w-[120vw] max-w-96 h-96 bg-amber-500/5 rounded-full blur-3xl"></div>
 
     <div class="relative max-w-4xl mx-auto" x-data="{
         avgValue: 5000,

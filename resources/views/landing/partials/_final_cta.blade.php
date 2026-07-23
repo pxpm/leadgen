@@ -1,6 +1,6 @@
 <section class="relative py-32 px-6 bg-gray-900 overflow-hidden">
     <div class="absolute inset-0 bg-dots-dark opacity-20"></div>
-    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-amber-500/5 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200vw] h-[400px] bg-amber-500/5 rounded-full blur-3xl"></div>
 
     <div class="relative max-w-2xl mx-auto text-center">
         <h2 class="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">

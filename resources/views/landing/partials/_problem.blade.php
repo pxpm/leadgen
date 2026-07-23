@@ -1,4 +1,4 @@
-<section class="relative py-24 sm:py-32 px-6 bg-white">
+<section class="relative py-24 sm:py-32 px-6 bg-white overflow-hidden">
     {{-- Subtle bg texture --}}
     <div class="absolute inset-0 bg-dots opacity-30"></div>
 

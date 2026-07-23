@@ -82,7 +82,7 @@
     </script>
     @stack('jsonld')
 </head>
-<body class="bg-white text-gray-900 antialiased font-sans" x-data="{ showTrialModal: false }">
+<body class="bg-white text-gray-900 antialiased font-sans overflow-x-hidden" x-data="{ showTrialModal: false }">
 
     {{-- Navigation --}}
     <header class="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur border-b border-gray-100 overflow-hidden">
@@ -99,11 +99,11 @@
                 <a href="/blog" class="hover:text-gray-900 transition-colors">Guia</a>
             </div>
 
-            <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                <a href="/manage-backoffice/login" class="text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors shrink-0">
+            <div class="flex items-center gap-1 sm:gap-3 min-w-0">
+                <a href="/manage-backoffice/login" class="text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap">
                     {{ __('landing.nav.login') }}
                 </a>
-                <button @click="showTrialModal = true" class="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors shadow-sm cursor-pointer shrink-0 whitespace-nowrap">
+                <button @click="showTrialModal = true" class="inline-flex items-center px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors shadow-sm cursor-pointer whitespace-nowrap">
                     {{ __('landing.hero.cta_primary') }}
                 </button>
             </div>

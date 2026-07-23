@@ -65,8 +65,8 @@
                         {{ __('landing.hero.conversation.result') }}
                     </div>
                 </div>
-                <div class="absolute -z-10 -top-8 -right-8 w-40 h-40 bg-amber-100/60 rounded-[2.5rem] rotate-12"></div>
-                <div class="absolute -z-10 -bottom-6 -left-6 w-28 h-28 bg-gray-100/60 rounded-[2rem] -rotate-6"></div>
+                <div class="absolute -z-10 -top-4 -right-4 sm:-top-8 sm:-right-8 w-24 sm:w-40 h-24 sm:h-40 bg-amber-100/60 rounded-[2rem] sm:rounded-[2.5rem] rotate-12"></div>
+                <div class="absolute -z-10 -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 w-20 sm:w-28 h-20 sm:h-28 bg-gray-100/60 rounded-[1.5rem] sm:rounded-[2rem] -rotate-6"></div>
             </div>
         </div>
     </div>
