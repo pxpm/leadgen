@@ -66,6 +66,10 @@ task('npm:build', function () {
     run('cd {{release_or_current_path}} && npm run build');
 });
 
+task('artisan:generate_sitemap', function () {
+    run('{{bin/php}} {{release_or_current_path}}/artisan app:generate-sitemap');
+});
+
 after('deploy:vendors', 'artisan:migrate');
 after('artisan:migrate', 'artisan:seed_critical');
 
@@ -73,6 +77,7 @@ after('deploy:vendors', 'artisan:optimize');
 
 after('deploy:vendors', 'npm:install');
 after('npm:install', 'npm:build');
+after('npm:build', 'artisan:generate_sitemap');
 
 after('deploy:symlink', 'artisan:queue_restart');
 
