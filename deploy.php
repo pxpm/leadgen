@@ -41,21 +41,9 @@ host('staging')
     ->set('deploy_path', '/var/www/app-staging')
     ->set('branch', 'develop');
 
-task('artisan:optimize', function () {
-    run('{{bin/php}} {{release_or_current_path}}/artisan optimize');
-});
-
-// Override default migrate to include --force for production
-task('artisan:migrate', function () {
-    run('{{bin/php}} {{release_or_current_path}}/artisan migrate --force');
-});
-
+// Custom tasks
 task('artisan:seed_critical', function () {
     run('{{bin/php}} {{release_or_current_path}}/artisan db:seed --class=IndustrySeeder --force');
-});
-
-task('artisan:queue_restart', function () {
-    run('{{bin/php}} {{release_or_current_path}}/artisan queue:restart');
 });
 
 task('npm:install', function () {
@@ -70,15 +58,17 @@ task('artisan:generate_sitemap', function () {
     run('{{bin/php}} {{release_or_current_path}}/artisan app:generate-sitemap');
 });
 
-after('deploy:vendors', 'artisan:migrate');
+task('artisan:queue_restart', function () {
+    run('{{bin/php}} {{release_or_current_path}}/artisan queue:restart');
+});
+
+// Hook our custom tasks around the recipe's built-in sequence.
+// The recipe already runs artisan:migrate, artisan:optimize, and
+// artisan:storage:link — we don't re-trigger those, just chain ours.
 after('artisan:migrate', 'artisan:seed_critical');
-
-after('deploy:vendors', 'artisan:optimize');
-
 after('deploy:vendors', 'npm:install');
 after('npm:install', 'npm:build');
 after('npm:build', 'artisan:generate_sitemap');
-
 after('deploy:symlink', 'artisan:queue_restart');
 
 after('deploy:failed', 'deploy:unlock');
