@@ -45,12 +45,13 @@ task('artisan:optimize', function () {
     run('{{bin/php}} {{release_or_current_path}}/artisan optimize');
 });
 
-task('artisan:migrate_force', function () {
+// Override default migrate to include --force for production
+task('artisan:migrate', function () {
     run('{{bin/php}} {{release_or_current_path}}/artisan migrate --force');
 });
 
 task('artisan:seed_critical', function () {
-    run('{{bin/php}} {{release_or_current_path}}/artisan db:seed --class=IndustrySeeder --no-interaction');
+    run('{{bin/php}} {{release_or_current_path}}/artisan db:seed --class=IndustrySeeder --force');
 });
 
 task('artisan:queue_restart', function () {
@@ -65,8 +66,8 @@ task('npm:build', function () {
     run('cd {{release_or_current_path}} && npm run build');
 });
 
-after('deploy:vendors', 'artisan:migrate_force');
-after('artisan:migrate_force', 'artisan:seed_critical');
+after('deploy:vendors', 'artisan:migrate');
+after('artisan:migrate', 'artisan:seed_critical');
 
 after('deploy:vendors', 'artisan:optimize');
 
