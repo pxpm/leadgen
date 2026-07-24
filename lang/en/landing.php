@@ -215,6 +215,7 @@ return [
         'plumbing' => ['name' => 'Plumbing', 'icon' => '🔧', 'slug' => 'plumbing'],
         'landscaping' => ['name' => 'Landscaping', 'icon' => '🌿', 'slug' => 'landscaping'],
         'pest_control' => ['name' => 'Pest Control', 'icon' => '🐛', 'slug' => 'pest-control'],
+        'transport' => ['name' => 'Transport', 'icon' => '🚚', 'slug' => 'transport'],
     ],
 
     'trust' => [
@@ -270,7 +271,7 @@ return [
             ],
             [
                 'question' => 'What industries are supported?',
-                'answer' => 'Roofing, renovation, insulation, HVAC, plumbing, and exterior services. Each industry has specific qualification questions.',
+                'answer' => 'Roofing, renovation, insulation, HVAC, plumbing, exterior services, and transport. Each industry has specific qualification questions.',
             ],
             [
                 'question' => 'How long does setup take?',
@@ -729,6 +730,37 @@ return [
             ],
             'faq' => [
                 ['q' => 'What kind of exterior work does it cover?', 'a' => 'The assistant is ready to qualify facade, wall, exterior paving, balcony and flat roof waterproofing, drainage projects, and more. If you don\'t find what you need, we\'ll tailor the questions to your business.'],
+            ],
+        ],
+        'transport' => [
+            'seo_title' => 'Transport & Logistics Lead Qualification — Moves, Freight, Vehicles | Lead Intake',
+            'seo_description' => 'Transport company? Get qualified leads for home removals, international cargo, vehicle transport, pallet freight, and courier. Auto-response 24/7. National and international coverage.',
+            'hero_headline' => 'Home moves, international freight, vehicle transport. Quotes in minutes without the phone calls.',
+            'hero_subheadline' => 'You\'re behind the wheel and the phone rings. Another customer needs a quote. Instead of pulling over to scribble addresses and weights, the assistant handles everything — asks for pickup and delivery addresses, confirms cargo type and urgency. You just review and send the quote.',
+            'steps' => [
+                ['title' => 'The customer explains what they need moved', 'desc' => 'A home move? Export cargo? A car to ship? The customer says what they need and the assistant asks the right questions for each type of service.'],
+                ['title' => 'Details that make the difference', 'desc' => 'Exact addresses, postal codes, floors, elevator, cargo weight, container type. The assistant asks everything needed to get the quote right the first time.'],
+                ['title' => 'Quote ready in minutes', 'desc' => 'With the addresses, service type, and all the details, it\'s just crunching numbers. The follow-up email is already written. Review, adjust if needed, click send.'],
+            ],
+            'benefits' => [
+                'Home removals, international freight, vehicle transport, pallet shipping, courier, and specialized heavy haul — all covered.',
+                'Pickup and delivery addresses with postal codes. Optimized routes from the first contact.',
+                'Automatic responses, 24 hours a day. Even on Sunday night.',
+                'Faster quotes: all the details organized for you, just do the math.',
+                'National and international coverage. From Lisbon to Madrid, from Porto to London.',
+            ],
+            'faq' => [
+                ['q' => 'What type of transport services are covered?', 'a' => 'Home and office removals (full or partial), international cargo shipping (sea, air, road), vehicle transport (cars, motorcycles, boats), palletized freight, courier and express delivery, and specialized transport for heavy or oversized items. Each service has its own specific questions.'],
+                ['q' => 'How much time do I save per lead?', 'a' => 'On average, 15-20 minutes per quote. That\'s time you stop spending on the phone noting addresses, postal codes, weights, and volumes. The assistant handles that — you just come in to close the deal.'],
+                ['q' => 'Does it work for domestic and international transport?', 'a' => 'Yes. From a move within the same city to a container bound for Brazil or Angola. The assistant adapts questions based on the service type and countries involved.'],
+            ],
+            'services' => [
+                ['slug' => 'home-removals', 'title' => 'Home Removal Quotes — Full House, Office, Man & Van Services', 'seo_description' => 'Get home and office removal requests. Addresses, floors, elevator, packing needs. Moving companies in Portugal and beyond.', 'hero_headline' => 'Home or office move? Complete quote in minutes.', 'hero_subheadline' => 'The customer provides pickup and delivery addresses, move size, floors, and elevator access. Everything you need to quote without leaving home.', 'highlights' => ['Pickup & delivery addresses', 'Move size', 'Floors & elevator', 'Packing service included']],
+                ['slug' => 'international-cargo', 'title' => 'International Cargo Shipping — Export & Import Freight Services', 'seo_description' => 'Get international freight requests. Countries, cargo type, weight, container, and customs clearance. Transport companies with global coverage.', 'hero_headline' => 'International cargo? Quote with everything you need.', 'hero_subheadline' => 'The customer indicates the countries, cargo type, weight, and whether they need a container and customs clearance.', 'highlights' => ['Origin & destination countries', 'Cargo type & weight', 'Container or LCL', 'Customs clearance']],
+                ['slug' => 'vehicle-transport', 'title' => 'Vehicle Transport — Cars, Motorcycles, Boats, RVs', 'seo_description' => 'Get vehicle transport requests. Vehicle type, condition, open or enclosed trailer. Transport companies in Portugal.', 'hero_headline' => 'Vehicle transport? Quote without the runaround.', 'hero_subheadline' => 'The customer indicates the vehicle type, whether it runs, and if they prefer open or enclosed transport.', 'highlights' => ['Car, motorcycle, boat, RV', 'Vehicle condition', 'Open or enclosed', 'Insurance included']],
+                ['slug' => 'freight-pallets', 'title' => 'Pallet & Freight Shipping — National Goods Transport', 'seo_description' => 'Get pallet and freight transport requests. Number of pallets, weight, loading dock availability. Transport companies in Portugal.', 'hero_headline' => 'Palletized freight? Quote in minutes.', 'hero_subheadline' => 'The customer tells you how many pallets, the weight, and whether there\'s a loading dock at both ends.', 'highlights' => ['Number of pallets', 'Total weight', 'Loading dock available', 'Tail lift if needed']],
+                ['slug' => 'courier-express', 'title' => 'Courier & Express Delivery — Urgent Shipments & Fast Deliveries', 'seo_description' => 'Get courier requests. Shipment type, urgency, declared value. Service across Portugal.', 'hero_headline' => 'Courier or express? Quote in seconds.', 'hero_subheadline' => 'The customer indicates the shipment type, quantity, and urgency. You decide the price.', 'highlights' => ['Documents or packages', 'Delivery urgency', 'Fragile or standard', 'Declared value']],
+                ['slug' => 'specialized-transport', 'title' => 'Specialized Transport — Heavy Haul & Oversized Cargo', 'seo_description' => 'Get specialized transport projects. Machinery, pianos, safes, oversized cargo. Transport companies in Portugal.', 'hero_headline' => 'Special cargo? Quote with all the requirements.', 'hero_subheadline' => 'The customer describes the item, provides weight and dimensions. You assess whether a crane or special permits are needed.', 'highlights' => ['Machinery & heavy items', 'Weight & dimensions', 'Crane requirements', 'Special permits']],
             ],
         ],
     ],

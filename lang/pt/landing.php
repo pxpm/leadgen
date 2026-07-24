@@ -216,6 +216,7 @@ return [
         'plumbing' => ['name' => 'Canalização', 'icon' => '🔧', 'slug' => 'canalizacao'],
         'landscaping' => ['name' => 'Paisagismo', 'icon' => '🌿', 'slug' => 'paisagismo'],
         'pest_control' => ['name' => 'Controlo de Pragas', 'icon' => '🐛', 'slug' => 'controlo-pragas'],
+        'transport' => ['name' => 'Transportes', 'icon' => '🚚', 'slug' => 'transportes'],
     ],
 
     'trust' => [
@@ -271,7 +272,7 @@ return [
             ],
             [
                 'question' => 'Que indústrias são suportadas?',
-                'answer' => 'Construção civil, climatização, eletricidade, canalização, paisagismo, e controlo de pragas. Cada indústria tem perguntas de qualificação específicas adaptadas ao setor.',
+                'answer' => 'Construção civil, climatização, eletricidade, canalização, paisagismo, controlo de pragas, e transportes. Cada indústria tem perguntas de qualificação específicas adaptadas ao setor.',
             ],
             [
                 'question' => 'Quanto tempo demora a configurar?',
@@ -878,6 +879,37 @@ return [
                 ['slug' => 'termitas', 'title' => 'Inspeção de Térmitas — Diagnóstico e Tratamento de Madeiras', 'seo_description' => 'Receba projetos de inspeção de térmitas. Sinais, idade do imóvel e fotos. Empresas em Portugal.', 'hero_headline' => 'Térmitas na madeira? Pedido de inspeção com fotos.', 'hero_subheadline' => 'O cliente mostra as madeiras afetadas, indica a idade do imóvel. Você prepara o diagnóstico.', 'highlights' => ['Sinais de infestação', 'Idade do imóvel', 'Fotos das madeiras', 'Diagnóstico técnico']],
                 ['slug' => 'percevejos', 'title' => 'Tratamento de Percevejos — Intervenção Urgente em Hotéis e Residências', 'seo_description' => 'Receba pedidos urgentes de tratamento de percevejos. Divisões afetadas, sintomas e fotos. Serviço 24h Portugal.', 'hero_headline' => 'Percevejos? Intervenção urgente em qualquer lugar.', 'hero_subheadline' => 'O cliente indica as divisões afetadas, descreve os sintomas. Você age rápido.', 'highlights' => ['Divisões afetadas', 'Sintomas', 'Fotos', 'Intervenção 24h']],
                 ['slug' => 'prevencao-pragas', 'title' => 'Prevenção de Pragas — Planos de Manutenção para Empresas e Residências', 'seo_description' => 'Receba contratos de prevenção de pragas. Tipo de imóvel, área e frequência. Empresas de controlo de pragas em Portugal.', 'hero_headline' => 'Planos de prevenção? Contactos para contratos recorrentes.', 'hero_subheadline' => 'O cliente indica o tipo de imóvel, a área e a frequência. Contacto para propor plano.', 'highlights' => ['Tipo de imóvel', 'Área', 'Frequência', 'Plano preventivo']],
+            ],
+        ],
+        'transport' => [
+            'seo_title' => 'Orçamentos de Transportes — Mudanças, Carga Internacional, Veículos | Lead Intake',
+            'seo_description' => 'Empresa de transportes? Receba pedidos de mudanças, carga internacional, transporte de veículos, paletes e estafeta. Resposta automática 24h. Cobertura nacional e internacional.',
+            'hero_headline' => 'Mudanças, carga internacional, veículos. Orçamentos em minutos, sem tocar no telefone.',
+            'hero_subheadline' => 'Está ao volante e o telefone toca. Mais um cliente a pedir transporte. Em vez de parar para anotar moradas e pesos, o assistente trata de tudo — pede moradas de origem e destino, confirma o tipo de carga, a urgência. Você só revê e envia o orçamento.',
+            'steps' => [
+                ['title' => 'O cliente explica o que precisa transportar', 'desc' => 'Uma mudança de casa? Carga para exportação? Um carro para transportar? O cliente conta o que quer e o assistente faz as perguntas certas para cada tipo de serviço.'],
+                ['title' => 'Detalhes que fazem a diferença', 'desc' => 'Moradas exatas, código postal, andares, elevador, peso da carga, tipo de contentor. O assistente pergunta tudo o que interessa para o orçamento sair certo à primeira.'],
+                ['title' => 'Orçamento pronto em minutos', 'desc' => 'Com as moradas, o tipo de serviço e todos os detalhes, é só fazer contas. O email de resposta já está escrito. Reveja, ajuste se quiser, clique enviar.'],
+            ],
+            'benefits' => [
+                'Mudanças de casa, carga internacional, transporte de veículos, paletes, estafeta e transporte especializado — está tudo coberto.',
+                'Moradas de origem e destino com código postal. Rotas otimizadas desde o primeiro contacto.',
+                'Respostas automáticas, 24 horas por dia. Até ao domingo à noite.',
+                'Orçamentos mais rápidos: recebe os detalhes todos organizados, é só fazer contas.',
+                'Cobertura nacional e internacional. De Lisboa a Madrid, do Porto a Paris.',
+            ],
+            'faq' => [
+                ['q' => 'Que tipo de serviços de transporte estão cobertos?', 'a' => 'Mudanças de casa e escritório (completa ou parcial), transporte internacional de carga (marítimo, aéreo, terrestre), transporte de veículos (carros, motas, barcos), carga paletizada, estafeta e expresso, e transporte especializado para itens pesados ou sobredimensionados. Cada serviço tem as suas perguntas específicas.'],
+                ['q' => 'Quanto tempo poupo por contacto?', 'a' => 'Em média, 15 a 20 minutos por orçamento. É o tempo que deixa de gastar ao telefone a apontar moradas, códigos postais, pesos e volumes. O assistente trata disso — você aparece só para fechar.'],
+                ['q' => 'Funciona para transportes nacionais e internacionais?', 'a' => 'Sim. Desde uma mudança dentro da mesma cidade até um contentor para o Brasil ou Angola. O assistente adapta as perguntas consoante o tipo de serviço e os países envolvidos.'],
+            ],
+            'services' => [
+                ['slug' => 'mudancas', 'title' => 'Orçamentos de Mudanças — Casa, Escritório, Homem com Carrinha', 'seo_description' => 'Receba pedidos de mudanças de casa e escritório. Moradas, andares, elevador, empacotamento. Empresas de mudanças em Lisboa, Porto e Portugal.', 'hero_headline' => 'Mudanças de casa ou escritório? Orçamento completo em minutos.', 'hero_subheadline' => 'O cliente indica as moradas, o tamanho da mudança, andares e elevador. Tudo para preparar o orçamento sem sair de casa.', 'highlights' => ['Moradas de origem e destino', 'Tamanho da mudança', 'Andares e elevador', 'Empacotamento incluído']],
+                ['slug' => 'carga-internacional', 'title' => 'Transporte Internacional de Carga — Exportação e Importação', 'seo_description' => 'Receba pedidos de transporte internacional. Países, tipo de carga, peso, contentor e desalfandegamento. Empresas em Portugal com cobertura global.', 'hero_headline' => 'Carga internacional? Orçamento com tudo o que precisa.', 'hero_subheadline' => 'O cliente indica os países, o tipo de carga, o peso e se precisa de contentor e desalfandegamento.', 'highlights' => ['Países de origem e destino', 'Tipo e peso da carga', 'Contentor ou grupagem', 'Desalfandegamento']],
+                ['slug' => 'transporte-veiculos', 'title' => 'Transporte de Veículos — Carros, Motas, Barcos, Autocaravanas', 'seo_description' => 'Receba pedidos de transporte de veículos. Tipo de veículo, estado, reboque aberto ou fechado. Empresas em Portugal.', 'hero_headline' => 'Transporte de veículos? Orçamento sem dar voltas.', 'hero_subheadline' => 'O cliente indica o tipo de veículo, se está operacional e se prefere reboque aberto ou fechado.', 'highlights' => ['Carro, mota, barco, RV', 'Estado do veículo', 'Reboque aberto ou fechado', 'Seguro incluído']],
+                ['slug' => 'carga-pallets', 'title' => 'Carga e Paletes — Transporte Nacional de Mercadorias', 'seo_description' => 'Receba pedidos de transporte de paletes e carga. Número de paletes, peso, cais de carga. Empresas de transporte em Portugal.', 'hero_headline' => 'Carga paletizada? Orçamento em minutos.', 'hero_subheadline' => 'O cliente indica quantas paletes, o peso e se há cais de carga na origem e no destino.', 'highlights' => ['Número de paletes', 'Peso total', 'Cais de carga disponível', 'Porta-paletes se necessário']],
+                ['slug' => 'estafeta-expresso', 'title' => 'Estafeta e Expresso — Envios Urgentes e Entregas Rápidas', 'seo_description' => 'Receba pedidos de estafeta. Tipo de envio, urgência, valor declarado. Serviço em Lisboa, Porto e todo o Portugal.', 'hero_headline' => 'Estafeta ou expresso? Orçamento em segundos.', 'hero_subheadline' => 'O cliente indica o tipo de envio, a quantidade e a urgência. Você decide o preço.', 'highlights' => ['Documentos ou encomendas', 'Urgência de entrega', 'Frágil ou normal', 'Valor declarado']],
+                ['slug' => 'transporte-especializado', 'title' => 'Transporte Especializado — Cargas Pesadas e Sobredimensionadas', 'seo_description' => 'Receba projetos de transporte especializado. Maquinaria, pianos, cofres, cargas sobredimensionadas. Empresas em Portugal.', 'hero_headline' => 'Carga especial? Orçamento com todos os requisitos.', 'hero_subheadline' => 'O cliente descreve o item, indica o peso e as dimensões. Você avalia se precisa de grua ou autorizações especiais.', 'highlights' => ['Maquinaria e itens pesados', 'Peso e dimensões', 'Necessidade de grua', 'Autorizações especiais']],
             ],
         ],
     ],
