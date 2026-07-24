@@ -68,8 +68,8 @@ task('artisan:queue_restart', function () {
 after('artisan:migrate', 'artisan:seed_critical');
 after('deploy:vendors', 'npm:install');
 after('npm:install', 'npm:build');
-after('npm:build', 'artisan:generate_sitemap');
 after('deploy:symlink', 'artisan:queue_restart');
 after('deploy:symlink', 'artisan:horizon:terminate');
+after('deploy:symlink', 'artisan:generate_sitemap');
 
 after('deploy:failed', 'deploy:unlock');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\TenantResource\Pages;
 
 use App\Filament\Resources\TenantResource;
+use App\Filament\Resources\TenantResource\RelationManagers\EmailAccountsRelationManager;
 use App\Models\Tenant;
 use App\Services\IndustryConfigEngine;
 use Filament\Forms\Components\CheckboxList;
@@ -17,6 +18,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Text;
@@ -87,23 +89,21 @@ class ManageServiceConfig extends EditRecord
                     ]),
             ];
 
-            if (! empty($condFields)) {
-                $tabSchema[] = Section::make('Campos Condicionais')
-                    ->description('Campos que só aparecem quando certas condições se verificam.')
-                    ->collapsible()
-                    ->schema([
-                        Grid::make(3)
-                            ->schema($this->buildConditionalFieldCards("svc.{$key}.conditional_fields", $condFields, $fieldOptions)),
-                    ]);
+            // Auto-populate rules from field-level 'when' conditions merged with saved overrides
+            $fieldRules = $this->buildDefaultRulesFromConditionalFields($condFields, $allFields);
+            $savedRules = $tenant->service_config["svc.{$key}.conditional_requirements"] ?? [];
+            $mergedRules = $fieldRules;
+            foreach ($savedRules as $rule) {
+                $mergedRules[] = $rule;
             }
 
             $tabSchema[] = Section::make('Regras Condicionais')
-                ->description('Quando certas condições se verificam, exigir campos extra.')
-                ->collapsible()
+                ->description('Defina condições: "quando campo X tiver valor Y, mostrar/exigir campo Z". As condições dos campos podem ser editadas aqui.')
                 ->schema([
                     Repeater::make("svc.{$key}.conditional_requirements")
                         ->label('')
-                        ->addActionLabel('Adicionar regra condicional')
+                        ->addActionLabel('Adicionar regra')
+                        ->default($mergedRules)
                         ->schema([
                             Fieldset::make('Condições (todas têm de ser verdade)')
                                 ->schema([
@@ -202,8 +202,8 @@ class ManageServiceConfig extends EditRecord
                     ->label(__('admin.service_config.tab_email'))
                     ->icon('heroicon-o-envelope')
                     ->schema([
-                        \Filament\Schemas\Components\Livewire::make(
-                            \App\Filament\Resources\TenantResource\RelationManagers\EmailAccountsRelationManager::class,
+                        Livewire::make(
+                            EmailAccountsRelationManager::class,
                             ['ownerRecord' => $tenant, 'pageClass' => static::class],
                         ),
                     ]),
@@ -532,6 +532,33 @@ class ManageServiceConfig extends EditRecord
         }
 
         return $options;
+    }
+
+    /**
+     * Convert field-level 'when' conditions into rule entries for the Repeater.
+     *
+     * @return array<int, array{when_list: array, require: array}>
+     */
+    private function buildDefaultRulesFromConditionalFields(array $condFields, array $allFields): array
+    {
+        $rules = [];
+
+        foreach ($condFields as $fieldKey => $def) {
+            $whenList = [];
+            foreach ($def['when'] ?? [] as $triggerField => $values) {
+                $whenList[] = [
+                    'field' => $triggerField,
+                    'values' => (array) $values,
+                ];
+            }
+
+            $rules[] = [
+                'when_list' => $whenList,
+                'require' => [$fieldKey],
+            ];
+        }
+
+        return $rules;
     }
 
     private function buildFieldDescriptions(array $allFields): array

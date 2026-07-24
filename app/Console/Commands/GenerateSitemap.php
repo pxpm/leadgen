@@ -14,47 +14,34 @@ class GenerateSitemap extends Command
 
     public function handle(): int
     {
-        $lastmod = now()->toDateString();
-
         $industries = __('landing.industries_section');
         $trades = array_filter($industries, fn ($v, $k) => is_array($v) && isset($v['name']), ARRAY_FILTER_USE_BOTH);
 
         $urls = [
-            // Core pages
-            ['loc' => url('/'), 'lastmod' => $lastmod],
-            ['loc' => how_it_works_url(), 'lastmod' => $lastmod],
-            ['loc' => industries_url(), 'lastmod' => $lastmod],
-            ['loc' => pricing_url(), 'lastmod' => $lastmod],
-            ['loc' => privacy_url(), 'lastmod' => $lastmod],
-            ['loc' => terms_url(), 'lastmod' => $lastmod],
-            ['loc' => contact_url(), 'lastmod' => $lastmod],
-            // Blog index
-            ['loc' => url('/blog'), 'lastmod' => $lastmod],
+            ['loc' => url('/')],
+            ['loc' => how_it_works_url()],
+            ['loc' => industries_url()],
+            ['loc' => pricing_url()],
+            ['loc' => privacy_url()],
+            ['loc' => terms_url()],
+            ['loc' => contact_url()],
+            ['loc' => url('/blog')],
         ];
 
         // City pages
         foreach (['lisboa', 'porto', 'algarve', 'minho', 'alentejo'] as $city) {
-            $urls[] = [
-                'loc' => url('/orcamentos-'.$city),
-                'lastmod' => $lastmod,
-            ];
+            $urls[] = ['loc' => url('/orcamentos-'.$city)];
         }
 
         // Industry + service pages
         foreach ($trades as $key => $trade) {
-            $urls[] = [
-                'loc' => industry_url($key),
-                'lastmod' => $lastmod,
-            ];
+            $urls[] = ['loc' => industry_url($key)];
 
             $services = __('landing.industry_pages.'.$key.'.services') ?? [];
             foreach ($services as $svc) {
                 $svcSlug = $svc['slug'] ?? '';
                 if ($svcSlug) {
-                    $urls[] = [
-                        'loc' => service_url($key, $svcSlug),
-                        'lastmod' => $lastmod,
-                    ];
+                    $urls[] = ['loc' => service_url($key, $svcSlug)];
                 }
             }
         }
@@ -62,10 +49,7 @@ class GenerateSitemap extends Command
         // Blog posts
         $articles = __('landing.blog_index.articles') ?? [];
         foreach ($articles as $slug => $article) {
-            $urls[] = [
-                'loc' => url('/blog/'.$slug),
-                'lastmod' => $lastmod,
-            ];
+            $urls[] = ['loc' => url('/blog/'.$slug)];
         }
 
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
@@ -73,15 +57,24 @@ class GenerateSitemap extends Command
         foreach ($urls as $url) {
             $xml .= '  <url>'."\n";
             $xml .= '    <loc>'.e($url['loc']).'</loc>'."\n";
-            $xml .= '    <lastmod>'.$url['lastmod'].'</lastmod>'."\n";
+            if (isset($url['lastmod'])) {
+                $xml .= '    <lastmod>'.$url['lastmod'].'</lastmod>'."\n";
+            }
             $xml .= '  </url>'."\n";
         }
         $xml .= '</urlset>';
 
         $path = public_path('sitemap.xml');
-        file_put_contents($path, $xml);
 
-        $this->info('Sitemap generated: '.$path);
+        $bytes = file_put_contents($path, $xml);
+
+        if ($bytes === false) {
+            $this->error('Failed to write sitemap to: '.$path);
+
+            return self::FAILURE;
+        }
+
+        $this->info('Sitemap generated: '.$path.' ('.$bytes.' bytes)');
         $this->info(count($urls).' URLs included.');
 
         return self::SUCCESS;
