@@ -18,6 +18,7 @@ class IndustrySeeder extends Seeder
             'plumbing' => 'Canalização',
             'landscaping' => 'Paisagismo',
             'pest_control' => 'Controlo de Pragas',
+            'transport' => 'Transportes',
         ];
 
         foreach ($industries as $slug => $name) {

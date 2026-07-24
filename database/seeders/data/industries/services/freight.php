@@ -1,0 +1,257 @@
+<?php
+
+return [
+    'key' => 'freight',
+    'icon' => '📦',
+    'required_fields' => [
+        0 => 'cargo_type',
+        1 => 'pallet_count',
+        2 => 'cargo_weight',
+        3 => 'loading_dock_origin',
+        4 => 'loading_dock_dest',
+    ],
+    'optional_fields' => [
+        0 => 'needs_tail_lift',
+        1 => 'hazmat',
+        2 => 'cargo_value',
+        3 => 'photos',
+    ],
+    'field_definitions' => [
+        'cargo_type' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'pallets',
+                1 => 'bulk',
+                2 => 'machinery',
+                3 => 'construction',
+                4 => 'retail_goods',
+                5 => 'other',
+            ],
+        ],
+        'pallet_count' => [
+            'type' => 'select',
+            'options' => [
+                0 => '1',
+                1 => '2_4',
+                2 => '5_10',
+                3 => '11_plus',
+                4 => 'not_sure',
+            ],
+        ],
+        'cargo_weight' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'less_than_500kg',
+                1 => '500_2000kg',
+                2 => '2000_10000kg',
+                3 => 'over_10000kg',
+                4 => 'not_sure',
+            ],
+        ],
+        'loading_dock_origin' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'yes',
+                1 => 'no',
+                2 => 'not_sure',
+            ],
+        ],
+        'loading_dock_dest' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'yes',
+                1 => 'no',
+                2 => 'not_sure',
+            ],
+        ],
+        'needs_tail_lift' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'yes',
+                1 => 'no',
+                2 => 'not_sure',
+            ],
+            'required' => false,
+            'when' => [
+                'loading_dock_origin' => [
+                    0 => 'no',
+                ],
+            ],
+        ],
+        'hazmat' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'yes',
+                1 => 'no',
+                2 => 'not_sure',
+            ],
+        ],
+        'cargo_value' => [
+            'type' => 'select',
+            'options' => [
+                0 => 'less_than_5k',
+                1 => '5k_20k',
+                2 => '20k_100k',
+                3 => 'over_100k',
+                4 => 'not_sure',
+            ],
+        ],
+    ],
+    'conditional_requirements' => [],
+    'locales' => [
+        'pt' => [
+            'field_prompts' => [
+                'cargo_type' => 'Que tipo de carga pretende transportar?',
+                'pallet_count' => 'Quantas paletes pretende enviar?',
+                'cargo_weight' => 'Qual é o peso total aproximado da carga?',
+                'loading_dock_origin' => 'Tem cais de carga disponível na origem?',
+                'loading_dock_dest' => 'E tem cais de carga disponível no destino?',
+                'needs_tail_lift' => 'Precisa de porta-paletes / plataforma elevatória na recolha?',
+                'hazmat' => 'A carga inclui mercadorias perigosas (ADN/ADR)?',
+                'cargo_value' => 'Qual é o valor aproximado da carga?',
+            ],
+            'field_options' => [
+                'cargo_type' => [
+                    'pallets' => 'Paletes',
+                    'bulk' => 'Granel / Carga solta',
+                    'machinery' => 'Maquinaria',
+                    'construction' => 'Materiais de construção',
+                    'retail_goods' => 'Produtos de retalho',
+                    'other' => 'Outro',
+                ],
+                'pallet_count' => [
+                    '1' => '1 palete',
+                    '2_4' => '2–4 paletes',
+                    '5_10' => '5–10 paletes',
+                    '11_plus' => 'Mais de 10 paletes',
+                    'not_sure' => 'Não sei',
+                ],
+                'cargo_weight' => [
+                    'less_than_500kg' => 'Menos de 500 kg',
+                    '500_2000kg' => '500–2.000 kg',
+                    '2000_10000kg' => '2.000–10.000 kg',
+                    'over_10000kg' => 'Mais de 10.000 kg',
+                    'not_sure' => 'Não sei',
+                ],
+                'loading_dock_origin' => [
+                    'yes' => 'Sim',
+                    'no' => 'Não',
+                    'not_sure' => 'Não tenho a certeza',
+                ],
+                'loading_dock_dest' => [
+                    'yes' => 'Sim',
+                    'no' => 'Não',
+                    'not_sure' => 'Não tenho a certeza',
+                ],
+                'needs_tail_lift' => [
+                    'yes' => 'Sim, preciso',
+                    'no' => 'Não',
+                    'not_sure' => 'Não sei',
+                ],
+                'hazmat' => [
+                    'yes' => 'Sim',
+                    'no' => 'Não',
+                    'not_sure' => 'Não sei',
+                ],
+                'cargo_value' => [
+                    'less_than_5k' => 'Menos de 5.000 €',
+                    '5k_20k' => '5.000–20.000 €',
+                    '20k_100k' => '20.000–100.000 €',
+                    'over_100k' => 'Mais de 100.000 €',
+                    'not_sure' => 'Prefiro não dizer',
+                ],
+            ],
+            'name' => 'Carga e Pallets',
+            'keywords' => [
+                0 => 'paletes',
+                1 => 'palete',
+                2 => 'carga',
+                3 => 'transporte carga',
+                4 => 'distribuição',
+                5 => 'distribuicao',
+                6 => 'armazém',
+                7 => 'armazem',
+                8 => 'logística',
+                9 => 'logistica',
+                10 => 'fornecedor',
+                11 => 'roupas',
+            ],
+        ],
+        'en' => [
+            'field_prompts' => [
+                'cargo_type' => 'What type of cargo do you need to transport?',
+                'pallet_count' => 'How many pallets do you need to ship?',
+                'cargo_weight' => 'What is the approximate total weight of the cargo?',
+                'loading_dock_origin' => 'Is there a loading dock available at the pickup location?',
+                'loading_dock_dest' => 'And is there a loading dock available at the delivery location?',
+                'needs_tail_lift' => 'Do you need a tail lift at pickup?',
+                'hazmat' => 'Does the cargo include hazardous materials (ADR)?',
+                'cargo_value' => 'What is the approximate value of the cargo?',
+            ],
+            'field_options' => [
+                'cargo_type' => [
+                    'pallets' => 'Pallets',
+                    'bulk' => 'Bulk / Loose cargo',
+                    'machinery' => 'Machinery',
+                    'construction' => 'Construction materials',
+                    'retail_goods' => 'Retail goods',
+                    'other' => 'Other',
+                ],
+                'pallet_count' => [
+                    '1' => '1 pallet',
+                    '2_4' => '2–4 pallets',
+                    '5_10' => '5–10 pallets',
+                    '11_plus' => 'More than 10 pallets',
+                    'not_sure' => 'Not sure',
+                ],
+                'cargo_weight' => [
+                    'less_than_500kg' => 'Less than 500 kg',
+                    '500_2000kg' => '500–2,000 kg',
+                    '2000_10000kg' => '2,000–10,000 kg',
+                    'over_10000kg' => 'Over 10,000 kg',
+                    'not_sure' => 'Not sure',
+                ],
+                'loading_dock_origin' => [
+                    'yes' => 'Yes',
+                    'no' => 'No',
+                    'not_sure' => 'Not sure',
+                ],
+                'loading_dock_dest' => [
+                    'yes' => 'Yes',
+                    'no' => 'No',
+                    'not_sure' => 'Not sure',
+                ],
+                'needs_tail_lift' => [
+                    'yes' => 'Yes, needed',
+                    'no' => 'No',
+                    'not_sure' => 'Not sure',
+                ],
+                'hazmat' => [
+                    'yes' => 'Yes',
+                    'no' => 'No',
+                    'not_sure' => 'Not sure',
+                ],
+                'cargo_value' => [
+                    'less_than_5k' => 'Less than €5,000',
+                    '5k_20k' => '€5,000–20,000',
+                    '20k_100k' => '€20,000–100,000',
+                    'over_100k' => 'Over €100,000',
+                    'not_sure' => 'Prefer not to say',
+                ],
+            ],
+            'name' => 'Freight & Pallets',
+            'keywords' => [
+                0 => 'pallets',
+                1 => 'freight',
+                2 => 'cargo',
+                3 => 'shipping',
+                4 => 'logistics',
+                5 => 'ltl',
+                6 => 'ftl',
+                7 => 'warehouse',
+                8 => 'distribution',
+                9 => 'supplier',
+            ],
+        ],
+    ],
+];
